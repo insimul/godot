@@ -446,3 +446,70 @@ view-model tests** + the extended operation-table conformance (`streamConversati
 clean incl. the four new `conversation/*.gd`; the new headless runner SKIPs without a
 `godot` binary). The editor two-turn checklist above is unchecked pending a `godot`
 binary + platform server — reviewed at merge (`autoMerge` is off).
+
+---
+
+## Default-UI quest journal/tracker/offer + inventory/container/merchant (US-GU2)
+
+The stable quest + trade UI is lifted into `addons/insimul/ui/` behind the panel
+registry (US-GU1). The behavior lives in two engine-neutral view-models mirrored
+1:1 in GDScript, so both legs run the SAME shared matrices:
+
+- **Quest**: `packages/core/src/ui/quest-journal-model.ts` ⟷
+  `addons/insimul/ui/quest_journal_model.gd` — tab filtering (all/active/completed/
+  available) + counts, the bounded tracker HUD (`max_tracked`, auto-untrack on
+  complete), and offer accept/decline; radiant arrivals land via `upsert`. The
+  transitions mirror the real `InsimulQuestSystem` signals (quest_accepted /
+  quest_completed / quest_offered). Thin Control binders:
+  `quest_journal_panel.gd`, `quest_tracker_panel.gd`, `quest_offer_panel.gd`.
+- **Trade**: `packages/core/src/ui/trade-model.ts` ⟷
+  `addons/insimul/ui/trade_model.gd` — inventory / container transfer / merchant
+  buy+sell, backed EXCLUSIVELY by `save.currentState` (`player.gold` /
+  `player.inventory`, `containers.containers[id].items`,
+  `npcs.merchantStates[id].{goldReserve,items}`). Thin Control binders:
+  `inventory_panel.gd`, `container_panel.gd`, `merchant_panel.gd`.
+
+### Runs on any box (no Godot toolchain) — the merge gate
+
+- **Shared view-model cases (quests + trade matrices)** (`npm test`) — the runner
+  `packages/core/src/ui/__tests__/quest-trade-corpus.test.ts` executes
+  `packages/core/conformance/ui/{quest-journal-cases,trade-cases}.json` against the
+  TS models: 7 quest cases (filter partition, accept, complete+untrack, decline,
+  max-tracked, non-active track rejection, radiant arrival) + 9 trade cases (take /
+  take-clamp / take-all, buy affordable/insufficient-gold/out-of-stock, sell /
+  merchant-broke / player-lacks-item).
+- **State-location invariant** (`npm test`) — same test file: the trade model keeps
+  no private store (reads return the live `currentState` arrays; two models over two
+  states never share state), and every op conserves the census — a merchant trade
+  conserves gold (`player.gold + merchant.goldReserve`), a container take conserves
+  the item census (items move, never created/destroyed).
+- **GDScript structural lint** (`npm run engines:check`) — the five new `ui/*.gd`
+  view-models/panels + the `tests/quest_trade_test.gd` mirror are covered.
+- **Headless GDScript parity** (`npm run engines:check`) —
+  `run_quest_trade_headless.sh` runs `quest_trade_test.gd` (the SAME shared JSON +
+  the state-location invariant, incl. a true reference-identity probe) when a
+  `godot` binary is on PATH; it **SKIPs** cleanly on the bare Ralph box, where the
+  structural lint + the TS corpus run cover the contract.
+
+### Needs a `godot` binary — human end-to-end checklist
+
+- [ ] **Quest journal + tracker** — open the journal (registry key `quest_journal`),
+      switch tabs and confirm the list partitions by status; track up to
+      `max_tracked` active quests and confirm the tracker HUD (`quest_tracker`)
+      mirrors them; complete a quest and confirm it drops off the tracker and lands
+      under Completed.
+- [ ] **Radiant offer** — trigger a radiant arrival (or an NPC offer) and confirm the
+      offer dialog (`quest_offer`) appears; Accept moves it to Active in the journal,
+      Decline removes it.
+- [ ] **Inventory / container / merchant against a save** — loot a container into the
+      inventory and confirm the item count moves (not duplicates); buy/sell at a
+      merchant and confirm gold + stock update on BOTH sides and that a re-open reads
+      the same values from `save.currentState` (no separate store).
+
+### Status on this machine (US-GU2)
+
+`npm run check` exit 0; `npm test` green incl. **21 new US-GU2 tests** (quest + trade
+shared matrices + the state-location invariant); `npm run engines:check` green
+(structural lint clean incl. the new `ui/*.gd`; `run_quest_trade_headless.sh` SKIPs
+without a `godot` binary as designed). The human checklist above is unchecked pending
+a `godot` binary — reviewed at merge (`autoMerge` is off).
