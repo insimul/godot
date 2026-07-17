@@ -85,6 +85,8 @@ gdextension/
     canonical_json.{h,cpp}  # canonical key-sorted JSON serializer (HOST-TESTABLE)
     save_file.{h,cpp}       # portable save-file core: load/migrate/envelope (HOST-TESTABLE)
     insimul_save_codec.{h,cpp} # RefCounted save wrapper (godot-cpp; syntax-gated)
+    quest_system.{h,cpp}    # portable quest core: hydrate/radiant/complete (HOST-TESTABLE)
+    insimul_quest_core.{h,cpp} # RefCounted quest wrapper (godot-cpp; syntax-gated)
     register_types.{h,cpp}  # GDExtension entry / ClassDB registration
   vendor/insimul/insimul.h  # libinsimul C ABI — contract copy (see THIRD_PARTY.md)
   test/                     # HOST C++ gates (clang++, no godot toolchain)
@@ -94,6 +96,8 @@ gdextension/
     run_conformance.sh      #   clang++ build+run — the US-GP2 host gate
     test_save_system.cpp    #   host tests for the portable save core (US-GC2)
     run_save_tests.sh       #   clang++ build+run — the US-GC2 save gate
+    test_quest_system.cpp   #   host tests for the portable quest core (US-GC3)
+    run_quest_tests.sh      #   clang++ build+run — the US-GC3 quest gate
   tests/                    # GODOT GDScript gates (godot --headless -s)
     conformance_runner.gd   #   corpus consult+query end-to-end (US-GP2)
     gdscript_structural_lint.py # structural `godot --check-only` stand-in (US-GP3)
@@ -177,7 +181,8 @@ this one). Consequently:
 
 - **What runs here:** `test/run_host_tests.sh` — the marshalling core built with
   `clang++` and executed. Green on this machine.
-- **What is syntax-gated only:** `insimul_prolog.*`, `register_types.*`,
+- **What is syntax-gated only:** `insimul_prolog.*`, `insimul_save_codec.*`,
+  `insimul_quest_core.*`, `register_types.*`,
   `SConstruct`, `insimul.gdextension` — they encode the real godot-cpp/libinsimul
   contract but require the toolchain to compile/link. Human-verify per
   `THIRD_PARTY.md` once godot-cpp and an `insimul-native/dist` are available (a

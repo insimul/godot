@@ -7,6 +7,7 @@
 #include "register_types.h"
 
 #include "insimul_prolog.h"
+#include "insimul_quest_core.h"
 #include "insimul_save_codec.h"
 
 #include <gdextension_interface.h>
@@ -21,6 +22,7 @@ void initialize_insimul_module(ModuleInitializationLevel p_level) {
 		return;
 	}
 	GDREGISTER_CLASS(InsimulProlog);
+	GDREGISTER_CLASS(InsimulQuestCore);
 	GDREGISTER_CLASS(InsimulSaveCodec);
 }
 
