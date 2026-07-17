@@ -119,6 +119,27 @@ func _on_push_to_talk_released():
 - `conversation_ended()`
 - `error_occurred(message: String)`
 
+## Type provenance
+
+Insimul's GDScript types fall into three tiers. **Only the *generated* tier is
+derived from the canonical `@insimul/core` schemas** (regenerate with
+`npm run codegen` from the `insimul-runtime` root); the others are hand-maintained
+and stay that way.
+
+| Tier | Files | Source of truth | Editable? |
+| --- | --- | --- | --- |
+| **Generated** | `addons/insimul/generated/{InsimulSaveFile,InsimulSaveFileEnvelope,InsimulWorldIR}.gd` — Godot 4 `class_name` DTOs with `from_dict`/`to_dict` | `packages/core/schemas/{save-file,save-envelope,world-ir}.schema.json` | **No** — `npm run codegen`, drift-guarded (`codegen:verify-gdscript`) |
+| **Hand-written (SDK)** | `addons/insimul/insimul_types.gd` (`InsimulTypes` — proto-derived conversation event types), `insimul_world_export.gd` (the distilled offline-export shape), and the addon runtime (`insimul_client.gd`, `insimul_npc.gd`, `insimul_http_client.gd`, `insimul_local_provider.gd`, audio/mic/lipsync) | Hand-maintained (engine-facing / proto-derived) | **Yes** |
+| **Template-legacy** | `templates/scripts/**/*.gd` (e.g. `systems/save_system.gd`, `core/data_loader.gd`, the world generators) — game-side scripts vendored into exported games | Hand-maintained | Retired by the per-engine Godot runtime PRD — **not** this PRD |
+
+**Why nothing in the addon was migrated to the generated classes:** no live addon
+type duplicates a generated schema DTO. `insimul_world_export.gd` parses the
+*distilled offline export* (`GET /api/conversation/export/{worldId}` →
+`world_export.json`) — a flattened dialogue-context shape, **not** the full
+`InsimulWorldIR` — so it stays hand-written. New save/world-IR code should parse
+into the generated classes and read fields off them (see the boundary convention
+in `addons/insimul/generated/README.md`).
+
 ## Supported Versions
 
 - Godot **4.2+**
