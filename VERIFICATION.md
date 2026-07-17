@@ -262,3 +262,187 @@ the Binding Editor dock docked (top-right):
 re-import diff 11, structural lint 0 issues, plus root `npm run check` (exit 0) and
 `npm test` (442 passed). The editor checklist above is unchecked pending a `godot`
 binary — reviewed at merge (`autoMerge` is off).
+
+## Editor backend connection (US-GE1)
+
+The editor's own v1 client + session foundation (separate from the runtime
+`insimul_client.gd` autoload). Machine-runnable gates pass **here**; the editor
+end-to-end needs a `godot` binary and a running platform server (reviewed at merge).
+
+### Runs on any box (no Godot toolchain)
+
+- **Operation-table conformance** (`npm test`) —
+  `packages/core/src/editor/__tests__/operations.test.ts` pins three copies of the
+  v1 table together: the generated `openapi/operations.json`, the core
+  `V1_OPERATIONS` const, and the GDScript `v1_client.gd` `OPERATIONS` table. Any
+  drift in an operationId, method, or path fails the guard. Every `USED_OPERATIONS`
+  id must resolve.
+- **Session lifecycle** (`npm test`) —
+  `packages/core/src/editor/__tests__/editor-session.test.ts` drives the reference
+  `EditorSession` over a mocked transport: health 200 → ok + parsed `healthy`,
+  login 200 keeps the token, login 401/403 **clears** the token, request carries
+  base-URL-joined path + bearer auth. The GDScript `insimul_editor_session.gd`
+  mirrors this contract (`connect_test.gd`, below).
+- **Secret-storage rule** (`npm test`) — the same conformance suite statically
+  asserts the token key (`insimul/editor/api_token`) **never** appears on a
+  `ProjectSettings` line and is persisted only via the `EditorSettings` handle,
+  while the non-secret server URL (`insimul/editor/server_url`) goes to
+  `ProjectSettings`. Documented in `addons/insimul/editor/connect/README.md`.
+- **GDScript structural lint** — the six new `connect/*.gd` files are covered by
+  `gdscript_structural_lint.py` (0 issues).
+
+### Needs a `godot` binary — human end-to-end checklist
+
+- [ ] **Logic-layer headless** —
+      `bash addons/insimul/editor/connect/run_connect_headless.sh` (with a `godot`
+      binary on PATH) runs `connect_test.gd`: client resolve, unknown-op guard,
+      request build, health probe, login success, and login-401-clears-token over
+      `InsimulV1MockTransport`. Expect all PASS.
+- [ ] **Settings split in the editor** — set the server URL in Project Settings
+      (`insimul/editor/server_url`) and confirm it persists to `project.godot`; set
+      the API token via the editor session and confirm it lands in `EditorSettings`
+      (per-machine, e.g. `editor_settings-*.tres`) and **not** in any committed
+      project file (`git status` shows no token in `project.godot`).
+- [ ] **Live health/verify** — against a running platform server, `verify()` on a
+      valid token returns ok (`healthy: true`); an invalid token returns 401 and the
+      session clears it (`is_authenticated()` false).
+
+## Status on this machine (editor-connect)
+
+`npm run engines:check` is green here (structural lint 0 issues incl. the new
+`connect/*.gd`; the editor-connect headless runner SKIPs without a `godot` binary),
+plus root `npm run check` (exit 0) and `npm test` (459 passed, incl. 17 editor
+tests). The editor checklist above is unchecked pending a `godot` binary +
+platform server — reviewed at merge (`autoMerge` is off).
+
+## World Browser + Generation Console docks (US-GE2)
+
+Two in-editor docks over the US-GE1 session: the **World Browser** (worlds
+list/detail/stats, compatibility badge, Import/Sync with a dry-run report,
+open-in-web) and the **Generation Console** (start a generator as a job, track
+progress via SSE with a polling fallback, sync-now). The view-model logic is the
+tested contract; the Control docks are UI, reviewed at merge.
+
+### Runs on any box (no Godot toolchain)
+
+- **World Browser view-model** (`npm test`) —
+  `packages/core/src/editor/__tests__/world-browser.test.ts` (16 cases): the
+  compatibility badge vs `SAVE_FILE_VERSION` (equal→compatible, older→warning,
+  newer→incompatible), `listWorlds` / `importWorld` body parsing (malformed
+  entries dropped, bad bodies tolerated), the dry-run report summary, the
+  open-in-web URL, and the list+selection reducer — including a re-fetch that
+  drops the selected world clearing the dangling selection.
+- **Job-lifecycle view-model** (`npm test`) —
+  `generation-console.test.ts` (12 cases): `queued → running → succeeded/failed`
+  over mocked SSE frames + a poll response, progress clamped to `[0,1]`,
+  succeeded forcing progress to 1 with the diff, error frames failing the job, and
+  the **terminal-freeze** rule (a terminal job ignores later events, so the SSE and
+  polling paths can safely overlap).
+- **Editor-restart safety / teardown** (`npm test`) —
+  `job-poller.test.ts` (7 cases): the poller stops on its own at a terminal
+  status; `dispose()` cancels the pending timer (**no live timer survives**); a
+  fetch callback returning **after** dispose is **dropped** (no `onUpdate`, no next
+  poll) — the zombie-request guarantee; `maxPolls` safety valve; idempotent
+  `dispose()`/`start()`. Uses a fake `Scheduler` (tracks live timers) + a
+  manually-fired `JobFetch` so the whole lifecycle runs with no real clock/HTTP.
+- **Operation-table conformance** (`npm test`) — the US-GE1 guard now also pins the
+  seven new worlds/generation operations (`listWorlds`, `getWorldDetail`,
+  `importWorld`, `startGenerationJob`, `getGenerationJob`, `streamGenerationJob`,
+  `syncGenerationJob`) across `operations.json` ⟷ `V1_OPERATIONS` ⟷ the GDScript
+  `OPERATIONS`/`USED_OPERATIONS` tables. `npm run codegen` regenerated the spec +
+  C# client (codegen drift guard green).
+- **GDScript structural lint** — the eight new `browser/*.gd` + `generation/*.gd`
+  files (models, docks, tests) are covered by `gdscript_structural_lint.py`
+  (0 issues, 141 files).
+
+### Needs a `godot` binary — human end-to-end checklist
+
+- [ ] **Logic-layer headless** —
+      `bash addons/insimul/editor/browser/run_browser_headless.sh` and
+      `bash addons/insimul/editor/generation/run_generation_headless.sh` (with a
+      `godot` binary on PATH) run `browser_test.gd` / `generation_test.gd`: the
+      GDScript mirrors of the compatibility badge, parsers, browser reducer, job
+      reducer, and the poller teardown (late response dropped, no orphaned timer).
+      Expect all PASS.
+- [ ] **World Browser in the editor** — against a running platform server, the dock
+      lists worlds, shows the detail + stats + compatibility badge for a selection,
+      an Import (dry run) shows a change summary without writing, and Open-in-Web
+      opens the world in the browser.
+- [ ] **Generation Console in the editor** — starting a generator shows live
+      progress (SSE, or the polling fallback when the stream can't be held), reaches
+      `succeeded`, and Sync Now applies the diff. Then **reload the dock / restart
+      the editor mid-job** and confirm no orphaned timer or request (the poller is
+      disposed in `_exit_tree`).
+
+## Status on this machine (US-GE2)
+
+`npm run check` exit 0; `npm test` **494 passed** (incl. 35 new US-GE2 view-model
+tests + the extended conformance guard); `npm run engines:check` green (structural
+lint 0 issues across 141 `.gd`; the two new headless runners SKIP without a `godot`
+binary). The editor checklists above are unchecked pending a `godot` binary +
+platform server — reviewed at merge (`autoMerge` is off).
+
+## In-editor NPC Conversation Tester (US-GE3)
+
+A dock for testing a world's NPC conversations from the editor over the US-GE1
+session: pick a character from imported world data, send a line, and watch the
+character response stream into a transcript — with a **PIE-style recorded-reasoning
+fallback** for when editor-process streaming misbehaves. The view-model logic is the
+tested contract; the Control dock is UI, reviewed at merge. Constraints are documented
+in `addons/insimul/editor/conversation/README.md`.
+
+### Runs on any box (no Godot toolchain)
+
+- **Conversation view-model** (`npm test`) —
+  `packages/core/src/editor/__tests__/conversation-tester.test.ts` (18 cases): the
+  character picker (`extractCharacters` from imported world data, entries without an
+  id dropped, name falling back to `firstName`+`lastName` then the id); the SSE-frame
+  parser (`parseConversationEvent`: text/reasoning/action/error/done, blank
+  keep-alives + unknown types → null); the transcript reducer over a **mocked
+  stream** (text chunks append, a final chunk closes the turn → `awaiting`, actions
+  recorded, a `done` frame closes the turn, a second player line appends a new pair,
+  events after a turn closes ignored, `end` freezes the conversation).
+- **Recorded-reasoning fallback** (`npm test`) — the PIE-style **auto-switch**: a
+  stream error on a live stream flips to the recorded mode (`recording`) instead of
+  failing; `streamFailed` forces the fallback and a `recorded` action completes the
+  turn (`fromRecording = true`); an error while **already** in the fallback is a hard
+  `error`.
+- **Editor-restart safety / teardown** (`npm test`) — the
+  `ConversationController` teardown: a stream frame arriving **after** `dispose()` is
+  **dropped** (no `onUpdate`, the late chunk never applied) — the zombie-frame
+  guarantee; `dispose()` is idempotent; a keep-alive frame fires no update.
+- **Operation-table conformance** (`npm test`) — the US-GE1 guard now also pins the
+  two conversation operations the tester uses (`streamConversation`,
+  `endConversation`) across `V1_OPERATIONS` ⟷ `USED_OPERATION_IDS` ⟷ the GDScript
+  `OPERATIONS`/`USED_OPERATIONS` tables (both already in the spec since US-GE1).
+- **GDScript structural lint** — the four new `conversation/*.gd` files (reducer,
+  controller, dock, test) are covered by `gdscript_structural_lint.py`.
+
+### Needs a `godot` binary — human two-turn checklist
+
+- [ ] **Logic-layer headless** —
+      `bash addons/insimul/editor/conversation/run_conversation_headless.sh` (with a
+      `godot` binary on PATH) runs `conversation_test.gd`: the GDScript mirrors of the
+      picker, frame parser, transcript reducer, recorded-fallback auto-switch, and the
+      controller teardown (late frame dropped, no update). Expect all PASS.
+- [ ] **Two-turn conversation in the editor** — against a running platform server
+      with an imported world: pick a character in the dock, send **turn 1** and watch
+      the response stream into the transcript, then send **turn 2** and confirm it
+      appends a new player/character pair below the first. The picker lists the
+      imported world's characters; switching character starts a fresh transcript.
+- [ ] **Recorded-reasoning fallback** — force a stream failure (stop the server
+      mid-turn, or a world with no streaming route) and confirm the dock shows the
+      `[recorded reasoning fallback]` marker and the turn is completed from a recorded
+      trace rather than the conversation erroring out.
+- [ ] **Editor-restart safety** — start a turn, then **reload the dock / restart the
+      editor mid-stream** and confirm no late SSE frame touches a freed node (the
+      controller is disposed in `_exit_tree`).
+
+## Status on this machine (US-GE3)
+
+`npm run check` exit 0; `npm test` green incl. **18 new US-GE3 conversation
+view-model tests** + the extended operation-table conformance (`streamConversation` /
+`endConversation` pinned three ways); `npm run engines:check` green (structural lint
+clean incl. the four new `conversation/*.gd`; the new headless runner SKIPs without a
+`godot` binary). The editor two-turn checklist above is unchecked pending a `godot`
+binary + platform server — reviewed at merge (`autoMerge` is off).
