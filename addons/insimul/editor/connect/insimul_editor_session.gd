@@ -64,6 +64,14 @@ func logout() -> void:
 	_token = ""
 
 
+## Dispatch a v1 operation through the session's client with the current token +
+## optional JSON `body`, delivering the raw { "code", "body" } response to `on_done`.
+## The World Browser / Generation Console docks (US-GE2) and the conversation tester
+## (US-GE3) call the API through here so they never touch the transport directly.
+func call_operation(operation_id: String, body: String, on_done: Callable) -> void:
+	_client.call_operation(operation_id, _token, body, on_done)
+
+
 ## Verify the current token by probing the health endpoint.
 func verify(on_done: Callable) -> void:
 	health(on_done)

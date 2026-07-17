@@ -314,3 +314,70 @@ end-to-end needs a `godot` binary and a running platform server (reviewed at mer
 plus root `npm run check` (exit 0) and `npm test` (459 passed, incl. 17 editor
 tests). The editor checklist above is unchecked pending a `godot` binary +
 platform server — reviewed at merge (`autoMerge` is off).
+
+## World Browser + Generation Console docks (US-GE2)
+
+Two in-editor docks over the US-GE1 session: the **World Browser** (worlds
+list/detail/stats, compatibility badge, Import/Sync with a dry-run report,
+open-in-web) and the **Generation Console** (start a generator as a job, track
+progress via SSE with a polling fallback, sync-now). The view-model logic is the
+tested contract; the Control docks are UI, reviewed at merge.
+
+### Runs on any box (no Godot toolchain)
+
+- **World Browser view-model** (`npm test`) —
+  `packages/core/src/editor/__tests__/world-browser.test.ts` (16 cases): the
+  compatibility badge vs `SAVE_FILE_VERSION` (equal→compatible, older→warning,
+  newer→incompatible), `listWorlds` / `importWorld` body parsing (malformed
+  entries dropped, bad bodies tolerated), the dry-run report summary, the
+  open-in-web URL, and the list+selection reducer — including a re-fetch that
+  drops the selected world clearing the dangling selection.
+- **Job-lifecycle view-model** (`npm test`) —
+  `generation-console.test.ts` (12 cases): `queued → running → succeeded/failed`
+  over mocked SSE frames + a poll response, progress clamped to `[0,1]`,
+  succeeded forcing progress to 1 with the diff, error frames failing the job, and
+  the **terminal-freeze** rule (a terminal job ignores later events, so the SSE and
+  polling paths can safely overlap).
+- **Editor-restart safety / teardown** (`npm test`) —
+  `job-poller.test.ts` (7 cases): the poller stops on its own at a terminal
+  status; `dispose()` cancels the pending timer (**no live timer survives**); a
+  fetch callback returning **after** dispose is **dropped** (no `onUpdate`, no next
+  poll) — the zombie-request guarantee; `maxPolls` safety valve; idempotent
+  `dispose()`/`start()`. Uses a fake `Scheduler` (tracks live timers) + a
+  manually-fired `JobFetch` so the whole lifecycle runs with no real clock/HTTP.
+- **Operation-table conformance** (`npm test`) — the US-GE1 guard now also pins the
+  seven new worlds/generation operations (`listWorlds`, `getWorldDetail`,
+  `importWorld`, `startGenerationJob`, `getGenerationJob`, `streamGenerationJob`,
+  `syncGenerationJob`) across `operations.json` ⟷ `V1_OPERATIONS` ⟷ the GDScript
+  `OPERATIONS`/`USED_OPERATIONS` tables. `npm run codegen` regenerated the spec +
+  C# client (codegen drift guard green).
+- **GDScript structural lint** — the eight new `browser/*.gd` + `generation/*.gd`
+  files (models, docks, tests) are covered by `gdscript_structural_lint.py`
+  (0 issues, 141 files).
+
+### Needs a `godot` binary — human end-to-end checklist
+
+- [ ] **Logic-layer headless** —
+      `bash addons/insimul/editor/browser/run_browser_headless.sh` and
+      `bash addons/insimul/editor/generation/run_generation_headless.sh` (with a
+      `godot` binary on PATH) run `browser_test.gd` / `generation_test.gd`: the
+      GDScript mirrors of the compatibility badge, parsers, browser reducer, job
+      reducer, and the poller teardown (late response dropped, no orphaned timer).
+      Expect all PASS.
+- [ ] **World Browser in the editor** — against a running platform server, the dock
+      lists worlds, shows the detail + stats + compatibility badge for a selection,
+      an Import (dry run) shows a change summary without writing, and Open-in-Web
+      opens the world in the browser.
+- [ ] **Generation Console in the editor** — starting a generator shows live
+      progress (SSE, or the polling fallback when the stream can't be held), reaches
+      `succeeded`, and Sync Now applies the diff. Then **reload the dock / restart
+      the editor mid-job** and confirm no orphaned timer or request (the poller is
+      disposed in `_exit_tree`).
+
+## Status on this machine (US-GE2)
+
+`npm run check` exit 0; `npm test` **494 passed** (incl. 35 new US-GE2 view-model
+tests + the extended conformance guard); `npm run engines:check` green (structural
+lint 0 issues across 141 `.gd`; the two new headless runners SKIP without a `godot`
+binary). The editor checklists above are unchecked pending a `godot` binary +
+platform server — reviewed at merge (`autoMerge` is off).

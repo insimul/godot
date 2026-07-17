@@ -20,11 +20,28 @@ const OPERATIONS := {
 	"streamConversationAudio": {"method": "POST", "path": "/api/conversation/stream-audio"},
 	"endConversation": {"method": "POST", "path": "/api/conversation/end"},
 	"healthCheck": {"method": "GET", "path": "/api/conversation/health"},
+	"listWorlds": {"method": "GET", "path": "/api/worlds"},
+	"getWorldDetail": {"method": "POST", "path": "/api/worlds/detail"},
+	"importWorld": {"method": "POST", "path": "/api/generation/import"},
+	"startGenerationJob": {"method": "POST", "path": "/api/generation/jobs"},
+	"getGenerationJob": {"method": "POST", "path": "/api/generation/jobs/status"},
+	"streamGenerationJob": {"method": "POST", "path": "/api/generation/jobs/events"},
+	"syncGenerationJob": {"method": "POST", "path": "/api/generation/jobs/sync"},
 }
 
-## operationIds the editor session actively calls today (US-GE1). Each MUST resolve
-## in OPERATIONS — the conformance test checks it.
-const USED_OPERATIONS := ["healthCheck"]
+## operationIds the editor panels actively call (US-GE1 health + US-GE2 World
+## Browser / Generation Console). Each MUST resolve in OPERATIONS — the conformance
+## test checks it, and that this list equals core's USED_OPERATION_IDS.
+const USED_OPERATIONS := [
+	"healthCheck",
+	"listWorlds",
+	"getWorldDetail",
+	"importWorld",
+	"startGenerationJob",
+	"getGenerationJob",
+	"streamGenerationJob",
+	"syncGenerationJob",
+]
 
 var _transport: InsimulV1Transport
 var _base_url: String = ""
