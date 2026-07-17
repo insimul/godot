@@ -65,8 +65,13 @@ gdextension/
     run_conformance.sh      #   clang++ build+run — the US-GP2 host gate
   tests/                    # GODOT GDScript gates (godot --headless -s)
     conformance_runner.gd   #   corpus consult+query end-to-end (US-GP2)
+    gdscript_structural_lint.py # structural `godot --check-only` stand-in (US-GP3)
   smoke/test_smoke.gd       # headless end-to-end smoke (godot --headless -s)
 ```
+
+The template migration off the fake `prolog_engine.gd` onto this extension is
+documented in `../MIGRATION.md` (per-call-site behaviour change + the honest
+orphan note) and verified per `../VERIFICATION.md`.
 
 **`test/` (host C++) vs `tests/` (godot).** The two directories are the two legs
 of the same US-GP2 parity gate. `test/` holds C++ that clang++ builds and runs on
