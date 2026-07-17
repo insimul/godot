@@ -262,3 +262,55 @@ the Binding Editor dock docked (top-right):
 re-import diff 11, structural lint 0 issues, plus root `npm run check` (exit 0) and
 `npm test` (442 passed). The editor checklist above is unchecked pending a `godot`
 binary — reviewed at merge (`autoMerge` is off).
+
+## Editor backend connection (US-GE1)
+
+The editor's own v1 client + session foundation (separate from the runtime
+`insimul_client.gd` autoload). Machine-runnable gates pass **here**; the editor
+end-to-end needs a `godot` binary and a running platform server (reviewed at merge).
+
+### Runs on any box (no Godot toolchain)
+
+- **Operation-table conformance** (`npm test`) —
+  `packages/core/src/editor/__tests__/operations.test.ts` pins three copies of the
+  v1 table together: the generated `openapi/operations.json`, the core
+  `V1_OPERATIONS` const, and the GDScript `v1_client.gd` `OPERATIONS` table. Any
+  drift in an operationId, method, or path fails the guard. Every `USED_OPERATIONS`
+  id must resolve.
+- **Session lifecycle** (`npm test`) —
+  `packages/core/src/editor/__tests__/editor-session.test.ts` drives the reference
+  `EditorSession` over a mocked transport: health 200 → ok + parsed `healthy`,
+  login 200 keeps the token, login 401/403 **clears** the token, request carries
+  base-URL-joined path + bearer auth. The GDScript `insimul_editor_session.gd`
+  mirrors this contract (`connect_test.gd`, below).
+- **Secret-storage rule** (`npm test`) — the same conformance suite statically
+  asserts the token key (`insimul/editor/api_token`) **never** appears on a
+  `ProjectSettings` line and is persisted only via the `EditorSettings` handle,
+  while the non-secret server URL (`insimul/editor/server_url`) goes to
+  `ProjectSettings`. Documented in `addons/insimul/editor/connect/README.md`.
+- **GDScript structural lint** — the six new `connect/*.gd` files are covered by
+  `gdscript_structural_lint.py` (0 issues).
+
+### Needs a `godot` binary — human end-to-end checklist
+
+- [ ] **Logic-layer headless** —
+      `bash addons/insimul/editor/connect/run_connect_headless.sh` (with a `godot`
+      binary on PATH) runs `connect_test.gd`: client resolve, unknown-op guard,
+      request build, health probe, login success, and login-401-clears-token over
+      `InsimulV1MockTransport`. Expect all PASS.
+- [ ] **Settings split in the editor** — set the server URL in Project Settings
+      (`insimul/editor/server_url`) and confirm it persists to `project.godot`; set
+      the API token via the editor session and confirm it lands in `EditorSettings`
+      (per-machine, e.g. `editor_settings-*.tres`) and **not** in any committed
+      project file (`git status` shows no token in `project.godot`).
+- [ ] **Live health/verify** — against a running platform server, `verify()` on a
+      valid token returns ok (`healthy: true`); an invalid token returns 401 and the
+      session clears it (`is_authenticated()` false).
+
+## Status on this machine (editor-connect)
+
+`npm run engines:check` is green here (structural lint 0 issues incl. the new
+`connect/*.gd`; the editor-connect headless runner SKIPs without a `godot` binary),
+plus root `npm run check` (exit 0) and `npm test` (459 passed, incl. 17 editor
+tests). The editor checklist above is unchecked pending a `godot` binary +
+platform server — reviewed at merge (`autoMerge` is off).
