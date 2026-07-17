@@ -58,11 +58,24 @@ gdextension/
     insimul_prolog.{h,cpp}  # RefCounted wrapper (godot-cpp; syntax-gated)
     register_types.{h,cpp}  # GDExtension entry / ClassDB registration
   vendor/insimul/insimul.h  # libinsimul C ABI — contract copy (see THIRD_PARTY.md)
-  test/
-    test_marshalling.cpp    # host unit tests for the marshalling core
-    run_host_tests.sh       # clang++ build+run — the US-GP1 gate
-  smoke/test_smoke.gd       # headless end-to-end (godot --headless -s)
+  test/                     # HOST C++ gates (clang++, no godot toolchain)
+    test_marshalling.cpp    #   host unit tests for the marshalling core
+    run_host_tests.sh       #   clang++ build+run — the US-GP1 gate
+    conformance_host.cpp    #   shared corpus -> parse_binding_set (US-GP2)
+    run_conformance.sh      #   clang++ build+run — the US-GP2 host gate
+  tests/                    # GODOT GDScript gates (godot --headless -s)
+    conformance_runner.gd   #   corpus consult+query end-to-end (US-GP2)
+  smoke/test_smoke.gd       # headless end-to-end smoke (godot --headless -s)
 ```
+
+**`test/` (host C++) vs `tests/` (godot).** The two directories are the two legs
+of the same US-GP2 parity gate. `test/` holds C++ that clang++ builds and runs on
+any box — it drives the corpus through the extension's real marshalling layer, so
+parity is verified even with **no** Godot editor. `tests/` holds GDScript that a
+`godot` binary runs against the **built** extension end-to-end (consult + query).
+Both read the identical corpus (`packages/core/conformance/prolog/*.json`), so
+they can never diverge on what "correct" means; the host leg is the machine gate
+here, the GDScript leg is the human/CI check once a toolchain exists.
 
 ## Building & testing
 
@@ -78,6 +91,26 @@ bash packages/godot/gdextension/test/run_host_tests.sh
 
 This is the machine-verified gate. Only the thin `PrologValue → Variant` adapter
 in `insimul_prolog.cpp` (a mechanical 1:1 of the tested kinds) is outside it.
+
+### Conformance corpus (the cross-engine parity gate)
+
+The Godot leg of the shared parity corpus (`packages/core/conformance/prolog/*.json`
+— the same JSON the tau-prolog TS gate reads). The host harness drives every
+expected solution through the extension's real marshalling layer:
+
+```sh
+bash packages/godot/gdextension/test/run_conformance.sh   # clang++, no godot
+```
+
+When a `godot` binary is on PATH, the same corpus runs end-to-end through the
+built extension (consult + query):
+
+```sh
+godot --headless -s packages/godot/gdextension/tests/conformance_runner.gd
+```
+
+Both are wired into `npm run engines:check`, which runs the godot gates only when
+`packages/godot/**` changed (see `scripts/engines-check.sh`).
 
 ### Full GDExtension build (needs the toolchain)
 
