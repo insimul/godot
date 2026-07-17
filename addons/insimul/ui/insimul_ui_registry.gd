@@ -39,6 +39,8 @@ const DEFAULT_PANELS := {
 	"container": "res://addons/insimul/ui/scenes/container.tscn",
 	"merchant": "res://addons/insimul/ui/scenes/merchant.tscn",
 	"dialogue": "res://addons/insimul/ui/scenes/dialogue.tscn",
+	"pause_menu": "res://addons/insimul/ui/scenes/pause_menu.tscn",
+	"save_load": "res://addons/insimul/ui/scenes/save_load.tscn",
 }
 
 var _defaults: Dictionary = {}

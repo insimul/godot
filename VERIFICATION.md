@@ -513,3 +513,90 @@ shared matrices + the state-location invariant); `npm run engines:check` green
 (structural lint clean incl. the new `ui/*.gd`; `run_quest_trade_headless.sh` SKIPs
 without a `godot` binary as designed). The human checklist above is unchecked pending
 a `godot` binary — reviewed at merge (`autoMerge` is off).
+
+---
+
+## Default-UI dialogue panel + pause/main menu + save/load (US-GU3)
+
+The last default-UI slice: the streaming NPC dialogue panel, the unified ESC menu
+with module-bundle-gated tabs, the main menu, and the save/load slot UI with
+integrity-failure messaging. Three engine-neutral view-models mirrored 1:1 in
+GDScript, so both legs run the SAME shared matrices:
+
+- **Dialogue**: `packages/core/src/ui/chat-model.ts` ⟷
+  `addons/insimul/ui/chat_model.gd` — the streaming SDK turn lifecycle (a player
+  line opens a turn, `appendChunk` accumulates the NPC bubble, `triggerAction`
+  records KB actions, `completeTurn`/`failTurn` close it), plus the
+  `save.conversations` (`ConversationSummary.recentTurns`) history projection. The
+  thin Control (`dialogue_panel.gd`) wires the `AIService` streaming signals and the
+  engine-coupled hooks: **TTS**, **`insimul_lip_sync`**, and asserting each action's
+  Prolog fact into the **KB** (PrologEngine).
+- **Pause menu**: `packages/core/src/ui/pause-menu-model.ts` ⟷
+  `addons/insimul/ui/pause_menu_model.gd` — tab visibility gated by the feature
+  modules the active genre bundle enabled (an ungated core tab always shows; a gated
+  tab shows only when every required module is enabled), plus the open/active-tab
+  reducer. Thin Control `pause_menu.gd` owns `get_tree().paused` + the ESC toggle;
+  `main_menu.gd` is the title screen (Continue/Load gate on `has_any_loadable`).
+- **Save/load**: `packages/core/src/ui/save-slot-model.ts` ⟷
+  `addons/insimul/ui/save_slot_model.gd` — codec-reported slot outcome (empty / ok /
+  `invalid_format` / `missing_save_file` / `integrity_mismatch`) → a rendered row
+  (status/title/message/can_load/can_save). The corrupted-envelope messaging is a
+  cross-engine contract. Thin Control `save_load_panel.gd`.
+
+### Runs on any box (no Godot toolchain) — the merge gate
+
+- **Streaming / action / history + tab-gating + save-slot shared cases** (`npm test`)
+  — the runner `packages/core/src/ui/__tests__/dialogue-menu-save-corpus.test.ts`
+  executes `packages/core/conformance/ui/{chat-cases,pause-menu-cases,save-slot-cases}.json`
+  against the TS models: 7 chat cases (single/two-turn streaming, full-text override,
+  KB action trigger, error bubble drops the turn from history, reject-while-streaming,
+  no-op complete), 7 pause-menu cases (language-learning / rpg / strategy / empty
+  module sets, AND-gating, the open+active-tab reducer, hidden-tab fallback), and 6
+  save-slot cases (empty / ok-summary / integrity-mismatch / bad-format / missing /
+  mixed sorted).
+- **Corrupted-envelope integrity chain** (`npm test`) — same test file: it builds a
+  real `SaveFileEnvelope`, tampers the payload, and runs the actual SHA-256
+  `validateSaveFileEnvelope` through `SaveSlotModel.classifyEnvelope`, asserting the
+  `integrity_mismatch` verdict renders the corrupted row + message (a null candidate
+  is `empty`, a wrong-format blob is `invalid_format`).
+- **GDScript structural lint** (`npm run engines:check`) — the seven new `ui/*.gd`
+  view-models/panels + the `tests/dialogue_menu_save_test.gd` mirror are covered.
+- **Headless GDScript parity** (`npm run engines:check`) —
+  `run_dialogue_menu_save_headless.sh` runs `dialogue_menu_save_test.gd` (the SAME
+  shared JSON) when a `godot` binary is on PATH; it **SKIPs** cleanly on the bare
+  Ralph box, where the structural lint + the TS corpus cover the contract.
+
+### Needs a `godot` binary — human full-loop checklist
+
+- [ ] **Dialogue streaming** — open the dialogue panel (registry key `dialogue`) on
+      an NPC; the greeting shows, a sent line streams the response chunk-by-chunk into
+      the NPC bubble, and the input is locked until the turn completes. A stream error
+      renders an `[Error: …]` bubble and unlocks input.
+- [ ] **TTS + lip-sync** — with a TTS provider + `insimul_lip_sync` hook registered,
+      the settled NPC line is spoken and the speaker's visemes animate; neither fires
+      for an errored turn.
+- [ ] **KB action trigger** — an NPC response that triggers an action (e.g.
+      `give_item(sword)`) asserts the mapped fact (`has_item(player,sword)`) into the
+      PrologEngine KB exactly once.
+- [ ] **History persists** — close the conversation and confirm
+      `model.history()` lands in `save.conversations` (recentTurns + totalTurnCount);
+      errored/in-flight bubbles are excluded.
+- [ ] **ESC menu tab-gating** — with an RPG bundle, the pause menu hides the
+      Assessment tab; with a language-learning bundle every gated tab (Character /
+      Vocabulary / Skills / Analytics / Assessment) appears. ESC toggles the menu and
+      pauses the tree; switching tabs updates the active tab (a hidden tab is
+      unselectable).
+- [ ] **Main menu** — Continue/Load are disabled on a fresh install (no loadable
+      slot) and enabled once a slot exists; New Game starts a fresh run.
+- [ ] **Save/load slots incl. corrupted** — a healthy slot shows its summary and
+      loads; a slot whose codec integrity check fails renders as **Corrupted Save**
+      with the integrity message, is not loadable, but can be overwritten.
+
+### Status on this machine (US-GU3)
+
+`npm run check` exit 0; `npm test` green incl. **23 new US-GU3 tests** (dialogue /
+pause-menu / save-slot shared matrices + the real SHA-256 corrupted-envelope chain);
+`npm run engines:check` green (structural lint clean incl. the new `ui/*.gd`;
+`run_dialogue_menu_save_headless.sh` SKIPs without a `godot` binary as designed). The
+human full-loop checklist above is unchecked pending a `godot` binary — reviewed at
+merge (`autoMerge` is off).
