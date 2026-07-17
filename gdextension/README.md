@@ -47,6 +47,30 @@ for sol in kb.query("parent(tom, X)"):
     print(sol["X"])   # -> bob
 ```
 
+## `InsimulSaveCodec` surface (US-GC2)
+
+A second `RefCounted` class exposes the **portable save codec** — canonical
+key-sorted JSON + SHA-256 integrity byte-identical to
+`packages/core/src/save-envelope.ts`. The exactness lives entirely in the
+dependency-free, host-tested C++ core (`src/{json_value,sha256,canonical_json,
+save_file}.cpp`); GDScript never re-implements the hash (Godot's `JSON.stringify`
+orders keys / formats numbers differently and would not match).
+
+| Method                                             | Returns  | Notes                                             |
+|----------------------------------------------------|----------|---------------------------------------------------|
+| `load(json)`                                       | `bool`   | Parse + version-gate + migrate v1→v3              |
+| `new_game(snapshot_json, id, user_id, world_id, name, slot, created_at)` | `bool` | Fresh current-version save from a world snapshot |
+| `serialize_canonical()`                            | `String` | Canonical (key-sorted, minified) SaveFile JSON    |
+| `compute_integrity()`                              | `String` | SHA-256 hex over the canonical SaveFile           |
+| `build_envelope(insimul_version, exported_at)`     | `String` | Canonical export envelope (`insimul-save-v2`)     |
+| `snapshot_facts(facts)` / `restore_facts()`        | —/`Array`| KB `currentState.prologFacts` bridge              |
+| `version()` / `is_loaded()` / `last_error()`       | —        | Introspection                                     |
+
+The GDScript `InsimulSaveSystem` (`../addons/insimul/runtime/save_system.gd`)
+owns slot I/O on `user://` and the envelope read/verify/write flow around the
+codec; it replaces the template `systems/save_system.gd` for the portable
+dimension (bootstrap wiring lands in US-GC4).
+
 ## Layout
 
 ```
@@ -55,7 +79,12 @@ gdextension/
   SConstruct                # godot-cpp build (needs ./godot-cpp submodule)
   src/
     prolog_value.{h,cpp}    # dependency-free marshalling core (HOST-TESTABLE)
-    insimul_prolog.{h,cpp}  # RefCounted wrapper (godot-cpp; syntax-gated)
+    insimul_prolog.{h,cpp}  # RefCounted Prolog wrapper (godot-cpp; syntax-gated)
+    json_value.{h,cpp}      # dependency-free JSON value + parser (HOST-TESTABLE)
+    sha256.{h,cpp}          # dependency-free SHA-256 (HOST-TESTABLE)
+    canonical_json.{h,cpp}  # canonical key-sorted JSON serializer (HOST-TESTABLE)
+    save_file.{h,cpp}       # portable save-file core: load/migrate/envelope (HOST-TESTABLE)
+    insimul_save_codec.{h,cpp} # RefCounted save wrapper (godot-cpp; syntax-gated)
     register_types.{h,cpp}  # GDExtension entry / ClassDB registration
   vendor/insimul/insimul.h  # libinsimul C ABI — contract copy (see THIRD_PARTY.md)
   test/                     # HOST C++ gates (clang++, no godot toolchain)
@@ -63,10 +92,16 @@ gdextension/
     run_host_tests.sh       #   clang++ build+run — the US-GP1 gate
     conformance_host.cpp    #   shared corpus -> parse_binding_set (US-GP2)
     run_conformance.sh      #   clang++ build+run — the US-GP2 host gate
+    test_save_system.cpp    #   host tests for the portable save core (US-GC2)
+    run_save_tests.sh       #   clang++ build+run — the US-GC2 save gate
   tests/                    # GODOT GDScript gates (godot --headless -s)
     conformance_runner.gd   #   corpus consult+query end-to-end (US-GP2)
     gdscript_structural_lint.py # structural `godot --check-only` stand-in (US-GP3)
   smoke/test_smoke.gd       # headless end-to-end smoke (godot --headless -s)
+
+tools/cross-check/
+  cpp-produced.envelope.json # Godot-produced export envelope; validated by the TS
+                             # guard save-integrity-crosscheck-godot.test.ts (US-GC2)
 ```
 
 The template migration off the fake `prolog_engine.gd` onto this extension is
