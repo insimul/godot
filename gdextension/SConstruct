@@ -1,0 +1,43 @@
+# SConstruct — godot-cpp build for the Insimul GDExtension.
+#
+# Standard godot-cpp SCons flow. Requires the godot-cpp submodule at ./godot-cpp
+# (see THIRD_PARTY.md for the pin) and libinsimul headers+libs from
+# insimul-native/dist (see vendor/insimul/insimul.h contract). Neither is present
+# in the Ralph harness, so this file is the *build contract*; the host marshalling
+# tests (test/run_host_tests.sh) are what actually run here.
+#
+# Usage (in a full toolchain):
+#   git submodule add https://github.com/godotengine/godot-cpp godot-cpp
+#   (cd godot-cpp && git checkout godot-4.2-stable)
+#   scons target=template_debug
+#
+# Output: bin/libinsimul_godot.<platform>.<target>[.<arch>].<ext>
+
+import os
+
+env = SConscript("godot-cpp/SConstruct")
+
+# libinsimul consumption (per insimul-native/docs/consuming.md). Override with
+# INSIMUL_NATIVE_DIST to point at a built dist/<platform>/ directory.
+insimul_dist = os.environ.get("INSIMUL_NATIVE_DIST", "vendor/insimul")
+env.Append(CPPPATH=["src/", insimul_dist])
+if os.path.isdir(os.path.join(insimul_dist, "lib")):
+    env.Append(LIBPATH=[os.path.join(insimul_dist, "lib")])
+    env.Append(LIBS=["insimul"])
+
+sources = Glob("src/*.cpp")
+
+if env["platform"] == "macos":
+    library = env.SharedLibrary(
+        "bin/libinsimul_godot.{}.{}.framework/libinsimul_godot.{}.{}".format(
+            env["platform"], env["target"], env["platform"], env["target"]
+        ),
+        source=sources,
+    )
+else:
+    library = env.SharedLibrary(
+        "bin/libinsimul_godot{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        source=sources,
+    )
+
+Default(library)

@@ -11,6 +11,11 @@ var has_prolog_kb: bool = false
 var _settlement_zones: Array[Dictionary] = []
 var _violations: Array[Dictionary] = []
 
+## Native Prolog engine (InsimulProlog GDExtension). Null when the extension is
+## not loaded — then quest/CEFR checks fall back to the legacy substring scan.
+var _prolog: Object = null
+var _native_available: bool = false
+
 func load_from_data(world_data: Dictionary) -> void:
 	var systems: Dictionary = world_data.get("systems", {})
 	rules.append_array(systems.get("rules", []))
@@ -46,13 +51,24 @@ func can_perform_action(action_id: String, action_type: String, context: Diction
 	return violations.is_empty()
 
 ## Attach a Prolog knowledge base string for logic-based rule evaluation.
-## The KB content is stored and used for quest condition checks (quest_complete,
-## quest_available, quest_cefr_level) via lightweight string search rather than
-## requiring a full Prolog interpreter in the export.
+## The KB content is consulted into the native InsimulProlog engine and used for
+## quest condition checks (quest_complete, quest_available, quest_cefr_level) via
+## real resolution. When the GDExtension is absent, the raw text is retained for a
+## legacy substring fallback so the export still runs.
 func set_prolog_knowledge_base(prolog_content: String) -> void:
 	_prolog_content = prolog_content
 	has_prolog_kb = not prolog_content.is_empty()
-	print("[Insimul] Prolog KB %s (%d chars)" % ["attached" if has_prolog_kb else "cleared", prolog_content.length()])
+	_prolog = null
+	_native_available = false
+	if has_prolog_kb and ClassDB.class_exists("InsimulProlog"):
+		_prolog = ClassDB.instantiate("InsimulProlog")
+		if _prolog != null and _prolog.consult(prolog_content):
+			_native_available = true
+		else:
+			if _prolog != null:
+				push_warning("[Insimul] RuleEnforcer consult failed: %s" % str(_prolog.last_error()))
+			_prolog = null
+	print("[Insimul] Prolog KB %s (%d chars, native=%s)" % ["attached" if has_prolog_kb else "cleared", prolog_content.length(), str(_native_available)])
 
 # --- Settlement zone registration ---
 
@@ -203,9 +219,13 @@ func _check_quest_complete_condition(condition: Dictionary, _context: Dictionary
 	var quest_id: String = condition.get("questId", "")
 	if quest_id.is_empty():
 		return false
-	# Search the KB for quest_complete(player, "<questId>")
-	var pattern := 'quest_complete(player, "%s")' % quest_id
-	return _prolog_content.contains(pattern)
+	# Prove quest_complete(player, <atom>). The KB stores quests as sanitized atoms
+	# (see ir-generator sanitizeAtom), so query with the atom form, not a quoted
+	# string — the old substring pattern quest_complete(player, "<id>") never matched.
+	return _prove_or_scan(
+		"quest_complete(player, %s)" % sanitize_to_atom(quest_id),
+		'quest_complete(player, "%s")' % quest_id
+	)
 
 func _check_quest_available_condition(condition: Dictionary, _context: Dictionary) -> bool:
 	if not has_prolog_kb:
@@ -213,9 +233,10 @@ func _check_quest_available_condition(condition: Dictionary, _context: Dictionar
 	var quest_id: String = condition.get("questId", "")
 	if quest_id.is_empty():
 		return false
-	# Search the KB for quest_available(player, "<questId>")
-	var pattern := 'quest_available(player, "%s")' % quest_id
-	return _prolog_content.contains(pattern)
+	return _prove_or_scan(
+		"quest_available(player, %s)" % sanitize_to_atom(quest_id),
+		'quest_available(player, "%s")' % quest_id
+	)
 
 func _check_cefr_level_condition(condition: Dictionary, _context: Dictionary) -> bool:
 	if not has_prolog_kb:
@@ -224,9 +245,17 @@ func _check_cefr_level_condition(condition: Dictionary, _context: Dictionary) ->
 	var cefr_level: String = condition.get("cefrLevel", "")
 	if quest_id.is_empty() or cefr_level.is_empty():
 		return false
-	# Search the KB for quest_cefr_level("<questId>", "<level>")
-	var pattern := 'quest_cefr_level("%s", "%s")' % [quest_id, cefr_level]
-	return _prolog_content.contains(pattern)
+	return _prove_or_scan(
+		"quest_cefr_level(%s, %s)" % [sanitize_to_atom(quest_id), sanitize_to_atom(cefr_level)],
+		'quest_cefr_level("%s", "%s")' % [quest_id, cefr_level]
+	)
+
+## Prove [param goal] against the native engine when available; otherwise fall
+## back to the legacy substring scan of [param legacy_pattern] against the raw KB.
+func _prove_or_scan(goal: String, legacy_pattern: String) -> bool:
+	if _native_available and _prolog != null:
+		return _prolog.query(goal).size() > 0
+	return _prolog_content.contains(legacy_pattern)
 
 func _compare_value(actual: float, expected: float, op: String) -> bool:
 	match op:

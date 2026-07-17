@@ -1,0 +1,13 @@
+# Build artifacts
+bin/
+*.o
+*.os
+*.obj
+*.gen.*
+.sconsign.dblite
+
+# Vendored toolchain (added as a submodule locally per THIRD_PARTY.md)
+/godot-cpp/
+
+# libinsimul dist consumed at build time
+/vendor/insimul/lib/

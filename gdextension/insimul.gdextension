@@ -1,0 +1,38 @@
+; insimul.gdextension — GDExtension descriptor for the native InsimulProlog class.
+;
+; Per-platform library paths follow the standard godot-cpp layout. `entry_symbol`
+; matches insimul_library_init() in src/register_types.cpp. Copy this file (and
+; the built libraries under bin/) into the addon at
+; packages/godot/addons/insimul/gdextension/ for a consuming project.
+;
+; NOTE: the listed libraries are produced by the SConstruct build once godot-cpp
+; and libinsimul are available (see README "Structural fallback"). Until then the
+; bin/ paths are declarative — the descriptor is the consumption contract.
+
+[configuration]
+
+entry_symbol = "insimul_library_init"
+compatibility_minimum = "4.2"
+reloadable = true
+
+[libraries]
+
+macos.debug =            "res://addons/insimul/gdextension/bin/libinsimul_godot.macos.template_debug.framework"
+macos.release =          "res://addons/insimul/gdextension/bin/libinsimul_godot.macos.template_release.framework"
+windows.debug.x86_64 =   "res://addons/insimul/gdextension/bin/libinsimul_godot.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/insimul/gdextension/bin/libinsimul_godot.windows.template_release.x86_64.dll"
+linux.debug.x86_64 =     "res://addons/insimul/gdextension/bin/libinsimul_godot.linux.template_debug.x86_64.so"
+linux.release.x86_64 =   "res://addons/insimul/gdextension/bin/libinsimul_godot.linux.template_release.x86_64.so"
+linux.debug.arm64 =      "res://addons/insimul/gdextension/bin/libinsimul_godot.linux.template_debug.arm64.so"
+linux.release.arm64 =    "res://addons/insimul/gdextension/bin/libinsimul_godot.linux.template_release.arm64.so"
+
+[dependencies]
+
+; libinsimul shared library, bundled next to the extension per platform. Paths
+; are declarative until libinsimul-bootstrap ships insimul-native/dist/.
+macos.debug =            { "res://addons/insimul/gdextension/bin/libinsimul.dylib" : "" }
+macos.release =          { "res://addons/insimul/gdextension/bin/libinsimul.dylib" : "" }
+windows.debug.x86_64 =   { "res://addons/insimul/gdextension/bin/insimul.dll" : "" }
+windows.release.x86_64 = { "res://addons/insimul/gdextension/bin/insimul.dll" : "" }
+linux.debug.x86_64 =     { "res://addons/insimul/gdextension/bin/libinsimul.so" : "" }
+linux.release.x86_64 =   { "res://addons/insimul/gdextension/bin/libinsimul.so" : "" }
