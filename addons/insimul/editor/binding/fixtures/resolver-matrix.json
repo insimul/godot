@@ -1,0 +1,40 @@
+{
+  "_comment": "Shared resolver test matrix for the Asset Binding Layer (US-GB1). Consumed by BOTH the host C++ gate (gdextension/test/test_binding_resolver.cpp) and the GDScript headless gate (editor/binding/binding_resolver_test.gd) so the two implementations can never diverge. Sources are a FALLBACK chain, most-specific-within-source, first-matching-source wins: project (100) -> packs (50) -> placeholder (0). This is the cross-engine contract the Unity/Unreal binding layers resolve against too.",
+  "sources": [
+    {
+      "name": "project",
+      "priority": 100,
+      "entries": [
+        { "key": "building.residential.house", "scene": "res://project/house_custom.tscn" },
+        { "key": "character.npc.merchant", "scene": "res://project/merchant_custom.tscn" }
+      ]
+    },
+    {
+      "name": "packs",
+      "priority": 50,
+      "entries": [
+        { "key": "building.residential", "scene": "res://packs/residential.tscn" },
+        { "key": "building.*", "scene": "res://packs/building_generic.tscn" },
+        { "key": "prop.furniture", "scene": "res://packs/furniture.tscn" }
+      ]
+    },
+    {
+      "name": "placeholder",
+      "priority": 0,
+      "entries": [
+        { "key": "*", "scene": "res://placeholder/cube.tscn" }
+      ]
+    }
+  ],
+  "cases": [
+    { "name": "exact-in-project-wins", "query": "building.residential.house", "expect": { "source": "project", "key": "building.residential.house" } },
+    { "name": "descendant-falls-to-packs", "query": "building.residential.cottage", "expect": { "source": "packs", "key": "building.residential" } },
+    { "name": "wildcard-in-packs", "query": "building.commercial.shop", "expect": { "source": "packs", "key": "building.*" } },
+    { "name": "exact-more-specific-than-wildcard-same-source", "query": "building.residential", "expect": { "source": "packs", "key": "building.residential" } },
+    { "name": "exact-npc-in-project", "query": "character.npc.merchant", "expect": { "source": "project", "key": "character.npc.merchant" } },
+    { "name": "unmatched-npc-falls-to-placeholder", "query": "character.npc.guard", "expect": { "source": "placeholder", "key": "*" } },
+    { "name": "descendant-prop-in-packs", "query": "prop.furniture.chair", "expect": { "source": "packs", "key": "prop.furniture" } },
+    { "name": "exact-prop-in-packs", "query": "prop.furniture", "expect": { "source": "packs", "key": "prop.furniture" } },
+    { "name": "fully-unknown-falls-to-placeholder", "query": "vehicle.cart", "expect": { "source": "placeholder", "key": "*" } }
+  ]
+}
