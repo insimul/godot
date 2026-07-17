@@ -1,0 +1,25 @@
+{
+  "_comment": "A binding pack authored by the Unity leg, in the engine-neutral 'insimul-binding-pack' interchange format (US-GB1 cross-engine round-trip). Asset refs use Unity-style GUID/path strings on purpose: the pack schema (format/version/name/priority/entries[{key,scene,mesh,transform,sockets}]) is identical across engines; only the asset-ref STRING values differ. The Godot importer must parse this unchanged and re-serialize it byte-identically (sorted, canonical) on export.",
+  "format": "insimul-binding-pack",
+  "version": 1,
+  "name": "unity-core",
+  "priority": 40,
+  "entries": [
+    {
+      "key": "prop.furniture.table",
+      "scene": "guid://8f1c2d3e4a5b6c7d8e9f0a1b2c3d4e5f",
+      "transform": { "offset": [0, 0, 0], "rotation": [0, 90, 0], "scale": [1, 1, 1] },
+      "sockets": { "surface": [0, 0.75, 0] }
+    },
+    {
+      "key": "building.residential.house",
+      "scene": "Assets/Insimul/Buildings/House.prefab",
+      "transform": { "offset": [0, 0, 0], "rotation": [0, 0, 0], "scale": [1, 1, 1] },
+      "sockets": { "door": [0, 0, 1.5], "chimney": [1.2, 3.0, 0] }
+    },
+    {
+      "key": "building.*",
+      "mesh": "Assets/Insimul/Meshes/GenericBuilding.mesh"
+    }
+  ]
+}

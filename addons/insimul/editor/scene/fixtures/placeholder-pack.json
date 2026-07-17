@@ -1,0 +1,21 @@
+{
+  "format": "insimul-binding-pack",
+  "version": 1,
+  "name": "insimul-placeholder",
+  "priority": 0,
+  "entries": [
+    { "key": "*", "scene": "res://addons/insimul/placeholders/placeholder_cube.tscn" },
+    { "key": "building", "scene": "res://addons/insimul/placeholders/building_generic.tscn" },
+    { "key": "building.commercial", "scene": "res://addons/insimul/placeholders/building_commercial.tscn" },
+    { "key": "building.downtown", "scene": "res://addons/insimul/placeholders/building_downtown.tscn" },
+    { "key": "building.industrial", "scene": "res://addons/insimul/placeholders/building_industrial.tscn" },
+    { "key": "building.outskirts", "scene": "res://addons/insimul/placeholders/building_outskirts.tscn" },
+    { "key": "building.residential", "scene": "res://addons/insimul/placeholders/building_residential.tscn" },
+    { "key": "interior", "scene": "res://addons/insimul/placeholders/interior_generic.tscn" },
+    { "key": "prop", "scene": "res://addons/insimul/placeholders/prop_generic.tscn" },
+    { "key": "prop.lamp", "scene": "res://addons/insimul/placeholders/prop_lamp.tscn" },
+    { "key": "prop.tree", "scene": "res://addons/insimul/placeholders/prop_tree.tscn" },
+    { "key": "road", "mesh": "res://addons/insimul/placeholders/road_strip.tres" },
+    { "key": "terrain", "mesh": "res://addons/insimul/placeholders/terrain_chunk.tres" }
+  ]
+}
