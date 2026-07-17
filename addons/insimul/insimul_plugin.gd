@@ -2,15 +2,18 @@
 extends EditorPlugin
 ## Insimul editor plugin — registers the runtime autoload, the Binding Editor dock
 ## (US-GB3), and the editor backend-connection docks: World Browser + Generation
-## Console (US-GE2), both over a shared InsimulEditorSession (US-GE1).
+## Console (US-GE2) and the NPC Conversation Tester (US-GE3), all over a shared
+## InsimulEditorSession (US-GE1).
 
 const BindingDock := preload("res://addons/insimul/editor/dock/insimul_binding_dock.gd")
 const WorldBrowserDock := preload("res://addons/insimul/editor/browser/insimul_world_browser_dock.gd")
 const GenerationConsoleDock := preload("res://addons/insimul/editor/generation/insimul_generation_console_dock.gd")
+const ConversationTesterDock := preload("res://addons/insimul/editor/conversation/insimul_conversation_tester_dock.gd")
 
 var _binding_dock: Control
 var _browser_dock: Control
 var _generation_dock: Control
+var _conversation_dock: Control
 var _session: InsimulEditorSession
 
 
@@ -38,15 +41,22 @@ func _enter_tree() -> void:
 	_generation_dock = GenerationConsoleDock.new(_session)
 	add_control_to_dock(EditorPlugin.DOCK_SLOT_RIGHT_BR, _generation_dock)
 
+	# Conversation Tester dock — pick a character from imported world data, stream a
+	# response into a transcript, with a recorded-reasoning fallback (US-GE3). The
+	# dock disposes its stream controller in _exit_tree (editor-restart safety).
+	_conversation_dock = ConversationTesterDock.new(_session)
+	add_control_to_dock(EditorPlugin.DOCK_SLOT_RIGHT_UR, _conversation_dock)
+
 
 func _exit_tree() -> void:
-	for dock in [_binding_dock, _browser_dock, _generation_dock]:
+	for dock in [_binding_dock, _browser_dock, _generation_dock, _conversation_dock]:
 		if dock != null:
 			remove_control_from_docks(dock)
 			dock.queue_free()
 	_binding_dock = null
 	_browser_dock = null
 	_generation_dock = null
+	_conversation_dock = null
 	_session = null
 
 	remove_autoload_singleton("InsimulClient")

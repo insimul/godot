@@ -41,6 +41,8 @@ const USED_OPERATIONS := [
 	"getGenerationJob",
 	"streamGenerationJob",
 	"syncGenerationJob",
+	"streamConversation",
+	"endConversation",
 ]
 
 var _transport: InsimulV1Transport

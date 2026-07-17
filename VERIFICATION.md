@@ -381,3 +381,68 @@ tests + the extended conformance guard); `npm run engines:check` green (structur
 lint 0 issues across 141 `.gd`; the two new headless runners SKIP without a `godot`
 binary). The editor checklists above are unchecked pending a `godot` binary +
 platform server — reviewed at merge (`autoMerge` is off).
+
+## In-editor NPC Conversation Tester (US-GE3)
+
+A dock for testing a world's NPC conversations from the editor over the US-GE1
+session: pick a character from imported world data, send a line, and watch the
+character response stream into a transcript — with a **PIE-style recorded-reasoning
+fallback** for when editor-process streaming misbehaves. The view-model logic is the
+tested contract; the Control dock is UI, reviewed at merge. Constraints are documented
+in `addons/insimul/editor/conversation/README.md`.
+
+### Runs on any box (no Godot toolchain)
+
+- **Conversation view-model** (`npm test`) —
+  `packages/core/src/editor/__tests__/conversation-tester.test.ts` (18 cases): the
+  character picker (`extractCharacters` from imported world data, entries without an
+  id dropped, name falling back to `firstName`+`lastName` then the id); the SSE-frame
+  parser (`parseConversationEvent`: text/reasoning/action/error/done, blank
+  keep-alives + unknown types → null); the transcript reducer over a **mocked
+  stream** (text chunks append, a final chunk closes the turn → `awaiting`, actions
+  recorded, a `done` frame closes the turn, a second player line appends a new pair,
+  events after a turn closes ignored, `end` freezes the conversation).
+- **Recorded-reasoning fallback** (`npm test`) — the PIE-style **auto-switch**: a
+  stream error on a live stream flips to the recorded mode (`recording`) instead of
+  failing; `streamFailed` forces the fallback and a `recorded` action completes the
+  turn (`fromRecording = true`); an error while **already** in the fallback is a hard
+  `error`.
+- **Editor-restart safety / teardown** (`npm test`) — the
+  `ConversationController` teardown: a stream frame arriving **after** `dispose()` is
+  **dropped** (no `onUpdate`, the late chunk never applied) — the zombie-frame
+  guarantee; `dispose()` is idempotent; a keep-alive frame fires no update.
+- **Operation-table conformance** (`npm test`) — the US-GE1 guard now also pins the
+  two conversation operations the tester uses (`streamConversation`,
+  `endConversation`) across `V1_OPERATIONS` ⟷ `USED_OPERATION_IDS` ⟷ the GDScript
+  `OPERATIONS`/`USED_OPERATIONS` tables (both already in the spec since US-GE1).
+- **GDScript structural lint** — the four new `conversation/*.gd` files (reducer,
+  controller, dock, test) are covered by `gdscript_structural_lint.py`.
+
+### Needs a `godot` binary — human two-turn checklist
+
+- [ ] **Logic-layer headless** —
+      `bash addons/insimul/editor/conversation/run_conversation_headless.sh` (with a
+      `godot` binary on PATH) runs `conversation_test.gd`: the GDScript mirrors of the
+      picker, frame parser, transcript reducer, recorded-fallback auto-switch, and the
+      controller teardown (late frame dropped, no update). Expect all PASS.
+- [ ] **Two-turn conversation in the editor** — against a running platform server
+      with an imported world: pick a character in the dock, send **turn 1** and watch
+      the response stream into the transcript, then send **turn 2** and confirm it
+      appends a new player/character pair below the first. The picker lists the
+      imported world's characters; switching character starts a fresh transcript.
+- [ ] **Recorded-reasoning fallback** — force a stream failure (stop the server
+      mid-turn, or a world with no streaming route) and confirm the dock shows the
+      `[recorded reasoning fallback]` marker and the turn is completed from a recorded
+      trace rather than the conversation erroring out.
+- [ ] **Editor-restart safety** — start a turn, then **reload the dock / restart the
+      editor mid-stream** and confirm no late SSE frame touches a freed node (the
+      controller is disposed in `_exit_tree`).
+
+## Status on this machine (US-GE3)
+
+`npm run check` exit 0; `npm test` green incl. **18 new US-GE3 conversation
+view-model tests** + the extended operation-table conformance (`streamConversation` /
+`endConversation` pinned three ways); `npm run engines:check` green (structural lint
+clean incl. the four new `conversation/*.gd`; the new headless runner SKIPs without a
+`godot` binary). The editor two-turn checklist above is unchecked pending a `godot`
+binary + platform server — reviewed at merge (`autoMerge` is off).
