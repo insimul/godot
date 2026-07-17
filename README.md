@@ -123,6 +123,30 @@ func _on_push_to_talk_released():
 
 - Godot **4.2+**
 
+## Export pipeline: what gets copied and substituted
+
+Everything under [`templates/`](templates/) is a **game-template tree** the Insimul
+platform export pipeline (`insimul-platform/scripts/copy-templates.js`, resolved
+through `server/services/game-export/template-paths.ts`) copies **verbatim** into a
+generated Godot game project when a creator exports a world for this engine. The
+platform then substitutes `{{UPPER_SNAKE_CASE}}` placeholder tokens in the text files
+with values derived from the exported world (world name, genre, counts, palette
+colors, player/combat tuning, etc.).
+
+- **The contract is machine-checked.** [`templates/TEMPLATE_MANIFEST.json`](templates/TEMPLATE_MANIFEST.json)
+  is the authoritative list of every file the pipeline copies and the exact set of
+  placeholders each file bears. Root `npm run engines:templates` is the drift guard:
+  it fails if the manifest and the tree disagree, if a placeholder-bearing file is
+  unlisted, or if any template file reaches into another engine package. Regenerate
+  after editing templates with
+  `node scripts/engines/validate-templates.mjs --write`.
+- **Placeholder syntax:** `{{TOKEN}}` where `TOKEN` is upper snake case (e.g.
+  `{{WORLD_NAME}}`, `{{TERRAIN_SIZE}}`, `{{ROAD_COLOR_R}}`). See the manifest's
+  top-level `placeholders` array for the full set this package uses.
+- **Dependency rule:** template files depend only on (a) this package, (b) generated
+  code, and (c) exported world-data JSON — never on `packages/unity` or
+  `packages/unreal`. The guard enforces the no-cross-engine-reach-in rule.
+
 ## License
 
 MIT

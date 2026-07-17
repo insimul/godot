@@ -1,0 +1,562 @@
+{
+  "engine": "godot",
+  "description": "Authoritative list of every file under packages/godot/templates that the platform export pipeline (insimul-platform/scripts/copy-templates.js) copies into an exported game. Text files carry {{UPPER_SNAKE_CASE}} placeholder tokens substituted at export time. Regenerate with: node scripts/engines/validate-templates.mjs --write",
+  "placeholderSyntax": "{{UPPER_SNAKE_CASE}}",
+  "placeholders": [
+    "{{ACTION_COUNT}}",
+    "{{BASE_COLOR_B}}",
+    "{{BASE_COLOR_G}}",
+    "{{BASE_COLOR_R}}",
+    "{{BUILDING_COUNT}}",
+    "{{CHARACTER_COUNT}}",
+    "{{COMBAT_ATTACK_COOLDOWN}}",
+    "{{COMBAT_BASE_DAMAGE}}",
+    "{{COMBAT_BLOCK_REDUCTION}}",
+    "{{COMBAT_CRITICAL_CHANCE}}",
+    "{{COMBAT_CRITICAL_MULTIPLIER}}",
+    "{{COMBAT_DODGE_CHANCE}}",
+    "{{COMBAT_STYLE}}",
+    "{{COUNTRY_COUNT}}",
+    "{{EXPORT_TIMESTAMP}}",
+    "{{GAME_TITLE}}",
+    "{{GENRE_ID}}",
+    "{{GENRE_NAME}}",
+    "{{GROUND_COLOR_B}}",
+    "{{GROUND_COLOR_G}}",
+    "{{GROUND_COLOR_R}}",
+    "{{HEIGHT_SCALE}}",
+    "{{INSIMUL_VERSION}}",
+    "{{NPC_COUNT}}",
+    "{{PEAK_COLOR_B}}",
+    "{{PEAK_COLOR_G}}",
+    "{{PEAK_COLOR_R}}",
+    "{{PLAYER_GRAVITY}}",
+    "{{PLAYER_INITIAL_ENERGY}}",
+    "{{PLAYER_INITIAL_GOLD}}",
+    "{{PLAYER_INITIAL_HEALTH}}",
+    "{{PLAYER_JUMP_HEIGHT}}",
+    "{{PLAYER_SPEED}}",
+    "{{QUEST_COUNT}}",
+    "{{ROAD_COLOR_B}}",
+    "{{ROAD_COLOR_G}}",
+    "{{ROAD_COLOR_R}}",
+    "{{ROAD_COUNT}}",
+    "{{ROAD_WIDTH}}",
+    "{{ROOF_COLOR_B}}",
+    "{{ROOF_COLOR_G}}",
+    "{{ROOF_COLOR_R}}",
+    "{{RULE_COUNT}}",
+    "{{SETTLEMENT_COUNT}}",
+    "{{SKY_COLOR_B}}",
+    "{{SKY_COLOR_G}}",
+    "{{SKY_COLOR_R}}",
+    "{{SLOPE_COLOR_B}}",
+    "{{SLOPE_COLOR_G}}",
+    "{{SLOPE_COLOR_R}}",
+    "{{STATE_COUNT}}",
+    "{{TERRAIN_SIZE}}",
+    "{{WATER_ALPHA}}",
+    "{{WATER_COLOR_B}}",
+    "{{WATER_COLOR_G}}",
+    "{{WATER_COLOR_R}}",
+    "{{WORLD_NAME}}",
+    "{{WORLD_SAFE_NAME}}",
+    "{{WORLD_TYPE}}"
+  ],
+  "files": [
+    {
+      "path": "project/.gitattributes",
+      "placeholders": []
+    },
+    {
+      "path": "project/.gitignore",
+      "placeholders": []
+    },
+    {
+      "path": "project/README.md",
+      "placeholders": [
+        "{{ACTION_COUNT}}",
+        "{{BUILDING_COUNT}}",
+        "{{CHARACTER_COUNT}}",
+        "{{COUNTRY_COUNT}}",
+        "{{EXPORT_TIMESTAMP}}",
+        "{{GENRE_ID}}",
+        "{{GENRE_NAME}}",
+        "{{INSIMUL_VERSION}}",
+        "{{NPC_COUNT}}",
+        "{{QUEST_COUNT}}",
+        "{{ROAD_COUNT}}",
+        "{{RULE_COUNT}}",
+        "{{SETTLEMENT_COUNT}}",
+        "{{STATE_COUNT}}",
+        "{{TERRAIN_SIZE}}",
+        "{{WORLD_NAME}}",
+        "{{WORLD_TYPE}}"
+      ]
+    },
+    {
+      "path": "project/default_bus_layout.tres",
+      "placeholders": []
+    },
+    {
+      "path": "project/export_presets.cfg",
+      "placeholders": [
+        "{{WORLD_SAFE_NAME}}"
+      ]
+    },
+    {
+      "path": "project/icon.svg",
+      "placeholders": []
+    },
+    {
+      "path": "project/project.godot",
+      "placeholders": [
+        "{{INSIMUL_VERSION}}",
+        "{{WORLD_NAME}}",
+        "{{WORLD_SAFE_NAME}}",
+        "{{WORLD_TYPE}}"
+      ]
+    },
+    {
+      "path": "scripts/characters/ambient_conversation_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/camera_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/character_animation_controller.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/lip_sync_controller.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_accessory_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_activity_label_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_animation_controller.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_controller.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_greeting_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_modular_assembler.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_movement_controller.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_schedule_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_simulation_lod.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/npc_spawner.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/characters/player_controller.gd",
+      "placeholders": [
+        "{{PLAYER_GRAVITY}}",
+        "{{PLAYER_INITIAL_ENERGY}}",
+        "{{PLAYER_INITIAL_GOLD}}",
+        "{{PLAYER_INITIAL_HEALTH}}",
+        "{{PLAYER_JUMP_HEIGHT}}",
+        "{{PLAYER_SPEED}}"
+      ]
+    },
+    {
+      "path": "scripts/core/data_loader.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/core/game_clock.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/core/game_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/services/ai_service.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/services/error_reporter.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/action_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/animal_npc_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/audio_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/audio_manifest.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/building_entry_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/combat_system.gd",
+      "placeholders": [
+        "{{COMBAT_ATTACK_COOLDOWN}}",
+        "{{COMBAT_BASE_DAMAGE}}",
+        "{{COMBAT_BLOCK_REDUCTION}}",
+        "{{COMBAT_CRITICAL_CHANCE}}",
+        "{{COMBAT_CRITICAL_MULTIPLIER}}",
+        "{{COMBAT_DODGE_CHANCE}}",
+        "{{COMBAT_STYLE}}"
+      ]
+    },
+    {
+      "path": "scripts/systems/crafting_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/dialogue_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/event_bus.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/exploration_discovery_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/fighting_combat_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/inventory_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/npc_business_interaction_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/photography_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/prolog_engine.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/puzzle_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/quest_completion_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/quest_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/ranged_combat_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/reputation_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/resource_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/rule_enforcer.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/save_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/survival_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/turn_based_combat_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/systems/vr_support.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/action_quick_bar.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/chat_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/combat_ui.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/container_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/dialogue_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/document_reading_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/game_intro_sequence.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/game_menu.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/hud.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/inventory_ui.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/main_menu.gd",
+      "placeholders": [
+        "{{GAME_TITLE}}"
+      ]
+    },
+    {
+      "path": "scripts/ui/minimap.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/notice_board_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/onboarding_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/quest_journal_ui.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/quest_tracker_ui.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/radial_menu.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/shop_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/skill_tree_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/vocabulary_panel.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/ui/world_map.gd",
+      "placeholders": [
+        "{{GROUND_COLOR_B}}",
+        "{{GROUND_COLOR_G}}",
+        "{{GROUND_COLOR_R}}",
+        "{{ROAD_COLOR_B}}",
+        "{{ROAD_COLOR_G}}",
+        "{{ROAD_COLOR_R}}",
+        "{{TERRAIN_SIZE}}"
+      ]
+    },
+    {
+      "path": "scripts/world/animal_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/building_collision_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/building_generator.gd",
+      "placeholders": [
+        "{{BASE_COLOR_B}}",
+        "{{BASE_COLOR_G}}",
+        "{{BASE_COLOR_R}}",
+        "{{ROOF_COLOR_B}}",
+        "{{ROOF_COLOR_G}}",
+        "{{ROOF_COLOR_R}}"
+      ]
+    },
+    {
+      "path": "scripts/world/building_interior_generator.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/building_placement_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/building_sign_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/chunk_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/container_spawn_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/day_night_cycle.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/dungeon_generator.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/exterior_item_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/interior_decoration_generator.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/interior_lighting_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/interior_scene_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/item_spawner.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/nature_generator.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/outdoor_furniture_generator.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/procedural_building_generator.gd",
+      "placeholders": [
+        "{{BASE_COLOR_B}}",
+        "{{BASE_COLOR_G}}",
+        "{{BASE_COLOR_R}}",
+        "{{ROOF_COLOR_B}}",
+        "{{ROOF_COLOR_G}}",
+        "{{ROOF_COLOR_R}}"
+      ]
+    },
+    {
+      "path": "scripts/world/road_generator.gd",
+      "placeholders": [
+        "{{ROAD_COLOR_B}}",
+        "{{ROAD_COLOR_G}}",
+        "{{ROAD_COLOR_R}}",
+        "{{ROAD_WIDTH}}"
+      ]
+    },
+    {
+      "path": "scripts/world/settlement_scene_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/terrain_foundation_renderer.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/terrain_generator.gd",
+      "placeholders": [
+        "{{GROUND_COLOR_B}}",
+        "{{GROUND_COLOR_G}}",
+        "{{GROUND_COLOR_R}}",
+        "{{HEIGHT_SCALE}}",
+        "{{PEAK_COLOR_B}}",
+        "{{PEAK_COLOR_G}}",
+        "{{PEAK_COLOR_R}}",
+        "{{SLOPE_COLOR_B}}",
+        "{{SLOPE_COLOR_G}}",
+        "{{SLOPE_COLOR_R}}",
+        "{{TERRAIN_SIZE}}"
+      ]
+    },
+    {
+      "path": "scripts/world/town_square_generator.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/water_generator.gd",
+      "placeholders": [
+        "{{WATER_ALPHA}}",
+        "{{WATER_COLOR_B}}",
+        "{{WATER_COLOR_G}}",
+        "{{WATER_COLOR_R}}"
+      ]
+    },
+    {
+      "path": "scripts/world/weather_system.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/world/world_scale_manager.gd",
+      "placeholders": [
+        "{{GROUND_COLOR_B}}",
+        "{{GROUND_COLOR_G}}",
+        "{{GROUND_COLOR_R}}",
+        "{{SKY_COLOR_B}}",
+        "{{SKY_COLOR_G}}",
+        "{{SKY_COLOR_R}}",
+        "{{TERRAIN_SIZE}}"
+      ]
+    }
+  ]
+}
