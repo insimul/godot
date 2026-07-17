@@ -185,3 +185,80 @@ only the "runs on any box" gates were executed here (all green: save 58, quest 3
 bootstrap 42, structural lint 0 issues, `npm run check` exit 0, `npm test` 442
 passed). The live full-loop checklist is unchecked pending a toolchain — reviewed at
 merge (`autoMerge` is off).
+
+---
+
+# Godot scene generation + Asset Binding Layer verification (US-GB1..GB3)
+
+A third verification surface: the **editor-time** (`@tool`) scene-generation
+pipeline and the Asset Binding Layer — binding resolver, placeholder pack,
+placement manifest, re-import diff policy, and the Binding Editor dock. Same two
+tiers: machine gates that pass **here**, plus a live editor checklist that needs a
+`godot` binary.
+
+## Runs on any box (no Godot toolchain) — the merge gate
+
+`npm run engines:check` (runs the godot gates only when `packages/godot/**`
+changed) executes, in addition to the gates above:
+
+1. **Binding-resolver host tests** (US-GB1) —
+   `gdextension/test/run_binding_tests.sh`. The shared resolver matrix, the
+   cross-engine Unity pack round-trip, and sorted-serialization determinism.
+2. **Scene-placement host tests** (US-GB2) —
+   `gdextension/test/run_placement_tests.sh`. The placement manifest computed
+   from the golden IR matches the committed golden; placeholder coverage;
+   determinism.
+3. **Re-import diff host tests** (US-GB3) —
+   `gdextension/test/run_reimport_tests.sh`. The dry-run report from the shared
+   old/new manifests matches the golden; every one of the five actions
+   (added/updated/unchanged/skipped/deprecated) is exercised; the hand-edit
+   invariant (a `generated:false` node is only ever *skipped*) holds; determinism
+   + no-op re-import. Expect **11 checks**.
+4. **GDScript structural lint** — covers every `@tool` twin, the dock UI/model,
+   and the re-import GDScript on a bare box (0 issues).
+
+The headless GDScript legs (`editor/*/run_*_headless.sh`) SKIP cleanly without a
+`godot` binary; the host C++ gates hold each contract.
+
+## Needs a `godot` binary — human end-to-end checklist
+
+### <a name="bind-custom-scene-regenerate-us-gb3"></a>Bind a custom scene + regenerate (US-GB3)
+
+The core re-import safety property: a human-bound / hand-edited node survives a
+regenerate. Open the template (or any project with the addon) in the editor with
+the Binding Editor dock docked (top-right):
+
+- [ ] **Generate.** Run the `@tool` pipeline (`InsimulSceneGenerator.generate`) on
+      a world IR; confirm the scene tree materializes with terrain chunks, roads,
+      buildings, props, interiors, a `NavigationRegion3D`, and that every generated
+      node carries `insimul_entity_id` + `insimul_generated = true` metadata.
+- [ ] **Bind a custom scene.** In the dock, select an unbound (red) archetype,
+      click **Bind Scene…**, pick a `.tscn`; the row turns green and shows the path.
+      Binding a non-leaf key (**Bind Descendants…**) covers all its `*.` children.
+- [ ] **Suggestions.** For an archetype like `building.residential`, the scene
+      picker surfaces project assets whose name/tags contain `building` /
+      `residential` ranked first; unrelated assets are excluded.
+- [ ] **Hand-edit a node.** Move/replace a generated node in the scene and set its
+      `insimul_generated` metadata to `false` (marking it a manual override).
+- [ ] **Regenerate (dry-run first).** Re-run the pipeline and inspect the re-import
+      report: the hand-edited node is **skipped**, a re-bound archetype's node is
+      **updated** to the new asset, brand-new entities are **added**, and any entity
+      the new IR dropped shows as **deprecated**.
+- [ ] **Apply.** `InsimulReimport.apply_reimport(existing, fresh)`: confirm the
+      hand-edited node is untouched (position + custom scene preserved), the
+      deprecated node is reparented under a **Deprecated** group (not deleted, and
+      in the `insimul_deprecated` group), and the new nodes are present. Re-running
+      with no IR change is a **no-op** (report shows only unchanged/skipped).
+- [ ] **Pack round-trip.** **Export Pack…** to JSON, **Import Pack…** it back into a
+      fresh dock; the bindings survive and the re-exported pack is byte-identical
+      (the `insimul-binding-pack` interchange shared with Unity/Unreal).
+- [ ] **Determinism.** Two generate runs on the same IR produce an identical scene
+      tree (serialized comparison) — the host `run_placement_tests.sh` /
+      `run_reimport_tests.sh` gates pin this on the bare box.
+
+## Status on this machine (scene/binding)
+
+`npm run engines:check` is green here: binding-resolver 19, scene-placement 3,
+re-import diff 11, structural lint 0 issues, plus root `npm run check` (exit 0) and
+`npm test` (442 passed). The editor checklist above is unchecked pending a `godot`
+binary — reviewed at merge (`autoMerge` is off).

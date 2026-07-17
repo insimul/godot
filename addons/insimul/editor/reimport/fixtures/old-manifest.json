@@ -1,0 +1,62 @@
+{
+  "manifestVersion": 1,
+  "seed": "reimport-golden",
+  "nodeCount": 5,
+  "nodes": [
+    {
+      "entityId": "building.a",
+      "kind": "building",
+      "archetype": "building.residential",
+      "scene": "res://placeholders/building_residential.tscn",
+      "bindingSource": "placeholder",
+      "generated": true,
+      "position": { "x": 10.0, "y": 0.0, "z": 5.0 },
+      "rotationY": 0.0,
+      "scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
+    },
+    {
+      "entityId": "building.b",
+      "kind": "building",
+      "archetype": "building.commercial",
+      "scene": "res://placeholders/building_commercial.tscn",
+      "bindingSource": "placeholder",
+      "generated": true,
+      "position": { "x": 20.0, "y": 1.0, "z": 8.0 },
+      "rotationY": 0.0,
+      "scale": { "x": 1.3, "y": 1.3, "z": 1.3 }
+    },
+    {
+      "entityId": "prop.d",
+      "kind": "prop",
+      "archetype": "prop.custom_statue",
+      "scene": "res://art/hand_placed_statue.tscn",
+      "bindingSource": "project",
+      "generated": false,
+      "position": { "x": 7.0, "y": 0.0, "z": 2.0 },
+      "rotationY": 1.5708,
+      "scale": { "x": 2.0, "y": 2.0, "z": 2.0 }
+    },
+    {
+      "entityId": "prop.e",
+      "kind": "prop",
+      "archetype": "prop.tree",
+      "scene": "res://placeholders/prop_tree.tscn",
+      "bindingSource": "placeholder",
+      "generated": true,
+      "position": { "x": 15.0, "y": 0.0, "z": 12.0 },
+      "rotationY": 0.0,
+      "scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
+    },
+    {
+      "entityId": "prop.f",
+      "kind": "prop",
+      "archetype": "prop.custom_fountain",
+      "scene": "res://art/hand_placed_fountain.tscn",
+      "bindingSource": "project",
+      "generated": false,
+      "position": { "x": 9.0, "y": 0.0, "z": 9.0 },
+      "rotationY": 0.0,
+      "scale": { "x": 1.0, "y": 1.0, "z": 1.0 }
+    }
+  ]
+}
