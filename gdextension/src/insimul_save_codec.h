@@ -51,6 +51,10 @@ public:
 	// SHA-256 hex of the canonical SaveFile — byte-compatible with TS.
 	String compute_integrity() const;
 
+	// SHA-256 hex of the worldSnapshot alone — stable across a currentState-only
+	// mutation (the world-hash-stability parity check).
+	String world_snapshot_integrity() const;
+
 	// Canonical export Envelope JSON wrapping the current SaveFile + its integrity.
 	String build_envelope(const String &insimul_version, const String &exported_at) const;
 

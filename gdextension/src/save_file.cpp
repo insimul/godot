@@ -305,6 +305,17 @@ std::string SaveSystem::compute_integrity() const {
 	return canonical_json_integrity(*root_);
 }
 
+std::string SaveSystem::world_snapshot_integrity() const {
+	if (!root_) {
+		return std::string();
+	}
+	const JsonValue *snapshot = root_->find("worldSnapshot");
+	if (!snapshot) {
+		return std::string();
+	}
+	return canonical_json_integrity(*snapshot);
+}
+
 std::string SaveSystem::build_envelope_json(
 		const std::string &insimul_version, const std::string &exported_at) const {
 	auto envelope = make_object();

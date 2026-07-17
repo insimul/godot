@@ -158,6 +158,13 @@ func grammar_count() -> int:
 	return _snapshot.grammars.size() if _snapshot != null else 0
 
 
+## The loaded character DTOs (opaque Array[Dictionary]), or [] when not loaded.
+## The spawn/AI consumers read this as the authoritative source of character
+## identity (see the template npc_spawner world-source path, US-GC4).
+func characters() -> Array:
+	return _snapshot.characters if _snapshot != null else []
+
+
 ## Find an entity Dictionary by its `id` field, or {} when absent. Entities are
 ## opaque (schema additionalProperties) so they stay Dictionaries in the DTO.
 func find_character(id: String) -> Dictionary:

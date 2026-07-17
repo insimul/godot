@@ -90,6 +90,12 @@ public:
 	// SHA-256 hex of the canonical SaveFile — byte-compatible with TS.
 	std::string compute_integrity() const;
 
+	// SHA-256 hex of the worldSnapshot sub-object alone. Stable across a
+	// currentState-only mutation (e.g. a KB snapshot) — the world-hash-stability
+	// parity check the bootstrap loop asserts across save/reload. Empty when the
+	// SaveFile has no worldSnapshot.
+	std::string world_snapshot_integrity() const;
+
 	// Build an export Envelope JSON string wrapping the current SaveFile with
 	// its integrity hash. Emitted canonically so the bytes are reproducible.
 	std::string build_envelope_json(const std::string &insimul_version, const std::string &exported_at) const;

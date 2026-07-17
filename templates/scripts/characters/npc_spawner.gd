@@ -101,11 +101,54 @@ func _load_npc_scene_from_manifest() -> void:
 			return
 
 func generate_from_data(world_data: Dictionary) -> void:
-	var entities: Dictionary = world_data.get("entities", {})
-	var npcs: Array = entities.get("npcs", [])
+	var npcs: Array = _resolve_npc_list(world_data)
 	for npc_data in npcs:
 		_spawn_npc(npc_data)
 	print("[Insimul] NPCSpawner: spawned %d NPCs" % npcs.size())
+
+## Resolve the NPC spawn set. When the portable runtime is booted (US-GC4), the
+## world source is authoritative for character IDENTITY (id + role); positional /
+## schedule data is overlaid from a matching legacy entry when present. When no
+## world source is booted, the legacy `entities.npcs` export drives the set
+## unchanged (zero behavior delta). Mirrors the Unreal
+## AInsimulSpawner::PopulateSpawnDataFromWorldSource re-point.
+func _resolve_npc_list(world_data: Dictionary) -> Array:
+	var legacy: Array = world_data.get("entities", {}).get("npcs", [])
+	var gm: Node = get_node_or_null("/root/GameManager")
+	var world_source: Object = gm.get_world_source() if gm != null and gm.has_method("get_world_source") else null
+	if world_source == null or world_source.character_count() == 0:
+		return legacy  # legacy export drives the spawn set
+
+	# Index the legacy render data by character id so positional/schedule fields
+	# survive when the world source supplies the identity.
+	var by_id: Dictionary = {}
+	for npc in legacy:
+		by_id[str(npc.get("characterId", ""))] = npc
+
+	var result: Array = []
+	for c in world_source.characters():
+		if not (c is Dictionary):
+			continue
+		var id: String = str(c.get("id", ""))
+		if id.is_empty():
+			continue
+		var merged: Dictionary = (by_id[id] as Dictionary).duplicate(true) if by_id.has(id) else {}
+		merged["characterId"] = id
+		if not merged.has("role") or str(merged.get("role", "")).is_empty():
+			merged["role"] = _role_from_occupation(str(c.get("occupation", "")))
+		result.append(merged)
+	print("[Insimul] NPCSpawner: %d characters from the world source" % result.size())
+	return result
+
+## Map a world-source occupation to a coarse spawn role bucket (used only when the
+## legacy entry carries no role of its own).
+func _role_from_occupation(occupation: String) -> String:
+	var occ: String = occupation.to_lower()
+	if occ.contains("guard") or occ.contains("soldier") or occ.contains("watch"):
+		return "guard"
+	if occ.contains("shop") or occ.contains("merchant") or occ.contains("trader") or occ.contains("keeper"):
+		return "merchant"
+	return "civilian"
 
 func _spawn_npc(data: Dictionary) -> void:
 	var npc := CharacterBody3D.new()

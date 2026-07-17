@@ -62,6 +62,10 @@ String InsimulSaveCodec::compute_integrity() const {
 	return String(save_.compute_integrity().c_str());
 }
 
+String InsimulSaveCodec::world_snapshot_integrity() const {
+	return String(save_.world_snapshot_integrity().c_str());
+}
+
 String InsimulSaveCodec::build_envelope(const String &insimul_version, const String &exported_at) const {
 	return String(save_.build_envelope_json(to_std(insimul_version), to_std(exported_at)).c_str());
 }
@@ -125,6 +129,7 @@ void InsimulSaveCodec::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("version"), &InsimulSaveCodec::version);
 	ClassDB::bind_method(D_METHOD("serialize_canonical"), &InsimulSaveCodec::serialize_canonical);
 	ClassDB::bind_method(D_METHOD("compute_integrity"), &InsimulSaveCodec::compute_integrity);
+	ClassDB::bind_method(D_METHOD("world_snapshot_integrity"), &InsimulSaveCodec::world_snapshot_integrity);
 	ClassDB::bind_method(D_METHOD("build_envelope", "insimul_version", "exported_at"),
 			&InsimulSaveCodec::build_envelope);
 	ClassDB::bind_method(D_METHOD("snapshot_facts", "facts"), &InsimulSaveCodec::snapshot_facts);
