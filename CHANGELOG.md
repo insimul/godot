@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `asset-lib.json` — Godot Asset Library submission metadata, version-locked to
   `plugin.cfg` and `VERSIONS.json` by `npm run engines:manifests`.
+- Asset Library release dry-run (`scripts/release/build-assetlib-zip.mjs`): stages
+  `addons/insimul/**` (no `templates/` tree) and builds + validates a
+  `dist/insimul-godot-<version>.zip`.
 
 ## [1.0.0]
 

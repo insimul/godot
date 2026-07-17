@@ -147,6 +147,14 @@ colors, player/combat tuning, etc.).
   code, and (c) exported world-data JSON — never on `packages/unity` or
   `packages/unreal`. The guard enforces the no-cross-engine-reach-in rule.
 
+## Releasing
+
+`node scripts/release/build-assetlib-zip.mjs` stages `addons/insimul/**` (plus
+docs, excluding `templates/`) into `dist/insimul-godot/`, zips it to
+`dist/insimul-godot-<version>.zip` in Asset Library layout, and asserts the file
+set. It does **not** publish. See the repo-root `docs/RELEASING.md` for the full
+version-bump + submission flow (`VERSIONS.json` is the single version source).
+
 ## License
 
 MIT
