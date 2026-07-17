@@ -1,0 +1,13 @@
+{
+  "_comment": "Godot Asset Library submission metadata. `version` MUST match VERSIONS.json.godot and addons/insimul/plugin.cfg (enforced by `npm run engines:manifests`). Fields mirror the Godot AssetLib REST submission form (https://docs.godotengine.org/en/stable/community/asset_library/submitting_to_assetlib.html).",
+  "title": "Insimul Conversation Plugin",
+  "description": "Connect any Godot 4.2+ game to the Insimul AI conversation service. NPCs speak, listen, and lip-sync via streaming text, audio, and viseme data.",
+  "category_id": "5",
+  "category": "Tools",
+  "godot_version": "4.2",
+  "version": "1.0.0",
+  "cost": "MIT",
+  "author": "Insimul",
+  "browse_url": "https://github.com/insimul/runtime",
+  "icon_url": "https://raw.githubusercontent.com/insimul/runtime/main/packages/godot/templates/project/icon.svg"
+}
