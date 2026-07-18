@@ -1,0 +1,132 @@
+{
+  "$comment": "US-XC3 golden radiant-tick corpus. Given `quests` + `maxOffering` + `ticks`, the deterministic radiantTick (packages/core/scripts/quest-golden-manifest.ts) asserts `quest_offered(questId, tick)` ground facts. `expected` is the emitted fact list; the C++ port and the TS reference both reproduce it byte-for-byte (compared as an order-independent multiset). Regenerate with `npm run quest-goldens`.",
+  "cases": [
+    {
+      "name": "single_per_tick",
+      "description": "one radiant offering per tick, drains the two available radiant quests over two ticks",
+      "quests": [
+        {
+          "id": "rq_alpha",
+          "tags": [
+            "radiant"
+          ],
+          "status": "available"
+        },
+        {
+          "id": "rq_beta",
+          "tags": [
+            "radiant"
+          ],
+          "status": "available"
+        },
+        {
+          "id": "q_story",
+          "tags": [
+            "main"
+          ],
+          "status": "available"
+        },
+        {
+          "id": "rq_done",
+          "tags": [
+            "radiant"
+          ],
+          "status": "completed"
+        }
+      ],
+      "maxOffering": 1,
+      "ticks": 3,
+      "expected": [
+        {
+          "predicate": "quest_offered",
+          "args": [
+            "rq_alpha",
+            0
+          ]
+        },
+        {
+          "predicate": "quest_offered",
+          "args": [
+            "rq_beta",
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "name": "batch_offering",
+      "description": "up to three radiant quests offered on the first tick, id-sorted",
+      "quests": [
+        {
+          "id": "rq_charlie",
+          "tags": [
+            "radiant"
+          ],
+          "status": "available"
+        },
+        {
+          "id": "rq_alpha",
+          "tags": [
+            "radiant"
+          ],
+          "status": "available"
+        },
+        {
+          "id": "rq_bravo",
+          "tags": [
+            "radiant"
+          ],
+          "status": "available"
+        }
+      ],
+      "maxOffering": 3,
+      "ticks": 1,
+      "expected": [
+        {
+          "predicate": "quest_offered",
+          "args": [
+            "rq_alpha",
+            0
+          ]
+        },
+        {
+          "predicate": "quest_offered",
+          "args": [
+            "rq_bravo",
+            0
+          ]
+        },
+        {
+          "predicate": "quest_offered",
+          "args": [
+            "rq_charlie",
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "name": "none_available",
+      "description": "no radiant quests available — no facts asserted",
+      "quests": [
+        {
+          "id": "q_story",
+          "tags": [
+            "main"
+          ],
+          "status": "available"
+        },
+        {
+          "id": "rq_locked",
+          "tags": [
+            "radiant"
+          ],
+          "status": "locked"
+        }
+      ],
+      "maxOffering": 2,
+      "ticks": 2,
+      "expected": []
+    }
+  ]
+}

@@ -1,0 +1,254 @@
+{
+  "id": "fixture-save-v2-typical",
+  "slotIndex": 0,
+  "userId": "fixture-user",
+  "worldId": "fixture-world",
+  "name": "v2 typical fixture",
+  "version": 2,
+  "status": "active",
+  "createdAt": "2026-02-01T12:00:00.000Z",
+  "lastSavedAt": "2026-02-15T18:30:00.000Z",
+  "totalPlaytime": 7200,
+  "saveCount": 12,
+  "worldSnapshot": {
+    "world": {
+      "id": "fixture-world",
+      "name": "Fixture Village",
+      "worldType": "medieval-fantasy",
+      "gameType": "language-learning",
+      "targetLanguage": "fr",
+      "description": "A small fixture village for migration tests"
+    },
+    "countries": [
+      {
+        "id": "country-1",
+        "name": "Fixture Kingdom",
+        "governmentType": "monarchy",
+        "economicSystem": "feudal"
+      }
+    ],
+    "settlements": [
+      {
+        "id": "settlement-1",
+        "name": "Fixture Village",
+        "settlementType": "village",
+        "streetPattern": "grid",
+        "population": 50,
+        "countryId": "country-1",
+        "streets": [],
+        "districts": [],
+        "landmarks": []
+      }
+    ],
+    "characters": [
+      {
+        "id": "npc-shopkeeper",
+        "firstName": "Marie",
+        "lastName": "Fixture",
+        "gender": "female",
+        "birthYear": 1985,
+        "isAlive": true,
+        "occupation": "Shopkeeper",
+        "personality": {
+          "openness": 0.6,
+          "conscientiousness": 0.7,
+          "extroversion": 0.8,
+          "agreeableness": 0.9,
+          "neuroticism": 0.3
+        },
+        "spouseId": null,
+        "parentIds": null,
+        "childIds": null,
+        "currentLocation": "lot-shop",
+        "appearance": null,
+        "socialAttributes": null
+      }
+    ],
+    "lots": [
+      {
+        "id": "lot-shop",
+        "settlementId": "settlement-1",
+        "address": "1 Market Street",
+        "houseNumber": 1,
+        "streetName": "Market Street",
+        "streetId": null,
+        "blockCol": 0,
+        "blockRow": 0,
+        "lotIndex": 0,
+        "lotType": "commercial",
+        "districtName": null,
+        "side": null,
+        "building": {
+          "buildingCategory": "business",
+          "name": "Marie's Shop",
+          "businessType": "General Store",
+          "ownerId": "npc-shopkeeper"
+        }
+      }
+    ],
+    "quests": [
+      {
+        "id": "quest-welcome",
+        "name": "Welcome to the Village",
+        "description": "Meet Marie the shopkeeper",
+        "giverNpcId": "npc-shopkeeper",
+        "status": "active",
+        "stages": [],
+        "rewards": {},
+        "storyText": null,
+        "content": "quest(quest_welcome, [objective(talk_to, npc_shopkeeper)]).",
+        "questType": "tutorial",
+        "difficulty": "easy",
+        "tags": ["tutorial"],
+        "targetLanguage": "fr"
+      }
+    ],
+    "rules": [],
+    "actions": [],
+    "grammars": []
+  },
+  "currentState": {
+    "player": {
+      "position": { "x": 10, "y": 1, "z": 5 },
+      "rotation": { "x": 0, "y": 1.5, "z": 0 },
+      "gold": 25,
+      "health": 85,
+      "energy": 70,
+      "inventory": [
+        { "itemId": "item-bread", "quantity": 2 }
+      ],
+      "cefrLevel": "A2",
+      "effectiveFluency": 12
+    },
+    "quests": {
+      "progress": {
+        "quest-welcome": {
+          "status": "active",
+          "currentStageIndex": 0,
+          "stageData": {},
+          "completedAt": null
+        }
+      },
+      "dynamicQuests": []
+    },
+    "npcs": {
+      "relationships": {
+        "npc-shopkeeper": { "type": "acquaintance", "strength": 0.3, "trust": 0.4 }
+      },
+      "romance": {},
+      "merchantStates": {}
+    },
+    "characterRelationships": {},
+    "reputation": {
+      "settlements": {
+        "settlement-1": { "standing": 5, "fines": 0, "title": null }
+      }
+    },
+    "containers": {
+      "containers": {}
+    },
+    "languageProgress": {
+      "vocabulary": [
+        { "word": "bonjour", "encounters": 3 },
+        { "word": "merci", "encounters": 2 }
+      ],
+      "grammarPatterns": [],
+      "totalXP": 150,
+      "level": 2,
+      "arrivalAssessment": {
+        "timestamp": "2026-02-01T12:05:00.000Z",
+        "overallLevel": "A1",
+        "overallScore": 15,
+        "dimensions": {
+          "vocabulary": { "level": "A1", "score": 15, "confidence": 0.6 }
+        },
+        "source": "arrival"
+      },
+      "proficiencyHistory": [
+        {
+          "timestamp": "2026-02-01T12:05:00.000Z",
+          "overallLevel": "A1",
+          "overallScore": 15,
+          "dimensions": {
+            "vocabulary": { "level": "A1", "score": 15, "confidence": 0.6 }
+          },
+          "source": "arrival"
+        },
+        {
+          "timestamp": "2026-02-15T18:00:00.000Z",
+          "overallLevel": "A2",
+          "overallScore": 30,
+          "dimensions": {
+            "vocabulary": { "level": "A2", "score": 35, "confidence": 0.7 }
+          },
+          "source": "tracker"
+        }
+      ],
+      "srsState": {
+        "currentSession": 12,
+        "lastUpdated": 1739642400000,
+        "items": {
+          "vocab:fr:bonjour": {
+            "id": "vocab:fr:bonjour",
+            "type": "vocabulary",
+            "word": "bonjour",
+            "language": "fr",
+            "firstSeen": 0,
+            "lastReviewed": 1739642400000,
+            "lastReviewedSession": 12,
+            "repetitions": 3,
+            "easeFactor": 2.5,
+            "interval": 6,
+            "nextReviewSession": 18,
+            "nextReviewTimestamp": 1740247200000,
+            "reviewCount": 3,
+            "errorCount": 0,
+            "correctCount": 3,
+            "averageResponseTimeMs": 2800,
+            "lapses": 0,
+            "masteryLevel": 0.7
+          }
+        }
+      },
+      "weakAreaHistory": [
+        {
+          "dimension": "grammar",
+          "topic": "article-agreement",
+          "severity": 0.4,
+          "errorCount": 2,
+          "recordedAt": "2026-02-15T18:00:00.000Z"
+        }
+      ]
+    },
+    "prologFacts": [
+      { "predicate": "player_cefr_level", "args": ["player", "A2"] },
+      { "predicate": "in_settlement", "args": ["player", "settlement-1"] }
+    ],
+    "timeState": {
+      "currentYear": 1850,
+      "currentMonth": 6,
+      "currentDay": 15,
+      "timeOfDay": "afternoon",
+      "ordinalDate": 166
+    },
+    "interiorState": null,
+    "extensions": {}
+  },
+  "conversations": [
+    {
+      "npcCharacterId": "npc-shopkeeper",
+      "npcCharacterName": "Marie",
+      "compressedHistory": null,
+      "recentTurns": [
+        { "role": "npc", "content": "Bonjour, bienvenue !", "timestamp": "2026-02-01T12:10:00.000Z" },
+        { "role": "player", "content": "Bonjour.", "timestamp": "2026-02-01T12:10:15.000Z" }
+      ],
+      "totalTurnCount": 2,
+      "lastLocationId": "lot-shop",
+      "lastLocationName": "Marie's Shop",
+      "wordsUsed": ["bonjour"],
+      "newWordsLearned": ["bonjour"],
+      "topics": ["greeting"]
+    }
+  ]
+}

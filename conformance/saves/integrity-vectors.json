@@ -1,0 +1,8 @@
+{
+  "description": "Golden SHA-256 integrity hashes of the canonical-JSON serialization of each save fixture (computeSaveFileIntegrity in packages/core/src/save-envelope.ts). Cross-runtime parity vectors: the TS drift guard (save-integrity-crosscheck.test.ts) recomputes these from the TS implementation, and the Unreal host harness (tools/verify-unreal/test_save_system.cpp) recomputes them from the portable C++ implementation. Both MUST agree — proving the canonical-JSON + SHA-256 save contract is byte-identical across runtimes. Regenerate with the TS drift guard if a fixture changes.",
+  "vectors": {
+    "v1-minimal.json": "39503a8e474f370618de2f54bfe365741d4cf6d254032bb59e42670a4c30427f",
+    "v2-typical.json": "4b24b7a3fba6eff0808e4306683cd34ac5127223b3de5ab4a7f6d0f84e4534c6",
+    "v2-with-extensions.json": "753a504d7781e07f7fdc368f6f65e1d4677991bf7658b7c84cc7977cde68ac7f"
+  }
+}

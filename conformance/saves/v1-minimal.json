@@ -1,0 +1,82 @@
+{
+  "id": "fixture-save-v1-minimal",
+  "slotIndex": 0,
+  "userId": "fixture-user",
+  "worldId": "fixture-world",
+  "name": "v1 minimal fixture",
+  "version": 1,
+  "status": "active",
+  "createdAt": "2025-10-01T00:00:00.000Z",
+  "lastSavedAt": "2025-10-01T00:00:00.000Z",
+  "totalPlaytime": 0,
+  "saveCount": 0,
+  "worldSnapshot": {
+    "world": {
+      "id": "fixture-world",
+      "name": "Fixture Village",
+      "worldType": "medieval-fantasy",
+      "gameType": "language-learning",
+      "targetLanguage": "fr",
+      "description": null
+    },
+    "countries": [],
+    "settlements": [
+      {
+        "id": "settlement-1",
+        "name": "Fixture Village",
+        "settlementType": "village",
+        "streetPattern": null,
+        "population": 0,
+        "countryId": null,
+        "streets": [],
+        "districts": [],
+        "landmarks": []
+      }
+    ],
+    "characters": [],
+    "lots": [],
+    "quests": [],
+    "rules": [],
+    "actions": [],
+    "grammars": []
+  },
+  "currentState": {
+    "player": {
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "gold": 0,
+      "health": 100,
+      "energy": 100,
+      "inventory": [],
+      "cefrLevel": null,
+      "effectiveFluency": null
+    },
+    "quests": {
+      "progress": {},
+      "dynamicQuests": []
+    },
+    "npcs": {
+      "relationships": {},
+      "romance": {},
+      "merchantStates": {}
+    },
+    "characterRelationships": {},
+    "reputation": {
+      "settlements": {}
+    },
+    "containers": {
+      "containers": {}
+    },
+    "languageProgress": {
+      "vocabulary": [],
+      "grammarPatterns": [],
+      "totalXP": 0,
+      "level": 1
+    },
+    "prologFacts": [],
+    "timeState": null,
+    "interiorState": null,
+    "extensions": {}
+  },
+  "conversations": []
+}

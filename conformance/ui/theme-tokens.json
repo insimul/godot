@@ -1,0 +1,40 @@
+{
+  "area": "ui-theme-tokens",
+  "description": "The shared, engine-neutral UI design-token set. Every default-runtime UI (Babylon, Unity, Unreal, Godot) maps these EXACT tokens into its native theme representation (CSS vars, UIStyleSheet, Slate style set, Godot Theme). Values are the single source of truth; a native theme that diverges from a token here is a parity bug.",
+  "version": 1,
+  "colors": {
+    "background": "#12141c",
+    "surface": "#1b1e2a",
+    "surface_alt": "#242838",
+    "overlay": "#0a0b10cc",
+    "border": "#333a52",
+    "text_primary": "#eef1f8",
+    "text_secondary": "#9aa3bd",
+    "text_disabled": "#5a6076",
+    "accent": "#5b8cff",
+    "accent_hover": "#7aa2ff",
+    "accent_pressed": "#3f6fe0",
+    "success": "#4ecb8d",
+    "warning": "#e6b34d",
+    "danger": "#e05a6a",
+    "quest": "#c9a24b"
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24
+  },
+  "radius": {
+    "sm": 4,
+    "md": 8,
+    "lg": 12
+  },
+  "font_size": {
+    "caption": 12,
+    "body": 16,
+    "title": 22,
+    "display": 32
+  }
+}

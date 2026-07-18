@@ -1,0 +1,100 @@
+{
+  "description": "Shared US-GU3 save/load slot matrix. Each case feeds a codec-reported outcome (empty/ok/invalid_format/missing_save_file/integrity_mismatch, + optional summary) to SaveSlotModel (TS) / InsimulSaveSlotModel (GDScript) and pins the rendered row (status/title/message/can_load/can_save). The corrupted-envelope MESSAGING is the cross-engine contract. The TS suite additionally proves the real SHA-256 integrity chain via classifyEnvelope.",
+  "cases": [
+    {
+      "name": "empty slot",
+      "slots": [{ "index": 0, "outcome": "empty" }],
+      "expected": [
+        { "index": 0, "status": "empty", "title": "Empty Slot", "message": "", "can_load": false, "can_save": true }
+      ],
+      "expected_has_loadable": false
+    },
+    {
+      "name": "healthy slot renders a summary title",
+      "slots": [
+        {
+          "index": 0,
+          "outcome": "ok",
+          "summary": { "playerName": "Mara", "level": 7, "locationName": "Rivertown", "gold": 240, "savedAt": "2026-07-17 10:02" }
+        }
+      ],
+      "expected": [
+        {
+          "index": 0,
+          "status": "ok",
+          "title": "Mara · Lv 7 · Rivertown",
+          "message": "Saved 2026-07-17 10:02",
+          "can_load": true,
+          "can_save": true
+        }
+      ],
+      "expected_has_loadable": true
+    },
+    {
+      "name": "integrity mismatch -> corrupted, cannot load, can overwrite",
+      "slots": [{ "index": 0, "outcome": "integrity_mismatch" }],
+      "expected": [
+        {
+          "index": 0,
+          "status": "corrupted",
+          "title": "Corrupted Save",
+          "message": "Save file integrity check failed — file may be corrupted or tampered.",
+          "can_load": false,
+          "can_save": true
+        }
+      ],
+      "expected_has_loadable": false
+    },
+    {
+      "name": "unknown format -> corrupted",
+      "slots": [{ "index": 0, "outcome": "invalid_format" }],
+      "expected": [
+        {
+          "index": 0,
+          "status": "corrupted",
+          "title": "Corrupted Save",
+          "message": "Unrecognized save format — this slot cannot be loaded.",
+          "can_load": false,
+          "can_save": true
+        }
+      ],
+      "expected_has_loadable": false
+    },
+    {
+      "name": "missing save payload -> corrupted",
+      "slots": [{ "index": 0, "outcome": "missing_save_file" }],
+      "expected": [
+        {
+          "index": 0,
+          "status": "corrupted",
+          "title": "Corrupted Save",
+          "message": "Save data is missing or unreadable.",
+          "can_load": false,
+          "can_save": true
+        }
+      ],
+      "expected_has_loadable": false
+    },
+    {
+      "name": "mixed slots sort by index and only ok is loadable",
+      "slots": [
+        { "index": 2, "outcome": "integrity_mismatch" },
+        { "index": 0, "outcome": "empty" },
+        { "index": 1, "outcome": "ok", "summary": { "playerName": "Kip", "level": 3 } }
+      ],
+      "expected": [
+        { "index": 0, "status": "empty", "title": "Empty Slot", "message": "", "can_load": false, "can_save": true },
+        { "index": 1, "status": "ok", "title": "Kip · Lv 3", "message": "", "can_load": true, "can_save": true },
+        {
+          "index": 2,
+          "status": "corrupted",
+          "title": "Corrupted Save",
+          "message": "Save file integrity check failed — file may be corrupted or tampered.",
+          "can_load": false,
+          "can_save": true
+        }
+      ],
+      "expected_has_loadable": true
+    }
+  ]
+}

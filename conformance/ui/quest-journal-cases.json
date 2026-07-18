@@ -1,0 +1,109 @@
+{
+  "area": "quest-journal",
+  "description": "Engine-neutral behavior matrix for the default-UI quest panels (journal tab filtering + counts, tracker HUD with a bounded tracked set, offer accept/decline, radiant arrival via upsert). Lifecycle transitions mirror the real InsimulQuestSystem signals: accept (available->active), complete (active->completed, auto-untracked), upsert (a radiant quest_offered arrival appears as available). Every engine (Babylon / Unity / Unreal / Godot) runs the SAME cases; a case is a quest set + an ordered op sequence with per-step and final assertions.",
+  "version": 1,
+  "cases": [
+    {
+      "name": "filter-tabs-partition-the-set",
+      "quests": [
+        { "id": "q1", "title": "Find the Sword", "status": "active", "difficulty": "medium" },
+        { "id": "q2", "title": "Slay the Dragon", "status": "active", "difficulty": "hard" },
+        { "id": "q3", "title": "Return the Ring", "status": "completed", "difficulty": "easy" },
+        { "id": "q4", "title": "Deliver the Letter", "status": "available", "difficulty": "easy" }
+      ],
+      "max_tracked": 3,
+      "steps": [
+        { "op": "set_filter", "arg": "all", "expected_filtered_ids": ["q1", "q2", "q3", "q4"] },
+        { "op": "set_filter", "arg": "active", "expected_filtered_ids": ["q1", "q2"] },
+        { "op": "set_filter", "arg": "completed", "expected_filtered_ids": ["q3"] },
+        { "op": "set_filter", "arg": "available", "expected_filtered_ids": ["q4"] }
+      ],
+      "expected_counts": { "all": 4, "active": 2, "completed": 1, "available": 1 }
+    },
+    {
+      "name": "accept-moves-available-to-active",
+      "quests": [
+        { "id": "q1", "title": "Deliver the Letter", "status": "available" }
+      ],
+      "max_tracked": 3,
+      "steps": [
+        { "op": "accept", "arg": "q1", "expected_ok": true },
+        { "op": "set_filter", "arg": "active", "expected_filtered_ids": ["q1"] },
+        { "op": "accept", "arg": "q1", "expected_ok": false }
+      ],
+      "expected_counts": { "all": 1, "active": 1, "completed": 0, "available": 0 }
+    },
+    {
+      "name": "complete-moves-active-to-completed-and-untracks",
+      "quests": [
+        { "id": "q1", "title": "Find the Sword", "status": "active" }
+      ],
+      "max_tracked": 3,
+      "steps": [
+        { "op": "track", "arg": "q1", "expected_ok": true, "expected_tracked_ids": ["q1"] },
+        { "op": "complete", "arg": "q1", "expected_ok": true, "expected_tracked_ids": [] },
+        { "op": "set_filter", "arg": "completed", "expected_filtered_ids": ["q1"] }
+      ],
+      "expected_counts": { "all": 1, "active": 0, "completed": 1, "available": 0 }
+    },
+    {
+      "name": "decline-removes-available-offer",
+      "quests": [
+        { "id": "q1", "title": "Deliver the Letter", "status": "available" },
+        { "id": "q2", "title": "Find the Sword", "status": "active" }
+      ],
+      "max_tracked": 3,
+      "steps": [
+        { "op": "decline", "arg": "q1", "expected_ok": true },
+        { "op": "decline", "arg": "q2", "expected_ok": false },
+        { "op": "set_filter", "arg": "all", "expected_filtered_ids": ["q2"] }
+      ],
+      "expected_counts": { "all": 1, "active": 1, "completed": 0, "available": 0 }
+    },
+    {
+      "name": "tracker-respects-max-tracked",
+      "quests": [
+        { "id": "q1", "title": "A", "status": "active" },
+        { "id": "q2", "title": "B", "status": "active" },
+        { "id": "q3", "title": "C", "status": "active" },
+        { "id": "q4", "title": "D", "status": "active" }
+      ],
+      "max_tracked": 2,
+      "steps": [
+        { "op": "track", "arg": "q1", "expected_ok": true, "expected_tracked_ids": ["q1"] },
+        { "op": "track", "arg": "q2", "expected_ok": true, "expected_tracked_ids": ["q1", "q2"] },
+        { "op": "track", "arg": "q3", "expected_ok": false, "expected_tracked_ids": ["q1", "q2"] },
+        { "op": "untrack", "arg": "q1", "expected_ok": true, "expected_tracked_ids": ["q2"] },
+        { "op": "track", "arg": "q3", "expected_ok": true, "expected_tracked_ids": ["q2", "q3"] }
+      ],
+      "expected_counts": { "all": 4, "active": 4, "completed": 0, "available": 0 }
+    },
+    {
+      "name": "cannot-track-non-active-quest",
+      "quests": [
+        { "id": "q1", "title": "Deliver the Letter", "status": "available" },
+        { "id": "q2", "title": "Return the Ring", "status": "completed" }
+      ],
+      "max_tracked": 3,
+      "steps": [
+        { "op": "track", "arg": "q1", "expected_ok": false, "expected_tracked_ids": [] },
+        { "op": "track", "arg": "q2", "expected_ok": false, "expected_tracked_ids": [] }
+      ],
+      "expected_counts": { "all": 2, "active": 0, "completed": 1, "available": 1 }
+    },
+    {
+      "name": "radiant-arrival-appears-as-available-then-accepts",
+      "quests": [
+        { "id": "q1", "title": "Find the Sword", "status": "active" }
+      ],
+      "max_tracked": 3,
+      "steps": [
+        { "op": "upsert", "entry": { "id": "r1", "title": "Bandits on the Road", "status": "available", "isRadiant": true } },
+        { "op": "set_filter", "arg": "available", "expected_filtered_ids": ["r1"] },
+        { "op": "accept", "arg": "r1", "expected_ok": true },
+        { "op": "set_filter", "arg": "active", "expected_filtered_ids": ["q1", "r1"] }
+      ],
+      "expected_counts": { "all": 2, "active": 2, "completed": 0, "available": 0 }
+    }
+  ]
+}

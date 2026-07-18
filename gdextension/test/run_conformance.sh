@@ -12,7 +12,12 @@ set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$here")"                 # packages/godot/gdextension
 # packages/godot/gdextension -> packages -> core/conformance/prolog
-corpus="$(cd "$root/../.." && pwd)/core/conformance/prolog"
+# prefer a vendored corpus (standalone repo); fall back to the monorepo sibling layout
+if [ -d "$root/../conformance/prolog" ]; then
+	corpus="$(cd "$root/.." && pwd)/conformance/prolog"
+else
+	corpus="$(cd "$root/../.." && pwd)/core/conformance/prolog"
+fi
 out="$(mktemp -d)"
 trap 'rm -rf "$out"' EXIT
 

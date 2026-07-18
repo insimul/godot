@@ -1,0 +1,127 @@
+{
+  "$comment": "US-XC3 golden quest-hydration corpus. `input` is the quest seed (Prolog content + optional runtime status); `expected` is the present-only projection of hydrateQuestFromProlog(input) — see packages/core/scripts/quest-golden-manifest.ts. Regenerate with `npm run quest-goldens`; the C++ port (FInsimulQuestSystem) and the TS drift guard both reproduce `expected` byte-for-byte via the canonical serializer.",
+  "cases": [
+    {
+      "name": "full_quest5",
+      "description": "quest/5 main fact + mixed objectives + scalars + rewards + prereqs + tags + completion",
+      "input": {
+        "content": "quest(q_market, 'Bergeron\\'s Market', errand, easy, active).\nquest_objective(q_market, 0, talk_to(npc_marie, 3)).\nquest_objective(q_market, 1, collect(apple, 5)).\nquest_objective(q_market, 2, deliver(bread, npc_paul)).\nquest_objective(q_market, 3, conversation_turns(4)).\nquest_objective(q_market, 4, objective('Chat with the baker')).\nquest_assigned_to(q_market, 'Marie Bergeron').\nquest_assigned_by(q_market, 'Paul Dubois').\nquest_language(q_market, fr).\nquest_reward(q_market, experience, 120).\nquest_prerequisite(q_market, q_intro).\nquest_tag(q_market, errand).\nquest_tag(q_market, radiant).\nquest_completion(q_market, all_objectives_complete)."
+      },
+      "expected": {
+        "title": "Bergeron's Market",
+        "questType": "errand",
+        "difficulty": "easy",
+        "status": "active",
+        "targetLanguage": "fr",
+        "assignedTo": "Marie Bergeron",
+        "assignedBy": "Paul Dubois",
+        "experienceReward": 120,
+        "tags": [
+          "errand",
+          "radiant"
+        ],
+        "prerequisiteQuestIds": [
+          "q_intro"
+        ],
+        "completionCriteria": {
+          "type": "all_objectives",
+          "description": "Complete all objectives"
+        },
+        "objectives": [
+          {
+            "id": "obj_0",
+            "type": "talk_to_npc",
+            "description": "Talk to npc_marie (at least 3 turns)",
+            "requiredCount": 3,
+            "target": "npc_marie",
+            "npcId": "npc_marie"
+          },
+          {
+            "id": "obj_1",
+            "type": "collect_item",
+            "description": "Collect 5 apple",
+            "requiredCount": 5,
+            "target": "apple"
+          },
+          {
+            "id": "obj_2",
+            "type": "deliver_item",
+            "description": "Deliver bread to npc_paul",
+            "requiredCount": 1,
+            "target": "npc_paul"
+          },
+          {
+            "id": "obj_3",
+            "type": "conversation_turns",
+            "description": "Complete 4 conversation turns",
+            "requiredCount": 4
+          },
+          {
+            "id": "obj_4",
+            "type": "objective",
+            "description": "Chat with the baker",
+            "requiredCount": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "availability_rule",
+      "description": "runtime status 'unavailable' + quest/5 'available' + only a 'none' prerequisite promotes to available",
+      "input": {
+        "status": "unavailable",
+        "content": "quest(q_hello, 'Say Hello', tutorial, easy, available).\nquest_objective(q_hello, 0, visit_location('Town Square')).\nquest_prerequisite(q_hello, none)."
+      },
+      "expected": {
+        "title": "Say Hello",
+        "questType": "tutorial",
+        "difficulty": "easy",
+        "status": "available",
+        "objectives": [
+          {
+            "id": "obj_0",
+            "type": "visit_location",
+            "description": "Visit Town Square",
+            "requiredCount": 1,
+            "target": "Town Square"
+          }
+        ]
+      }
+    },
+    {
+      "name": "conversation_completion",
+      "description": "count objective + conversation_turns completion criterion",
+      "input": {
+        "content": "quest(q_talk, 'Practice Talking', practice, medium, active).\nquest_objective(q_talk, 0, talk_to(npc_luc)).\nquest_completion(q_talk, conversation_turns(6))."
+      },
+      "expected": {
+        "title": "Practice Talking",
+        "questType": "practice",
+        "difficulty": "medium",
+        "status": "active",
+        "completionCriteria": {
+          "type": "conversation_turns",
+          "requiredTurns": 6
+        },
+        "objectives": [
+          {
+            "id": "obj_0",
+            "type": "talk_to_npc",
+            "description": "Talk to npc_luc",
+            "requiredCount": 1,
+            "target": "npc_luc",
+            "npcId": "npc_luc"
+          }
+        ]
+      }
+    },
+    {
+      "name": "quest2_noop",
+      "description": "fixture-style quest/2 content has no quest/5 or quest_objective facts — hydration is a no-op",
+      "input": {
+        "content": "quest(quest_welcome, [objective(talk_to, npc_shopkeeper)])."
+      },
+      "expected": {}
+    }
+  ]
+}

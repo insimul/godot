@@ -1,0 +1,106 @@
+{
+  "id": "fixture-save-v2-extensions",
+  "slotIndex": 1,
+  "userId": "fixture-user",
+  "worldId": "fixture-world",
+  "name": "v2 with extensions fixture",
+  "version": 2,
+  "status": "active",
+  "createdAt": "2026-03-10T09:00:00.000Z",
+  "lastSavedAt": "2026-03-20T22:15:00.000Z",
+  "totalPlaytime": 18000,
+  "saveCount": 27,
+  "worldSnapshot": {
+    "world": {
+      "id": "fixture-world",
+      "name": "Fixture Village",
+      "worldType": "medieval-fantasy",
+      "gameType": "language-learning",
+      "targetLanguage": "fr",
+      "description": "Extension exerciser world"
+    },
+    "countries": [],
+    "settlements": [
+      {
+        "id": "settlement-1",
+        "name": "Fixture Village",
+        "settlementType": "village",
+        "streetPattern": null,
+        "population": 25,
+        "countryId": null,
+        "streets": [],
+        "districts": [],
+        "landmarks": []
+      }
+    ],
+    "characters": [],
+    "lots": [],
+    "quests": [],
+    "rules": [],
+    "actions": [],
+    "grammars": []
+  },
+  "currentState": {
+    "player": {
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "rotation": { "x": 0, "y": 0, "z": 0 },
+      "gold": 100,
+      "health": 100,
+      "energy": 100,
+      "inventory": [],
+      "cefrLevel": "B1",
+      "effectiveFluency": 25
+    },
+    "quests": {
+      "progress": {},
+      "dynamicQuests": []
+    },
+    "npcs": {
+      "relationships": {},
+      "romance": {},
+      "merchantStates": {}
+    },
+    "characterRelationships": {},
+    "reputation": {
+      "settlements": {}
+    },
+    "containers": {
+      "containers": {}
+    },
+    "languageProgress": {
+      "vocabulary": [],
+      "grammarPatterns": [],
+      "totalXP": 500,
+      "level": 5,
+      "arrivalAssessment": null,
+      "proficiencyHistory": [],
+      "srsState": {
+        "currentSession": 27,
+        "lastUpdated": 1742509200000,
+        "items": {}
+      },
+      "weakAreaHistory": []
+    },
+    "prologFacts": [],
+    "timeState": null,
+    "interiorState": null,
+    "extensions": {
+      "introShown": true,
+      "skillTree": {
+        "unlockedNodes": ["haggling-1", "haggling-2"],
+        "availablePoints": 3
+      },
+      "gamification": {
+        "streakDays": 7,
+        "lastDailyLoginAt": "2026-03-20T00:00:00.000Z",
+        "badgesEarned": ["first-quest", "week-streak"]
+      },
+      "achievements": {
+        "earned": [
+          { "id": "first-conversation", "earnedAt": "2026-03-11T10:00:00.000Z" }
+        ]
+      }
+    }
+  },
+  "conversations": []
+}

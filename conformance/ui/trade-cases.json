@@ -1,0 +1,154 @@
+{
+  "area": "trade",
+  "description": "Engine-neutral behavior matrix for the default-UI trade panels (inventory, container transfer, merchant buy/sell), backed EXCLUSIVELY by save.currentState. Each case supplies an initial currentState slice (player.gold/inventory, containers.containers, npcs.merchantStates), one op, and the expected result + final quantities/gold. Items MOVE between stacks (never created/destroyed); a merchant trade conserves gold (player.gold + merchant.goldReserve constant). Every engine (Babylon / Unity / Unreal / Godot) runs the SAME cases. The state-location invariant (the model keeps no private store) is asserted separately in code.",
+  "version": 1,
+  "cases": [
+    {
+      "name": "take-item-from-container-into-inventory",
+      "state": {
+        "player": { "gold": 50, "inventory": [] },
+        "containers": { "containers": { "chest1": { "items": [{ "itemId": "potion", "quantity": 3, "value": 10 }, { "itemId": "key", "quantity": 1, "value": 0 }] } } },
+        "npcs": { "merchantStates": {} }
+      },
+      "op": { "kind": "take", "container": "chest1", "item": "potion", "qty": 2 },
+      "expected": {
+        "ok": true,
+        "moved": 2,
+        "player_items": { "potion": 2 },
+        "container_items": { "potion": 1, "key": 1 }
+      }
+    },
+    {
+      "name": "take-clamps-to-available-stock",
+      "state": {
+        "player": { "gold": 0, "inventory": [{ "itemId": "potion", "quantity": 1, "value": 10 }] },
+        "containers": { "containers": { "chest1": { "items": [{ "itemId": "potion", "quantity": 2, "value": 10 }] } } },
+        "npcs": { "merchantStates": {} }
+      },
+      "op": { "kind": "take", "container": "chest1", "item": "potion", "qty": 99 },
+      "expected": {
+        "ok": true,
+        "moved": 2,
+        "player_items": { "potion": 3 },
+        "container_items": {}
+      }
+    },
+    {
+      "name": "take-all-empties-the-container",
+      "state": {
+        "player": { "gold": 0, "inventory": [] },
+        "containers": { "containers": { "chest1": { "items": [{ "itemId": "potion", "quantity": 2, "value": 10 }, { "itemId": "gem", "quantity": 1, "value": 100 }] } } },
+        "npcs": { "merchantStates": {} }
+      },
+      "op": { "kind": "take_all", "container": "chest1" },
+      "expected": {
+        "ok": true,
+        "moved": 3,
+        "player_items": { "potion": 2, "gem": 1 },
+        "container_items": {}
+      }
+    },
+    {
+      "name": "buy-affordable-transfers-item-and-gold",
+      "state": {
+        "player": { "gold": 100, "inventory": [] },
+        "containers": { "containers": {} },
+        "npcs": { "merchantStates": { "shop1": { "goldReserve": 100, "items": [{ "itemId": "potion", "quantity": 5, "value": 10 }] } } }
+      },
+      "op": { "kind": "buy", "merchant": "shop1", "item": "potion", "qty": 2 },
+      "expected": {
+        "ok": true,
+        "moved": 2,
+        "player_gold": 80,
+        "player_items": { "potion": 2 },
+        "merchant_gold": 120,
+        "merchant_items": { "potion": 3 }
+      }
+    },
+    {
+      "name": "buy-rejected-when-gold-insufficient",
+      "state": {
+        "player": { "gold": 15, "inventory": [] },
+        "containers": { "containers": {} },
+        "npcs": { "merchantStates": { "shop1": { "goldReserve": 100, "items": [{ "itemId": "sword", "quantity": 1, "value": 50 }] } } }
+      },
+      "op": { "kind": "buy", "merchant": "shop1", "item": "sword", "qty": 1 },
+      "expected": {
+        "ok": false,
+        "reason": "insufficient_gold",
+        "player_gold": 15,
+        "player_items": {},
+        "merchant_gold": 100,
+        "merchant_items": { "sword": 1 }
+      }
+    },
+    {
+      "name": "buy-rejected-when-out-of-stock",
+      "state": {
+        "player": { "gold": 1000, "inventory": [] },
+        "containers": { "containers": {} },
+        "npcs": { "merchantStates": { "shop1": { "goldReserve": 100, "items": [{ "itemId": "potion", "quantity": 1, "value": 10 }] } } }
+      },
+      "op": { "kind": "buy", "merchant": "shop1", "item": "potion", "qty": 3 },
+      "expected": {
+        "ok": false,
+        "reason": "out_of_stock",
+        "player_gold": 1000,
+        "player_items": {},
+        "merchant_gold": 100,
+        "merchant_items": { "potion": 1 }
+      }
+    },
+    {
+      "name": "sell-transfers-item-and-gold-back",
+      "state": {
+        "player": { "gold": 20, "inventory": [{ "itemId": "gem", "quantity": 2, "value": 30 }] },
+        "containers": { "containers": {} },
+        "npcs": { "merchantStates": { "shop1": { "goldReserve": 100, "items": [] } } }
+      },
+      "op": { "kind": "sell", "merchant": "shop1", "item": "gem", "qty": 1 },
+      "expected": {
+        "ok": true,
+        "moved": 1,
+        "player_gold": 50,
+        "player_items": { "gem": 1 },
+        "merchant_gold": 70,
+        "merchant_items": { "gem": 1 }
+      }
+    },
+    {
+      "name": "sell-rejected-when-merchant-cannot-afford",
+      "state": {
+        "player": { "gold": 0, "inventory": [{ "itemId": "gem", "quantity": 1, "value": 100 }] },
+        "containers": { "containers": {} },
+        "npcs": { "merchantStates": { "shop1": { "goldReserve": 40, "items": [] } } }
+      },
+      "op": { "kind": "sell", "merchant": "shop1", "item": "gem", "qty": 1 },
+      "expected": {
+        "ok": false,
+        "reason": "merchant_cannot_afford",
+        "player_gold": 0,
+        "player_items": { "gem": 1 },
+        "merchant_gold": 40,
+        "merchant_items": {}
+      }
+    },
+    {
+      "name": "sell-rejected-when-player-lacks-item",
+      "state": {
+        "player": { "gold": 0, "inventory": [] },
+        "containers": { "containers": {} },
+        "npcs": { "merchantStates": { "shop1": { "goldReserve": 100, "items": [] } } }
+      },
+      "op": { "kind": "sell", "merchant": "shop1", "item": "gem", "qty": 1 },
+      "expected": {
+        "ok": false,
+        "reason": "insufficient_items",
+        "player_gold": 0,
+        "player_items": {},
+        "merchant_gold": 100,
+        "merchant_items": {}
+      }
+    }
+  ]
+}

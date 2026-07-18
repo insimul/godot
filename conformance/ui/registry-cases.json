@@ -1,0 +1,68 @@
+{
+  "area": "ui-registry",
+  "description": "Engine-neutral behavior contract for the default-UI panel registry: default-scene lookup, creator override precedence (a per-key override always wins over the shipped default), and missing-panel diagnostics. Scene ids are opaque strings so every engine (Babylon PackedScene/prefab/widget/Godot PackedScene) runs the SAME cases; only the concrete default map differs per engine.",
+  "version": 1,
+  "panel_keys": [
+    "loading_screen",
+    "notifications",
+    "hud",
+    "main_menu",
+    "game_menu",
+    "quest_journal",
+    "quest_tracker",
+    "quest_offer",
+    "inventory",
+    "container",
+    "merchant",
+    "dialogue",
+    "pause_menu",
+    "save_load"
+  ],
+  "cases": [
+    {
+      "name": "default-resolves-to-shipped-scene",
+      "defaults": { "quest_journal": "scene:quest_journal", "hud": "scene:hud" },
+      "overrides": {},
+      "resolve": "quest_journal",
+      "expected_scene": "scene:quest_journal",
+      "expected_missing": false,
+      "expected_overridden": false
+    },
+    {
+      "name": "override-wins-over-default",
+      "defaults": { "quest_journal": "scene:quest_journal" },
+      "overrides": { "quest_journal": "scene:creator_journal" },
+      "resolve": "quest_journal",
+      "expected_scene": "scene:creator_journal",
+      "expected_missing": false,
+      "expected_overridden": true
+    },
+    {
+      "name": "override-of-one-key-leaves-others-default",
+      "defaults": { "quest_journal": "scene:quest_journal", "inventory": "scene:inventory" },
+      "overrides": { "inventory": "scene:creator_inventory" },
+      "resolve": "quest_journal",
+      "expected_scene": "scene:quest_journal",
+      "expected_missing": false,
+      "expected_overridden": false
+    },
+    {
+      "name": "unknown-key-is-missing-and-diagnosed",
+      "defaults": { "hud": "scene:hud" },
+      "overrides": {},
+      "resolve": "quest_journal",
+      "expected_scene": "",
+      "expected_missing": true,
+      "expected_overridden": false
+    },
+    {
+      "name": "override-for-key-with-no-default-still-resolves",
+      "defaults": { "hud": "scene:hud" },
+      "overrides": { "merchant": "scene:creator_merchant" },
+      "resolve": "merchant",
+      "expected_scene": "scene:creator_merchant",
+      "expected_missing": false,
+      "expected_overridden": true
+    }
+  ]
+}

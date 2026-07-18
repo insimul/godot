@@ -1,0 +1,159 @@
+{
+  "description": "Shared US-GU3 dialogue/chat streaming matrix. Each case replays an ordered event stream (greeting/begin/chunk/action/complete/fail) against ChatModel (TS) / InsimulChatModel (GDScript) and pins the transcript, streaming flag, triggered actions, completed-turn count, and the save.conversations history projection. begin/complete/fail may carry expected_ok.",
+  "cases": [
+    {
+      "name": "single turn streams then completes",
+      "character": { "id": "npc1", "name": "Aldric" },
+      "events": [
+        { "op": "greeting", "text": "Well met, traveler." },
+        { "op": "begin", "text": "Hello", "expected_ok": true },
+        { "op": "chunk", "text": "Good " },
+        { "op": "chunk", "text": "day " },
+        { "op": "chunk", "text": "to you." },
+        { "op": "complete", "expected_ok": true }
+      ],
+      "expected_messages": [
+        { "role": "npc", "text": "Well met, traveler." },
+        { "role": "player", "text": "Hello" },
+        { "role": "npc", "text": "Good day to you." }
+      ],
+      "expected_streaming": false,
+      "expected_actions": [],
+      "expected_turn_count": 1,
+      "expected_last_npc_text": "Good day to you.",
+      "expected_history_turns": [
+        { "role": "npc", "content": "Well met, traveler." },
+        { "role": "player", "content": "Hello" },
+        { "role": "npc", "content": "Good day to you." }
+      ]
+    },
+    {
+      "name": "complete with authoritative full text overrides accumulated chunks",
+      "character": { "id": "npc1", "name": "Aldric" },
+      "events": [
+        { "op": "begin", "text": "Hi" },
+        { "op": "chunk", "text": "partial" },
+        { "op": "complete", "full_text": "The full, corrected reply.", "expected_ok": true }
+      ],
+      "expected_messages": [
+        { "role": "player", "text": "Hi" },
+        { "role": "npc", "text": "The full, corrected reply." }
+      ],
+      "expected_streaming": false,
+      "expected_actions": [],
+      "expected_turn_count": 1,
+      "expected_last_npc_text": "The full, corrected reply.",
+      "expected_history_turns": [
+        { "role": "player", "content": "Hi" },
+        { "role": "npc", "content": "The full, corrected reply." }
+      ]
+    },
+    {
+      "name": "stream triggers an action asserted into the KB",
+      "character": { "id": "smith", "name": "Bram" },
+      "events": [
+        { "op": "begin", "text": "Can I have the sword?" },
+        { "op": "chunk", "text": "Here, take it." },
+        { "op": "action", "name": "give_item", "args": ["sword"], "fact": "has_item(player,sword)" },
+        { "op": "complete" }
+      ],
+      "expected_messages": [
+        { "role": "player", "text": "Can I have the sword?" },
+        { "role": "npc", "text": "Here, take it." }
+      ],
+      "expected_streaming": false,
+      "expected_actions": [
+        { "name": "give_item", "args": ["sword"], "factToAssert": "has_item(player,sword)" }
+      ],
+      "expected_turn_count": 1,
+      "expected_last_npc_text": "Here, take it.",
+      "expected_history_turns": [
+        { "role": "player", "content": "Can I have the sword?" },
+        { "role": "npc", "content": "Here, take it." }
+      ]
+    },
+    {
+      "name": "stream error renders an error bubble and drops the turn from history",
+      "character": { "id": "npc1", "name": "Aldric" },
+      "events": [
+        { "op": "begin", "text": "Hello?" },
+        { "op": "chunk", "text": "half" },
+        { "op": "fail", "error": "connection timed out", "expected_ok": true }
+      ],
+      "expected_messages": [
+        { "role": "player", "text": "Hello?" },
+        { "role": "npc", "text": "[Error: connection timed out]", "error": true }
+      ],
+      "expected_streaming": false,
+      "expected_actions": [],
+      "expected_turn_count": 0,
+      "expected_last_npc_text": "",
+      "expected_history_turns": [
+        { "role": "player", "content": "Hello?" }
+      ]
+    },
+    {
+      "name": "a second begin while streaming is rejected",
+      "character": { "id": "npc1", "name": "Aldric" },
+      "events": [
+        { "op": "begin", "text": "First", "expected_ok": true },
+        { "op": "chunk", "text": "answering" },
+        { "op": "begin", "text": "Second", "expected_ok": false },
+        { "op": "complete", "expected_ok": true }
+      ],
+      "expected_messages": [
+        { "role": "player", "text": "First" },
+        { "role": "npc", "text": "answering" }
+      ],
+      "expected_streaming": false,
+      "expected_actions": [],
+      "expected_turn_count": 1,
+      "expected_last_npc_text": "answering",
+      "expected_history_turns": [
+        { "role": "player", "content": "First" },
+        { "role": "npc", "content": "answering" }
+      ]
+    },
+    {
+      "name": "complete with no turn in flight is a no-op",
+      "character": { "id": "npc1", "name": "Aldric" },
+      "events": [
+        { "op": "complete", "expected_ok": false }
+      ],
+      "expected_messages": [],
+      "expected_streaming": false,
+      "expected_actions": [],
+      "expected_turn_count": 0,
+      "expected_last_npc_text": "",
+      "expected_history_turns": []
+    },
+    {
+      "name": "two turns append a fresh pair each",
+      "character": { "id": "npc1", "name": "Aldric" },
+      "events": [
+        { "op": "begin", "text": "Hi" },
+        { "op": "chunk", "text": "Hello." },
+        { "op": "complete" },
+        { "op": "begin", "text": "Bye" },
+        { "op": "chunk", "text": "Farewell." },
+        { "op": "complete" }
+      ],
+      "expected_messages": [
+        { "role": "player", "text": "Hi" },
+        { "role": "npc", "text": "Hello." },
+        { "role": "player", "text": "Bye" },
+        { "role": "npc", "text": "Farewell." }
+      ],
+      "expected_streaming": false,
+      "expected_actions": [],
+      "expected_turn_count": 2,
+      "expected_last_npc_text": "Farewell.",
+      "expected_history_turns": [
+        { "role": "player", "content": "Hi" },
+        { "role": "npc", "content": "Hello." },
+        { "role": "player", "content": "Bye" },
+        { "role": "npc", "content": "Farewell." }
+      ]
+    }
+  ]
+}

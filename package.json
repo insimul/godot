@@ -1,0 +1,9 @@
+{
+  "name": "@insimul/godot",
+  "private": true,
+  "description": "Insimul Godot engine plugin (GDExtension + addon + game template)",
+  "scripts": {
+    "check": "node tools/verify-godot/check.mjs",
+    "test:conformance": "bash gdextension/test/run_conformance.sh"
+  }
+}

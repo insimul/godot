@@ -1,0 +1,49 @@
+{
+  "area": "ui-loading-phases",
+  "description": "Engine-neutral view-model contract for the startup loading screen. The runtime boot loop (world source -> save slot -> KB -> systems init) drives the loading screen through an ordered set of weighted phases; the view-model turns the current phase into a monotonic progress fraction [0,1], a human label, and a deterministic per-phase tip. Weights are the contract: progress at a phase = cumulative weight through that phase / total weight.",
+  "version": 1,
+  "phases": [
+    { "key": "init", "label": "Starting up…", "weight": 1 },
+    { "key": "world", "label": "Loading world…", "weight": 3 },
+    { "key": "save", "label": "Restoring save…", "weight": 2 },
+    { "key": "kb", "label": "Building knowledge base…", "weight": 2 },
+    { "key": "systems", "label": "Initializing systems…", "weight": 1 },
+    { "key": "ready", "label": "Ready", "weight": 1 }
+  ],
+  "tips": [
+    "Talk to villagers to uncover radiant quests.",
+    "Every conversation is generated live — no two runs are alike.",
+    "Check the quest journal (J) to track objectives.",
+    "Your progress autosaves to the active slot."
+  ],
+  "cases": [
+    {
+      "name": "full-boot-sequence",
+      "steps": [
+        { "advance": "init",    "expected_progress": 0.1, "expected_label": "Starting up…",            "expected_complete": false },
+        { "advance": "world",   "expected_progress": 0.4, "expected_label": "Loading world…",           "expected_complete": false },
+        { "advance": "save",    "expected_progress": 0.6, "expected_label": "Restoring save…",          "expected_complete": false },
+        { "advance": "kb",      "expected_progress": 0.8, "expected_label": "Building knowledge base…",  "expected_complete": false },
+        { "advance": "systems", "expected_progress": 0.9, "expected_label": "Initializing systems…",    "expected_complete": false },
+        { "advance": "ready",   "expected_progress": 1.0, "expected_label": "Ready",                     "expected_complete": true }
+      ]
+    },
+    {
+      "name": "progress-is-monotonic-and-never-regresses",
+      "steps": [
+        { "advance": "init",  "expected_progress": 0.1, "expected_label": "Starting up…",  "expected_complete": false },
+        { "advance": "world", "expected_progress": 0.4, "expected_label": "Loading world…", "expected_complete": false },
+        { "advance": "world", "expected_progress": 0.4, "expected_label": "Loading world…", "expected_complete": false }
+      ]
+    },
+    {
+      "name": "new-game-skips-restore-save-phase",
+      "steps": [
+        { "advance": "init",    "expected_progress": 0.1, "expected_label": "Starting up…",           "expected_complete": false },
+        { "advance": "world",   "expected_progress": 0.4, "expected_label": "Loading world…",          "expected_complete": false },
+        { "advance": "kb",      "expected_progress": 0.8, "expected_label": "Building knowledge base…", "expected_complete": false },
+        { "advance": "ready",   "expected_progress": 1.0, "expected_label": "Ready",                    "expected_complete": true }
+      ]
+    }
+  ]
+}

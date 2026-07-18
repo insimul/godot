@@ -1,0 +1,76 @@
+{
+  "description": "Shared US-GU3 pause/ESC-menu tab-gating matrix. Each case sets the enabled feature-module set (from a genre bundle) and pins the visible tab keys under the DEFAULT tabs; an optional `tabs` override supplies custom tab defs (for AND-gating). Optional `steps` (open/close/toggle/set_active) pin the open + active-tab reducer. Mirrors PauseMenuModel (TS) / InsimulPauseMenuModel (GDScript).",
+  "cases": [
+    {
+      "name": "language-learning bundle shows every gated tab",
+      "enabled_modules": [
+        "knowledge-acquisition", "proficiency", "pattern-recognition", "performance-scoring",
+        "voice", "gamification", "skill-tree", "adaptive-difficulty", "world-lore",
+        "conversation-analytics", "assessment", "npc-exams", "onboarding"
+      ],
+      "expected_visible_keys": [
+        "resume", "journal", "inventory", "map", "character",
+        "vocabulary", "skills", "analytics", "assessment", "settings", "save"
+      ]
+    },
+    {
+      "name": "rpg bundle hides the assessment tab (no assessment module)",
+      "enabled_modules": [
+        "knowledge-acquisition", "proficiency", "gamification", "skill-tree",
+        "adaptive-difficulty", "world-lore", "conversation-analytics", "onboarding"
+      ],
+      "expected_visible_keys": [
+        "resume", "journal", "inventory", "map", "character",
+        "vocabulary", "skills", "analytics", "settings", "save"
+      ]
+    },
+    {
+      "name": "strategy bundle keeps only character among the gated tabs",
+      "enabled_modules": ["proficiency", "gamification", "adaptive-difficulty", "world-lore", "onboarding"],
+      "expected_visible_keys": ["resume", "journal", "inventory", "map", "character", "settings", "save"]
+    },
+    {
+      "name": "no modules -> only the ungated core tabs",
+      "enabled_modules": [],
+      "expected_visible_keys": ["resume", "journal", "inventory", "map", "settings", "save"]
+    },
+    {
+      "name": "AND-gating: a tab requiring two modules needs both",
+      "enabled_modules": ["proficiency"],
+      "tabs": [
+        { "key": "resume", "label": "Resume" },
+        { "key": "exam", "label": "Exam", "requires": ["proficiency", "assessment"] }
+      ],
+      "expected_visible_keys": ["resume"]
+    },
+    {
+      "name": "open defaults to the first visible tab, set_active rejects hidden tabs",
+      "enabled_modules": ["proficiency"],
+      "expected_visible_keys": ["resume", "journal", "inventory", "map", "character", "settings", "save"],
+      "steps": [
+        { "op": "open" },
+        { "op": "expect_active", "key": "resume" },
+        { "op": "set_active", "key": "character", "expected_ok": true },
+        { "op": "expect_active", "key": "character" },
+        { "op": "set_active", "key": "vocabulary", "expected_ok": false },
+        { "op": "expect_active", "key": "character" },
+        { "op": "expect_open", "value": true },
+        { "op": "close" },
+        { "op": "expect_open", "value": false }
+      ]
+    },
+    {
+      "name": "open to a hidden tab falls back to the first visible tab",
+      "enabled_modules": [],
+      "expected_visible_keys": ["resume", "journal", "inventory", "map", "settings", "save"],
+      "steps": [
+        { "op": "open", "tab": "vocabulary" },
+        { "op": "expect_active", "key": "resume" },
+        { "op": "toggle" },
+        { "op": "expect_open", "value": false },
+        { "op": "toggle" },
+        { "op": "expect_open", "value": true }
+      ]
+    }
+  ]
+}
