@@ -291,3 +291,42 @@ func build_scene(root: Node) -> int:
 ## re-export read off this (US-IM2).
 func source() -> Dictionary:
 	return _source
+
+
+# ── Round-trip export (US-IM2: author-once / use-anywhere parity) ─────────────
+
+## Re-export the imported content back into an engine-neutral content-library
+## Dictionary — the export leg of the round-trip. It is REBUILT from the
+## materialized native entities (grouped back into their collections by `kind`),
+## not handed a copy of the raw source, so a fresh importer loading it must
+## reproduce the same semantics the shared golden pins. Returns {} when not loaded.
+func export_library() -> Dictionary:
+	if not _loaded:
+		return {}
+	var out := {
+		"schemaVersion": _schema_version,
+		"id": library_id(),
+		"name": library_name(),
+	}
+	for spec in COLLECTIONS:
+		out[spec["key"]] = []
+	for entity in materialize():
+		var key := _kind_to_key(entity.kind)
+		if not key.is_empty():
+			(out[key] as Array).append(entity.data)
+	return out
+
+
+## export_library() serialized back to JSON text — feeds straight into a fresh
+## InsimulContentLibrary.load_from_json() to close the round-trip.
+func export_json() -> String:
+	return JSON.stringify(export_library())
+
+
+## The collection key a materialized `kind` belongs to ("" if unknown) — the
+## inverse of the COLLECTIONS kind mapping.
+func _kind_to_key(kind: String) -> String:
+	for spec in COLLECTIONS:
+		if spec["kind"] == kind:
+			return spec["key"]
+	return ""
