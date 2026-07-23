@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "conformance-content-library",
+  "name": "Conformance Content Library",
+  "items": [
+    {
+      "id": "item-bread",
+      "name": "Bread",
+      "itemType": "food",
+      "value": 2,
+      "weight": 0.5,
+      "stackable": true,
+      "description": "A crusty loaf.",
+      "tags": ["food", "consumable"]
+    },
+    {
+      "id": "item-iron-sword",
+      "name": "Iron Sword",
+      "itemType": "weapon",
+      "value": 45,
+      "weight": 3.0,
+      "stackable": false,
+      "description": "A dependable blade.",
+      "tags": ["weapon", "melee"]
+    }
+  ],
+  "characters": [
+    {
+      "id": "npc-shopkeeper",
+      "firstName": "Marie",
+      "lastName": "Fixture",
+      "gender": "female",
+      "occupation": "Shopkeeper",
+      "homeTownId": "town-fixture",
+      "tags": ["merchant"]
+    },
+    {
+      "id": "npc-guard",
+      "firstName": "Bernard",
+      "lastName": "Fixture",
+      "gender": "male",
+      "occupation": "Guard",
+      "homeTownId": "town-fixture",
+      "tags": ["guard"]
+    }
+  ],
+  "towns": [
+    {
+      "id": "town-fixture",
+      "name": "Fixture Village",
+      "settlementType": "village",
+      "population": 50,
+      "description": "A small fixture village."
+    }
+  ],
+  "quests": [
+    {
+      "id": "quest-welcome",
+      "name": "Welcome to the Village",
+      "description": "Meet Marie the shopkeeper.",
+      "giverNpcId": "npc-shopkeeper",
+      "questType": "tutorial",
+      "difficulty": "easy",
+      "content": "quest(quest_welcome, [objective(talk_to, npc_shopkeeper)]).",
+      "tags": ["tutorial"]
+    }
+  ],
+  "narratives": [
+    {
+      "id": "narr-arrival",
+      "title": "Arrival",
+      "content": "You arrive at the gates of Fixture Village as the market bells ring.",
+      "tags": ["intro"]
+    }
+  ]
+}
