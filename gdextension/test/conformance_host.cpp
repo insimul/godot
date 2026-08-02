@@ -35,6 +35,14 @@
 
 using namespace insimul;
 
+// The corpus as re-vendored in US-3 of tasklist 100: 10 files / 76 cases, the
+// full source set (it was 41 before — a 54% subset nothing was checking). This
+// harness used to return 0 on an empty corpus dir, so it was a gate that could
+// not fail; the floor below is what makes a shrinking or missing corpus red.
+// Growing the corpus must not break the gate, shrinking it must.
+static const int MIN_CORPUS_FILES = 10;
+static const int MIN_CASES = 76;
+
 namespace {
 
 // ---------------------------------------------------------------------------
@@ -572,6 +580,27 @@ int main(int argc, char **argv) {
 	std::printf("-----------------------------------------------------------\n");
 	std::printf("%d corpus files, %d cases, %d solutions marshalled\n",
 			corpus_files, g_pass + g_fail, g_solutions);
+
+	// The count is ASSERTED, not merely reported: a run that executed nothing
+	// must be red. Before US-3 this harness printed "0 cases" and exited 0.
+	const int cases_run = g_pass + g_fail;
+	if (cases_run == 0) {
+		std::fprintf(stderr, "error: the gate executed ZERO cases\n");
+		return 1;
+	}
+	if (corpus_files < MIN_CORPUS_FILES) {
+		std::fprintf(stderr,
+				"error: only %d corpus file(s) found, expected at least %d — the corpus shrank\n",
+				corpus_files, MIN_CORPUS_FILES);
+		g_fail++;
+	}
+	if (cases_run < MIN_CASES) {
+		std::fprintf(stderr,
+				"error: only %d case(s) executed, expected at least %d — the corpus shrank\n",
+				cases_run, MIN_CASES);
+		g_fail++;
+	}
+
 	std::printf("%d passed, %d failed\n", g_pass, g_fail);
 	return g_fail == 0 ? 0 : 1;
 }

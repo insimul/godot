@@ -56,8 +56,24 @@ corpus is what proves it.
 | `src/insimulcore.c` | The QuickJS host: ABI, promise pump, Prolog bridge. |
 | `js/entry.js` | The adopted surface — one entry per callable core method. |
 | `js/host-prolog-engine.js` | Core's Prolog seam, implemented over libinsimul. |
+| `js/host-crypto.js` | Stand-in for Node's `crypto`, which core's `save-envelope.ts` imports at module scope. It **throws**: nothing on the adopted surface hashes, and a plausible wrong digest is worse than a stop. See `RUNTIME_CORE_ADOPTION.md` §8. |
 | `vendor/quickjs/` | QuickJS 2025-04-26, unmodified (see `../THIRD_PARTY.md`). |
 | `vendor/core/` | **Generated.** The bundled core + its provenance. Never hand-edit. |
+
+## The method table, and what "adopted" means in it
+
+`js/entry.js` holds every callable method. Two of them are **not** adopted
+runtime surface:
+
+| method | status |
+|---|---|
+| `radiant.generate`, `radiant.baseTemplates` | **adopted** — `InsimulRadiantSource` calls these at runtime. |
+| `quest.hydrate`, `quest.radiantTick` | **comparison only.** Nothing in the runtime calls them; they exist so `run_quest_parity_tests.sh` can diff core against this repo's hand-ported `gdextension/src/quest_system.cpp` over the same vectors. Quest hydration is still served by the C++ port. See `RUNTIME_CORE_ADOPTION.md` §10.3. |
+| `core.methods` | introspection, so a gate can assert the surface. |
+
+Keeping that distinction visible matters: a method reachable across the ABI is
+not the same as a capability this plugin has adopted, and the gate asserts the
+surface by name precisely so the two do not blur.
 
 ## Adopting more of core
 
@@ -86,7 +102,8 @@ scons, no godot-cpp, no Godot binary — and runs the shared radiant corpus:
 
 ```sh
 npm run test:radiant                       # 11 cases, source=core
-bash gdextension/test/run_radiant_tests.sh --source none   # the pre-adoption leg
+bash gdextension/test/run_radiant_tests.sh --source none   # 4 AGREE, 7 GAIN, 0 REGRESSION
+npm run test:quest-parity                  # hand-ported C++ vs core: 7 AGREE, 0 REGRESSION
 ```
 
 It **links libinsimul** (core's radiant algorithm is Prolog-driven), so it needs

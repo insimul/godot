@@ -37,9 +37,21 @@ const SOURCE_CORE := "core"
 ## has ever turned templates + world state into new quests.) Kept
 ## selectable for one story (US-2 -> US-3) so the two can be run over the same
 ## corpus and every difference classified, the same discipline tasklist 91 used
-## when it kept tau-prolog alive for one story before deleting it. It is also a
-## genuine runtime fallback: a build without libinsimulcore lands here rather
-## than erroring.
+## when it kept tau-prolog alive for one story before deleting it.
+##
+## US-3 RAN THAT DIFF AND RETAINED THIS DELIBERATELY (the story's last criterion
+## is "removed OR explicitly retained with a reason"). Two reasons:
+##   1. It is not a superseded implementation. Deleting tau-prolog removed a
+##      SECOND implementation of a thing; there is no second implementation of
+##      radiant generation here — `none` is the "off" setting, and a game that
+##      does not want procedurally generated quests still needs it.
+##   2. It is now load-bearing evidence. `run_radiant_tests.sh --source none`
+##      classifies all 11 vectors as 4 AGREE / 7 GAIN / 0 REGRESSION, and that
+##      assertion is what keeps "the adoption is a strict capability gain" true
+##      after somebody edits the generator. Removing the leg would delete the
+##      proof along with the code.
+## It is also a genuine runtime fallback: a build without libinsimulcore lands
+## here rather than erroring.
 const SOURCE_NONE := "none"
 
 ## Which implementation answers `generate()`. Defaults to core; set to

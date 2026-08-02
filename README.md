@@ -175,7 +175,7 @@ in `addons/insimul/generated/README.md`).
 | [`VERIFICATION.md`](VERIFICATION.md) | every gate in this repo — the ones that run on any box, and the human checklists that need a `godot` binary |
 | [`RUNTIME_CORE_ADOPTION.md`](RUNTIME_CORE_ADOPTION.md) | the plan for adopting `@insimul/core`: what this engine keeps, what it adopts, the first slice — and the cross-engine **language-boundary decision** (§4) that Unity, Unreal and Babylon inherit |
 | [`gdextension/corebridge/README.md`](gdextension/corebridge/README.md) | `libinsimulcore` — how `@insimul/core`'s TypeScript actually runs from a native engine, and how to adopt more of it |
-| [`conformance/VENDORED.md`](conformance/VENDORED.md) | where the vendored cross-engine corpus comes from |
+| [`conformance/VENDORED.md`](conformance/VENDORED.md) | where the vendored cross-engine corpus comes from, and the drift guard that keeps it honest |
 
 ## Supported Versions
 

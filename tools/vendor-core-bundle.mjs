@@ -26,6 +26,12 @@
 // the adapter/core boundary:
 //
 //   `@insimul/core/x`     -> <core>/src/x.ts        — the one-way dependency.
+//   `@insimul/core-scripts/x` -> <core>/scripts/x.ts — the same one-way
+//                            dependency, on core's non-`src` authorities. Only
+//                            `quest-golden-manifest` uses it: that file is where
+//                            core DEFINES the quest corpus's projection and the
+//                            radiant tick, so the parity gate compares against
+//                            core's own definition rather than a copy of it.
 //   `.../prolog-engine`   -> js/host-prolog-engine.js — the adapter SUPPLIES
 //                            the Prolog seam, because core's own
 //                            `createPrologEngine()` loads a **wasm** Trealla and
@@ -92,6 +98,12 @@ async function bundle(coreDir, outfile) {
     setup(build) {
       build.onResolve({ filter: /(^|\/)prolog-engine$/ }, () => ({
         path: path.join(JS_DIR, 'host-prolog-engine.js'),
+      }));
+      build.onResolve({ filter: /^(node:)?crypto$/ }, () => ({
+        path: path.join(JS_DIR, 'host-crypto.js'),
+      }));
+      build.onResolve({ filter: /^@insimul\/core-scripts\// }, (a) => ({
+        path: path.join(core, 'scripts', `${a.path.slice('@insimul/core-scripts/'.length)}.ts`),
       }));
       build.onResolve({ filter: /^@insimul\/core\// }, (a) => ({
         path: path.join(core, 'src', `${a.path.slice('@insimul/core/'.length)}.ts`),
@@ -205,7 +217,11 @@ async function write(coreDir) {
     source: '@insimul/core (packages/core)',
     coreCommit: gitCommit(path.resolve(coreDir)),
     coreModules: inputs,
-    adapterModules: ['gdextension/corebridge/js/entry.js', 'gdextension/corebridge/js/host-prolog-engine.js'],
+    adapterModules: [
+      'gdextension/corebridge/js/entry.js',
+      'gdextension/corebridge/js/host-prolog-engine.js',
+      'gdextension/corebridge/js/host-crypto.js',
+    ],
     bundleBytes: Buffer.byteLength(js, 'utf8'),
     bundleSha256: sha256(js),
   };

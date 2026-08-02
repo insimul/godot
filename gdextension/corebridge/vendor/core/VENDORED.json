@@ -3,14 +3,18 @@
   "source": "@insimul/core (packages/core)",
   "coreCommit": "443cce783eddea790d4a1f07b90018047ca36845",
   "coreModules": [
+    "scripts/quest-golden-manifest.ts",
     "src/prolog/prolog-fact-parser.ts",
+    "src/prolog/quest-hydrator.ts",
     "src/radiant/base-templates.ts",
-    "src/radiant/radiant-engine.ts"
+    "src/radiant/radiant-engine.ts",
+    "src/save-envelope.ts"
   ],
   "adapterModules": [
     "gdextension/corebridge/js/entry.js",
-    "gdextension/corebridge/js/host-prolog-engine.js"
+    "gdextension/corebridge/js/host-prolog-engine.js",
+    "gdextension/corebridge/js/host-crypto.js"
   ],
-  "bundleBytes": 29526,
-  "bundleSha256": "e0499b1eea9de8eff185f3fcf3b9f4af1bb41c2bb82d10cd8669e494e75f0133"
+  "bundleBytes": 54478,
+  "bundleSha256": "7b2a391997b180258369e1f73422251174090d88f7f3055867c7fd774c4934b6"
 }

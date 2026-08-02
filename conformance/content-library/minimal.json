@@ -1,0 +1,20 @@
+{
+  "manifest": {
+    "contractVersion": "insimul-content-library-v1",
+    "libraryId": "lib-minimal",
+    "name": "Minimal Library",
+    "description": "The smallest well-formed content library: a manifest and five empty section headers. Proves that an empty array is how a library says \"no content of this kind\" — an importer may iterate all five kinds without presence checks.",
+    "version": 1,
+    "generatedAt": "2026-07-22T00:00:00.000Z",
+    "provenance": {
+      "source": "insimul-core-conformance",
+      "author": "Insimul",
+      "license": "CC0-1.0"
+    }
+  },
+  "items": [],
+  "quests": [],
+  "characters": [],
+  "towns": [],
+  "narratives": []
+}

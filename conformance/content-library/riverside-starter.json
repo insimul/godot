@@ -1,0 +1,246 @@
+{
+  "manifest": {
+    "contractVersion": "insimul-content-library-v1",
+    "libraryId": "lib-riverside-starter",
+    "name": "Riverside Starter Pack",
+    "description": "The reference content library: every entity kind populated, every cross-reference (assignedBy, prerequisiteQuestIds, mayorId, homeTownId) resolving inside the library, plus a portable Prolog KB slice. This is the golden every per-engine importer validates against.",
+    "version": 3,
+    "generatedAt": "2026-07-22T00:00:00.000Z",
+    "provenance": {
+      "source": "insimul-editor",
+      "sourceUrl": "https://example.invalid/libraries/riverside-starter",
+      "author": "Insimul",
+      "createdAt": "2026-07-19T00:00:00.000Z",
+      "insimulVersion": "1.0.0",
+      "worldId": "world-riverside-demo",
+      "license": "CC-BY-SA-4.0"
+    },
+    "genre": "medieval-fantasy",
+    "locale": "en-US",
+    "targetLanguage": "es"
+  },
+  "items": [
+    {
+      "id": "item-iron-sword",
+      "name": "Iron Sword",
+      "itemType": "weapon",
+      "description": "A serviceable blade, forged at the riverside smithy.",
+      "icon": "sword-iron",
+      "value": 45,
+      "sellValue": 22,
+      "weight": 3.5,
+      "tradeable": true,
+      "stackable": false,
+      "objectRole": "melee",
+      "effects": { "attack": 6 },
+      "lootWeight": 0.25,
+      "tags": ["weapon", "starter", "smithy"]
+    },
+    {
+      "id": "item-healing-draught",
+      "name": "Healing Draught",
+      "itemType": "consumable",
+      "description": "Bitter, but it closes a wound.",
+      "value": 12,
+      "sellValue": 5,
+      "weight": 0.4,
+      "tradeable": true,
+      "stackable": true,
+      "maxStack": 10,
+      "effects": { "health": 25 },
+      "lootWeight": 0.6,
+      "tags": ["consumable", "alchemy"]
+    },
+    {
+      "id": "item-millers-ledger",
+      "name": "Miller's Ledger",
+      "itemType": "quest",
+      "description": "Water-stained accounts from the riverside mill.",
+      "value": 0,
+      "weight": 0.8,
+      "tradeable": false,
+      "stackable": false,
+      "objectRole": "evidence",
+      "effects": null,
+      "tags": ["quest-item", "evidence"]
+    }
+  ],
+  "quests": [
+    {
+      "id": "quest-missing-ledger",
+      "title": "The Missing Ledger",
+      "questType": "fetch",
+      "description": "Recover the mill's ledger before the harvest tally.",
+      "difficulty": "easy",
+      "targetLanguage": "es",
+      "objectives": [
+        { "objectiveId": "obj-find-ledger", "kind": "collect", "target": "item-millers-ledger", "count": 1 }
+      ],
+      "completionCriteria": { "allObjectives": true },
+      "experienceReward": 120,
+      "rewards": { "gold": 40, "reputation": 5 },
+      "itemRewards": [{ "itemId": "item-healing-draught", "quantity": 2 }],
+      "prerequisiteQuestIds": [],
+      "questChainId": "chain-riverside-intro",
+      "questChainOrder": 1,
+      "assignedBy": "char-mira-thorn",
+      "tags": ["intro", "fetch"]
+    },
+    {
+      "id": "quest-wolves-at-the-ford",
+      "title": "Wolves at the Ford",
+      "questType": "bounty",
+      "description": "The river crossing is no longer safe after dusk.",
+      "difficulty": "medium",
+      "objectives": [
+        { "objectiveId": "obj-cull-wolves", "kind": "defeat", "target": "wolves", "count": 4 }
+      ],
+      "completionCriteria": { "allObjectives": true },
+      "experienceReward": 260,
+      "rewards": { "gold": 90 },
+      "itemRewards": [{ "itemId": "item-iron-sword", "quantity": 1 }],
+      "prerequisiteQuestIds": ["quest-missing-ledger"],
+      "questChainId": "chain-riverside-intro",
+      "questChainOrder": 2,
+      "assignedBy": "char-bram-oakes",
+      "tags": ["bounty", "combat"]
+    }
+  ],
+  "characters": [
+    {
+      "id": "char-mira-thorn",
+      "name": "Mira Thorn",
+      "firstName": "Mira",
+      "middleName": null,
+      "lastName": "Thorn",
+      "suffix": null,
+      "gender": "female",
+      "birthYear": 1187,
+      "occupation": "miller",
+      "status": "alive",
+      "personality": {
+        "openness": 0.62,
+        "conscientiousness": 0.81,
+        "extroversion": 0.44,
+        "agreeableness": 0.7,
+        "neuroticism": 0.33
+      },
+      "physicalTraits": { "height": "average", "hairColor": "auburn" },
+      "mentalTraits": { "literate": true },
+      "skills": { "bookkeeping": 0.75, "haggling": 0.5 },
+      "socialAttributes": { "standing": "respected" },
+      "relationships": { "sibling": ["char-bram-oakes"] },
+      "homeTownId": "town-riverside",
+      "tags": ["quest-giver", "merchant"]
+    },
+    {
+      "id": "char-bram-oakes",
+      "name": "Bram Oakes",
+      "firstName": "Bram",
+      "lastName": "Oakes",
+      "gender": "male",
+      "birthYear": 1183,
+      "occupation": "guard",
+      "status": "alive",
+      "personality": {
+        "openness": 0.4,
+        "conscientiousness": 0.66,
+        "extroversion": 0.72,
+        "agreeableness": 0.55,
+        "neuroticism": 0.28
+      },
+      "skills": { "swordsmanship": 0.8 },
+      "relationships": { "sibling": ["char-mira-thorn"] },
+      "homeTownId": "town-riverside",
+      "tags": ["quest-giver", "guard"]
+    },
+    {
+      "id": "char-eldra-vance",
+      "name": "Eldra Vance",
+      "firstName": "Eldra",
+      "lastName": "Vance",
+      "gender": "female",
+      "occupation": "mayor",
+      "status": "alive",
+      "homeTownId": "town-riverside",
+      "tags": ["authority"]
+    }
+  ],
+  "towns": [
+    {
+      "id": "town-riverside",
+      "name": "Riverside",
+      "settlementType": "village",
+      "description": "A mill village straddling the ford.",
+      "terrain": "riverbank",
+      "population": 240,
+      "foundedYear": 1142,
+      "mayorId": "char-eldra-vance",
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "radius": 180,
+      "lots": [
+        { "id": "lot-mill", "position": { "x": -20, "z": 35 }, "buildingType": "mill" },
+        { "id": "lot-smithy", "position": { "x": 18, "z": -12 }, "buildingType": "smithy" },
+        { "id": "lot-guardhouse", "position": { "x": 4, "z": 48 }, "buildingType": "guardhouse" }
+      ],
+      "businesses": [
+        { "businessId": "biz-riverside-mill", "name": "Riverside Mill", "lotId": "lot-mill", "ownerId": "char-mira-thorn" },
+        { "businessId": "biz-ford-smithy", "name": "Ford Smithy", "lotId": "lot-smithy" }
+      ],
+      "infrastructure": [{ "kind": "bridge", "name": "The Ford Crossing" }],
+      "tags": ["starter-town"]
+    }
+  ],
+  "narratives": [
+    {
+      "id": "narrative-the-silent-mill",
+      "title": "The Silent Mill",
+      "protagonistRole": "miller",
+      "protagonistName": "Mira Thorn",
+      "protagonistBackstory": "Mira kept the mill's books for a decade before the ledger vanished.",
+      "incidentReason": "theft",
+      "resolution": "The ledger is recovered from the ford and the harvest tally is settled.",
+      "chapters": [
+        {
+          "chapterId": "chapter-1-the-tally",
+          "chapterNumber": 1,
+          "title": "The Tally",
+          "introNarrative": "The harvest tally is due and the ledger is gone.",
+          "outroNarrative": "A trail of wet footprints leads toward the ford.",
+          "clueDescriptions": [
+            { "clueId": "clue-wet-footprints", "text": "Wet footprints on the mill floor." }
+          ]
+        },
+        {
+          "chapterId": "chapter-2-the-ford",
+          "chapterNumber": 2,
+          "title": "The Ford",
+          "introNarrative": "The crossing is watched by more than wolves.",
+          "outroNarrative": "The ledger, water-stained but whole.",
+          "clueDescriptions": [
+            { "clueId": "clue-torn-strap", "text": "A torn satchel strap snagged on driftwood." }
+          ]
+        }
+      ],
+      "redHerrings": [
+        { "herringId": "herring-the-smith", "text": "The smith was seen near the mill at dusk." }
+      ],
+      "tags": ["mystery", "intro"]
+    }
+  ],
+  "prologFacts": [
+    "person(char_mira_thorn).",
+    "person(char_bram_oakes).",
+    "person(char_eldra_vance).",
+    "occupation(char_mira_thorn, miller).",
+    "occupation(char_bram_oakes, guard).",
+    "occupation(char_eldra_vance, mayor).",
+    "settlement(town_riverside).",
+    "settlement_type(town_riverside, village).",
+    "settlement_mayor(town_riverside, char_eldra_vance).",
+    "item_type(item_iron_sword, weapon).",
+    "item_value(item_iron_sword, 45).",
+    "item_type(item_healing_draught, consumable).",
+    "item_value(item_healing_draught, 12)."
+  ]
+}

@@ -478,6 +478,13 @@ Also unvendored: `predicate-schema-hash.json`. And `conformance/content/library.
 is **not** a mirror of anything — core has `content-library/{minimal,riverside-starter}.json`
 instead. `saves/`, `quests/`, `radiant/` and `ui/` are byte-identical and fine.
 
+> **Fixed in US-3.** Re-vendored to byte-identity — 34 mirrored files, prolog now
+> **76 of 76 cases**, `gameplay.json` on KINP terms, `predicate-schema-hash.json`
+> and `content-library/` present, `README.md` current. The marshalling gate runs
+> all 76. `content/library.json` is now *declared* local rather than mis-described
+> as a mirror, and `tools/vendor-conformance.mjs` is the guard that would have
+> caught all of this. See §10.2.
+
 ### 6.4 Three of the four host gates fail in a standalone checkout
 
 `run_conformance.sh` resolves the corpus with a vendored-first fallback. The other
@@ -561,8 +568,8 @@ moment they create and release KBs.
 `gdextension/test/conformance_host.cpp` feeds each corpus case's *expected*
 binding-set JSON through `insimul::parse_binding_set` and checks it decodes. It
 never consults a program or runs a query — by design and documented in the file,
-because libinsimul is not built in this harness. So `41 passed` means **41
-solution sets decoded**, not 41 queries proved. The real query-execution parity
+because libinsimul is not built in this harness. So `76 passed` means **76
+solution sets decoded**, not 76 queries proved. The real query-execution parity
 lives in `native/` (`ctest -R conformance`, 76/76, byte-identical native vs
 wasm32 per `native/conformance/WASM_PARITY.md`) and in
 `gdextension/tests/conformance_runner.gd` when a `godot` binary is present.
@@ -616,6 +623,21 @@ outcome for part of this surface:
    `IDataSource` being fully async is a browser artifact. A native adapter needs
    to know which is which before it designs its pump.
 
+*(Added by US-3, found the same way §6.6 and §6.7 were — by being the first
+consumer outside Node/the browser.)*
+
+4. **Declare the host builtins core imports, and keep them off wide modules.**
+   `src/save-envelope.ts` opens with `import { createHash } from 'crypto'` — a
+   bare **Node** builtin, at module scope. `save-envelope` is a wide module
+   (canonical JSON stringify + envelope build/validate), so importing *any* of
+   its exports drags the Node import in and the module will not bundle for a
+   non-Node host at all. That is what blocked US-3's quest diff until the adapter
+   supplied `js/host-crypto.js`. Two asks: list the host builtins core assumes
+   (alongside §2's five host hooks), and move `computeSaveFileIntegrity` behind
+   an injected hasher or into a narrow module so `canonicalJSONStringify` can be
+   imported without it. The `prolog-engine` seam (§5.3) is the precedent — that
+   one is *designed* to be re-resolved; `crypto` is an accident.
+
 ---
 
 ## 9. What the next stories do
@@ -623,7 +645,143 @@ outcome for part of this surface:
 | story | work |
 | --- | --- |
 | **US-2** ✅ | (a) three host gates fixed, 58/33/42 green; (b) `libinsimulcore` built — in `gdextension/corebridge/`, **not** `native/`, because that is a sibling submodule outside this worktree; the header is the part that must not fork when it moves; (c) `InsimulCore` GDExtension wrapper; (d) `InsimulRadiantSource` as the single translation site, selectable `core` \| `none`. All 11 vectors pass. |
-| **US-3** | (a) `run_radiant_tests.sh` over all **11** vectors, count asserted non-zero **and** equal to 11; (b) re-vendor the drifted Prolog corpus to the full 76 (§6.3) and say so; (c) the hydration/radiant-tick diff of §5.3, each difference classified fix / tolerable / regression; (d) retain option D's `quest_system.cpp` with the reason recorded — do not delete a passing implementation on the strength of one slice. |
+| **US-3** ✅ | (a) `run_radiant_tests.sh` over all **11** vectors, count asserted; (b) corpus re-vendored to the full 76 with a drift guard; (c) the §5.3 diff built and run — **7/7 AGREE**; (d) `quest_system.cpp` retained, reason recorded. Full report: **§10**. |
+
+---
+
+## 10. US-3 — the parity report
+
+Three questions, three gates. Every number below is printed by a command in
+Appendix B and was green on this machine at the time of writing.
+
+### 10.1 The adopted slice against the corpus
+
+`npm run test:radiant` → **11 of 11 radiant vectors pass** through core's real
+TypeScript, unreduced: the same five files packages/core's own runner reads,
+byte-identical to the source copy (asserted by §10.2's guard, not by inspection).
+
+The count is asserted, not merely printed. The gate fails if the corpus directory
+is empty, if fewer than 11 cases run, if any of the five areas is missing, if two
+cases share a name, or if the bundle no longer exposes `radiant.generate`. The
+same discipline was retro-fitted to the **marshalling** gate this story, which
+until now returned 0 on an empty corpus directory — a gate that could not fail.
+
+| gate | before US-3 | after |
+| --- | --- | --- |
+| `npm run test:conformance` | 41 cases, **no floor** | **76 cases**, floors on files *and* cases |
+| `npm run test:radiant` | 11 cases, floor 11 | unchanged |
+| `npm run test:quest-parity` | did not exist | 7 cases, floors on both areas |
+
+### 10.2 The corpus is byte-identical again — it was not
+
+§6.3 found the mirror had rotted to **41 of 76** Prolog cases with a pre-KINP
+`gameplay.json`. Re-vendored from `packages/core` @ `443cce78`:
+
+| | before | after |
+| --- | --- | --- |
+| mirrored files | 27, unverified | **34, hash-pinned** |
+| `prolog/` cases | 41 (54%) | **76 (100%)** |
+| KINP `identity` / `equivalence` / `worlds` | absent | present (34 cases) |
+| `gameplay.json` | pre-KINP atoms | `id/3` terms |
+| `predicate-schema-hash.json`, `content-library/` | absent | mirrored |
+
+**The guard matters more than the copy.** `tools/vendor-conformance.mjs`
+(`npm run vendor:conformance`) mirrors `tools/vendor-core-bundle.mjs`'s two
+modes: `--check` verifies every mirrored file against the sha256 in
+`conformance/VENDORED.json` and rejects any file that is neither mirrored nor
+*declared local*, needing no core checkout so it runs in `npm run check`; adding
+`--core` does the real byte-for-byte diff against the source tree. The rot
+happened because nothing ever ran that diff.
+
+The "declared local" list is the other half. `conformance/content/library.json`
+claimed in its own README to be a mirror of core and never was — core's shared
+content-library golden is `content-library/*.json`, a *different and current*
+shape (`manifest.contractVersion` vs a top-level `schemaVersion`). It is now
+listed as local, its README says so, and core's real fixtures sit beside it. They
+are not interchangeable; reconciling the Godot importer onto the shared golden is
+content-portability work, not runtime-core adoption.
+
+### 10.3 The two-implementation diff, and the classification
+
+Two diffs, because the honest one is weak and the useful one is cheap.
+
+**Diff 1 — the adopted slice vs what shipped** (`run_radiant_tests.sh --source none`).
+This engine never generated radiant quests, so the pre-adoption leg emits
+nothing. All 11 vectors classify:
+
+| | cases | meaning |
+| --- | --- | --- |
+| AGREE | 4 | the corpus expects zero quests; both legs produce zero |
+| **GAIN** | **7** | core produces quests where this engine produced none |
+| REGRESSION | 0 | not constructible — the old leg emits nothing at all |
+
+"Not constructible" is now **asserted** rather than argued: the leg fails if the
+pre-adoption path ever produces a quest, and it also fails if GAIN is zero (which
+would mean the comparison had quietly stopped comparing).
+
+**Diff 2 — hand-ported C++ vs core, over identical vectors**
+(`npm run test:quest-parity`, the diff §5.3 promised). `gdextension/src/quest_system.cpp`
+(649 lines, option D) already implements quest hydration and the radiant tick;
+core implements both; `conformance/quests/{hydration,radiant}-cases.json` pins
+both. Three legs — committed corpus, the hand-port, core through libinsimulcore —
+reduced to a canonical string by the **same** C++ serializer, so a difference is
+semantic and never a formatting artifact.
+
+```
+classifier self-test: 5/5 verdicts reachable
+7 case(s) executed: 4 hydration + 3 radiant
+classification: 7 AGREE, 0 FIX, 0 SHAPE, 0 REGRESSION
+```
+
+**Result: total agreement. Zero differences to classify, and therefore zero
+regressions — the classification asked for by US-3's third criterion is empty
+because there is nothing in it, not because nothing was compared.** The gate runs
+its classifier over five synthetic triples first and asserts every verdict
+(AGREE / FIX / REGRESSION / two flavours of SHAPE) is reachable, so "7 AGREE" is
+a result rather than the only thing the code can say.
+
+What this is evidence *for*: the hand-port is a faithful port on the surface the
+corpus covers, and a future tasklist can retire it in favour of core without
+behaviour change **on that surface**. What it is not evidence for: the corpus
+covers 4 hydration cases and 3 tick cases, while `quest_system.cpp` is 649 lines
+including query-driven completion and fact-asserting transitions that no shared
+vector touches. Agreement here does not license deleting it — see §10.4.
+
+Reaching core's side of this diff required one adapter module that did not exist:
+`js/host-crypto.js` (§8 amendment 4). It throws rather than computing, because
+nothing on the adopted surface hashes and a stub that returns a plausible wrong
+digest is worse than one that stops.
+
+### 10.4 What was removed, and what was retained
+
+US-3's last criterion: *remove the superseded implementation, or retain it
+explicitly with a reason.* Nothing was removed. Both retentions are deliberate.
+
+| thing | decision | reason |
+| --- | --- | --- |
+| `InsimulRadiantSource.SOURCE_NONE` | **retained** | It is not a superseded implementation — there is no second implementation of radiant generation, `none` is the *off* setting, and a game that wants no procedurally generated quests still needs it. It is also now load-bearing evidence: the 4/7/0 classification above is what keeps "strict capability gain" true after somebody edits the generator. It is additionally the fallback for a build without libinsimulcore. |
+| `gdextension/src/quest_system.cpp` (option D) | **retained** | US-2 adopted radiant *generation* only; quest hydration was never adopted, so this is not superseded by anything shipped. §5.3 was explicit that the diff "adds no adopted surface — `quest_system.cpp` is not replaced, only compared." Deleting a passing 649-line implementation on the strength of 7 agreeing vectors would be retiring it on evidence that covers a fraction of it. |
+
+The retention of option D is **not** an endorsement of option D. §4.4 and §7 stand:
+do not extend the hand-port to new core surface. This story's job was to produce
+the evidence a future retirement needs, and it did.
+
+### 10.5 The honest gaps
+
+- **The GDScript-level gates did not run here.** A `godot` binary is on PATH in
+  this worktree but `addons/insimul/tests/run_*_headless.sh` hangs past three
+  minutes (it wants a built GDExtension, which needs godot-cpp + scons). That is
+  pre-existing and unrelated to these changes — no GDScript behaviour was
+  modified beyond a doc comment — but it means the numbers in §10.1–§10.3 are all
+  from the **C++ host gates**, which is what this harness can actually check.
+  `gdextension/tests/conformance_runner.gd` remains the only thing that executes
+  the Prolog corpus as *queries*; §6.5 still stands.
+- **`content-library/` and `predicate-schema-hash.json` have no reader here.**
+  Mirrored for provenance; noted as orphans in `conformance/VENDORED.md` rather
+  than left to look like coverage.
+- **The quest corpus is small.** 4 + 3 cases. A stronger retirement case for
+  option D would need vectors for completion evaluation and the fact-asserting
+  transition, which do not exist in any runtime's corpus yet.
 
 ---
 
@@ -664,19 +822,26 @@ find addons  -name '*.gd' | wc -l; find addons  -name '*.gd' -exec cat {} + | wc
 find templates -name '*.gd' | wc -l; find templates -name '*.gd' -exec cat {} + | wc -l
 wc -l gdextension/src/*.cpp gdextension/src/*.h | tail -1
 
-# corpus drift (§6.3) — CORE is the packages/core checkout
-diff -rq "$CORE/conformance" conformance
+# corpus drift (§6.3, §10.2) — CORE is the packages/core checkout
+node tools/vendor-conformance.mjs --check --core "$CORE"     # byte-identical (was: 9 diffs)
 node -e "const fs=require('fs');let t=0;for(const f of fs.readdirSync('conformance/prolog'))
-  t+=JSON.parse(fs.readFileSync('conformance/prolog/'+f,'utf8')).cases.length;console.log(t)"   # 41 (source: 76)
+  t+=JSON.parse(fs.readFileSync('conformance/prolog/'+f,'utf8')).cases.length;console.log(t)"   # 76 (was 41)
 
-# the radiant corpus has no readers (§5.2)
+# the radiant corpus had no readers before US-2 (§5.2); it has one now
 grep -rn 'conformance/radiant\|exclusion-cooldown\|maxquests\|single-slot' . \
-  --exclude-dir=.git --exclude-dir=conformance          # no hits
+  --exclude-dir=.git --exclude-dir=conformance          # run_radiant_tests.sh + the bridge gate
 
-# gates (§6.4)
-npm run check                       # 172 files structurally sound
-npm run test:conformance            # 7 files, 41 cases, 41 passed
-bash gdextension/test/run_save_tests.sh       # 46 checks, 20 failures  (path)
-bash gdextension/test/run_quest_tests.sh      # 13 checks,  6 failures  (path)
-bash gdextension/test/run_bootstrap_tests.sh  # 42 checks, 21 failures  (path)
+# gates (§6.4 → §10.1). All green on this machine.
+npm run check                       # 173 .gd + bundle guard + corpus guard
+npm run test:conformance            # 10 files, 76 cases, 76 passed
+npm run test:radiant                # 11 case(s), all 5 areas
+npm run test:quest-parity           # 7 AGREE, 0 FIX, 0 SHAPE, 0 REGRESSION
+bash gdextension/test/run_radiant_tests.sh --source none       # 4 AGREE, 7 GAIN, 0 REGRESSION
+bash gdextension/test/run_quest_parity_tests.sh --source cpp   # the hand-port alone, no libinsimul
+bash gdextension/test/run_save_tests.sh       # 58 checks, 0 failures  (was 46/20, path)
+bash gdextension/test/run_quest_tests.sh      # 33 checks, 0 failures  (was 13/6,  path)
+bash gdextension/test/run_bootstrap_tests.sh  # 42 checks, 0 failures  (was 42/21, path)
+
+# the vendored bundle really is core (needs the checkout)
+node tools/vendor-core-bundle.mjs --check --core "$CORE"
 ```

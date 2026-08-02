@@ -19,8 +19,13 @@ which executes, in order:
    through the real `parse_binding_set`. Expect **24/24**.
 2. **Conformance corpus** (US-GP2) —
    `bash packages/godot/gdextension/test/run_conformance.sh`. Drives every
-   `expected` solution in `packages/core/conformance/prolog/*.json` through the
-   extension's marshalling layer. Expect **41 cases / 49 solutions green**.
+   `expected` solution in the vendored `conformance/prolog/*.json` through the
+   extension's marshalling layer. Expect **76 cases / 97 solutions green** across
+   10 corpus files. This gate **decodes solution sets; it does not run queries** —
+   see `RUNTIME_CORE_ADOPTION.md` §6.5 for which half of parity it covers. It was
+   41 cases until tasklist 100's US-3 re-vendored the drifted corpus (§10.2), and
+   it now asserts a file/case floor so a corpus that shrinks again fails instead
+   of printing a smaller green number.
 3. **GDScript structural lint** (US-GP3, the `godot --check-only` stand-in) —
    `python3 packages/godot/gdextension/tests/gdscript_structural_lint.py`. Scans
    the template tree + GDExtension `.gd` + addons for unbalanced brackets,
@@ -624,10 +629,27 @@ missing area file, a duplicate case name or a bundle that no longer exposes
 `radiant.generate` all fail the gate. This repo has shipped gates that could not
 fail; this one can.
 
-The `none` leg reproduces pre-adoption behaviour (no generation) and reports
-**7 differences** — the four cases that expect zero quests agree, the seven that
-expect quests are the capability core adds. That table is the input to US-3's
-fix / tolerable / regression classification.
+The `none` leg reproduces pre-adoption behaviour (no generation) and, since
+US-3, **classifies** rather than merely counts: **4 AGREE, 7 GAIN, 0
+REGRESSION**. The four cases that expect zero quests agree; the seven that expect
+quests are the capability core adds. It fails if the pre-adoption path ever
+produces a quest of its own (a regression), and it also fails if GAIN reaches
+zero — a comparison that has quietly stopped comparing must not read as green.
+
+```sh
+npm run test:quest-parity                                     # both legs
+bash gdextension/test/run_quest_parity_tests.sh --source cpp  # hand-port alone
+```
+
+The **two-implementation diff** (`RUNTIME_CORE_ADOPTION.md` §10.3). Runs
+`conformance/quests/{hydration,radiant}-cases.json` through both this repo's
+hand-ported `gdextension/src/quest_system.cpp` and `@insimul/core` through
+`libinsimulcore`, reducing all three legs (corpus / cpp / core) with the same C++
+canonicalizer, and classifies every case **AGREE / FIX / SHAPE / REGRESSION**.
+Result: **7 AGREE, 0 FIX, 0 SHAPE, 0 REGRESSION** — total agreement. A regression
+blocks the gate. The classifier is exercised against five synthetic triples
+before the corpus runs, so "everything agrees" is a finding rather than the only
+sentence the code can produce.
 
 > **Unlike every other host gate here, this one links libinsimul**, because
 > core's radiant algorithm is Prolog-driven and the whole point of the adoption
@@ -641,12 +663,21 @@ fix / tolerable / regression classification.
 ## Runs on any box, no libinsimul
 
 ```sh
-npm run check          # GDScript structural lint + vendored-bundle drift guard
+npm run check          # GDScript structural lint + bundle drift guard + corpus drift guard
 ```
 
-The second half verifies that `corebridge/vendor/core/`'s bundle, its generated C
-array and its `VENDORED.json` provenance all agree. To check for drift against
-core *itself* — which needs a checkout that has `packages/core` — add `--core`:
+The second part verifies that `corebridge/vendor/core/`'s bundle, its generated C
+array and its `VENDORED.json` provenance all agree. The third
+(`tools/vendor-conformance.mjs --check`) verifies the vendored `conformance/`
+tree against the per-file sha256 in `conformance/VENDORED.json`, and rejects any
+file that is neither mirrored nor declared local — the guard that did not exist
+while the Prolog corpus quietly rotted to 41 of 76 cases. To check for drift
+against core *itself* — which needs a checkout that has `packages/core` — add
+`--core`:
+
+```sh
+node tools/vendor-conformance.mjs --check --core ../babylon/packages/core
+```
 
 ```sh
 node tools/vendor-core-bundle.mjs --check --core ../babylon/packages/core
@@ -659,11 +690,14 @@ cannot slip in unnoticed.
 
 | gate | result |
 | --- | --- |
-| `npm run check` | ✅ 173 `.gd` files structurally sound; bundle artifacts consistent |
+| `npm run check` | ✅ 173 `.gd` files structurally sound; bundle + corpus artifacts consistent |
 | `node tools/vendor-core-bundle.mjs --check --core …` | ✅ re-bundle reproduces the vendored artifact byte-for-byte |
-| `npm run test:conformance` | ✅ 7 files, 41 cases, 41 passed |
+| `node tools/vendor-conformance.mjs --check --core …` | ✅ 34 mirrored files byte-identical to `packages/core/conformance` |
+| `npm run test:conformance` | ✅ **10 files, 76 cases, 76 passed** (was 41 — see §10.2) |
 | `npm run test:radiant` | ✅ **11 cases, 5 areas, 0 failures** |
-| `run_radiant_tests.sh --source none` | ✅ runs, reports 7 differences (expected) |
+| `run_radiant_tests.sh --source none` | ✅ **4 AGREE, 7 GAIN, 0 REGRESSION** |
+| `npm run test:quest-parity` | ✅ **7 AGREE, 0 FIX, 0 SHAPE, 0 REGRESSION** (+ 5/5 classifier self-test) |
+| `run_quest_parity_tests.sh --source cpp` | ✅ 7 cases, hand-port alone (no libinsimul needed) |
 | `bash gdextension/test/run_host_tests.sh` | ✅ 24/24 |
 | `bash gdextension/test/run_save_tests.sh` | ✅ 58 checks, 0 failures |
 | `bash gdextension/test/run_quest_tests.sh` | ✅ 33 checks, 0 failures |
@@ -677,8 +711,12 @@ semantically, but because they hardcoded a monorepo corpus path and this repo is
 standalone (`RUNTIME_CORE_ADOPTION.md` §6.4). They now resolve the vendored
 corpus first, and hit exactly the counts this document always claimed.
 
-Still needs a `godot` binary, and so is unchecked here: `InsimulCore` and
-`InsimulRadiantSource` running inside the editor/exported game. What the host
-gate covers is the entire path below GDScript — the same C ABI calls, the same
-bundle, the same Prolog engine — so what is unverified is the GDScript wrapper
-itself, not the adoption.
+Still needs a `godot` binary **and a built GDExtension**, and so is unchecked
+here: `InsimulCore` and `InsimulRadiantSource` running inside the editor/exported
+game, `gdextension/tests/conformance_runner.gd` (the only thing that executes the
+Prolog corpus as *queries*), and the `addons/insimul/tests/run_*_headless.sh`
+suites. A bare `godot` binary on PATH is not enough — those runners want the
+extension, which needs godot-cpp + scons; they hang rather than skip in this
+harness. What the host gates cover is the entire path below GDScript — the same C
+ABI calls, the same bundle, the same Prolog engine — so what is unverified is the
+GDScript wrapper itself, not the adoption.

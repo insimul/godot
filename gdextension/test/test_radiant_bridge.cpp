@@ -18,13 +18,24 @@
 //
 // SELECTABLE IMPLEMENTATION (US-2's "the old one stays reachable"): `--source`
 // picks which implementation answers.
-//   --source core   the adopted implementation (default)
+//   --source core   the adopted implementation (default). Must match the corpus
+//                   exactly; any difference is a failure.
 //   --source none   this plugin's PRE-ADOPTION behaviour — it generated no
 //                   radiant quests at all, so every case yields zero quests.
 // The `none` leg is not a straw man: it is literally what shipped before this
 // tasklist, and running it over the same vectors is how US-3 shows the adoption
 // is a capability GAIN with no reachable regression. It mirrors
 // InsimulRadiantSource.SOURCE_NONE in addons/insimul/runtime/radiant_source.gd.
+//
+// US-3's CLASSIFICATION (`--source none`). The `none` leg is expected NOT to
+// match the corpus — that is the whole point — so instead of counting failures
+// it classifies every case and asserts the classification:
+//   AGREE  the corpus expects zero quests, and `none` produces zero
+//   GAIN   the corpus expects quests, `none` produces none — pure new capability
+//   REGRESSION  `none` produced a quest core does not, or a DIFFERENT one
+// A regression is not constructible from an implementation that emits nothing,
+// which is exactly why it is worth asserting rather than asserting by argument:
+// the assertion is what will still be true after somebody edits this file.
 //
 // THE COUNT IS ASSERTED, NOT REPORTED. A corpus runner that silently executes
 // nothing must fail — this repo has shipped gates that could not fail. So the
@@ -66,6 +77,7 @@ namespace {
 
 int failures = 0;
 int cases_run = 0;
+int agree = 0, gain = 0, regression = 0;
 
 void fail(const std::string &case_name, const std::string &what) {
 	failures++;
@@ -261,6 +273,32 @@ void compare(const std::string &name, const std::vector<Quest> &actual, const st
 	std::printf("  ✓ %s (%zu quest(s))\n", name.c_str(), actual.size());
 }
 
+/**
+ * Classify one case for the pre-adoption (`none`) leg instead of failing it.
+ *
+ * The claim being machine-checked is "the adoption is a strict capability gain":
+ * the pre-adoption implementation must produce NOTHING wherever core produces
+ * something, and must never produce a quest of its own.
+ */
+void classify_none(const std::string &name, const std::vector<Quest> &actual,
+		const std::vector<Quest> &expected) {
+	if (!actual.empty()) {
+		regression++;
+		failures++;
+		std::printf("  ✗ %s  REGRESSION — the pre-adoption leg produced %zu quest(s)\n", name.c_str(),
+				actual.size());
+		return;
+	}
+	if (expected.empty()) {
+		agree++;
+		std::printf("  = %s  AGREE (corpus expects no quests)\n", name.c_str());
+		return;
+	}
+	gain++;
+	std::printf("  + %s  GAIN — core produces %zu quest(s) where this engine produced none\n",
+			name.c_str(), expected.size());
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -365,7 +403,11 @@ int main(int argc, char **argv) {
 				}
 			}
 			// source == "none": actual stays empty — the pre-adoption behaviour.
-			compare(name, actual, expected_quests(*c));
+			if (source == "none") {
+				classify_none(name, actual, expected_quests(*c));
+			} else {
+				compare(name, actual, expected_quests(*c));
+			}
 		}
 	}
 
@@ -385,6 +427,22 @@ int main(int argc, char **argv) {
 	for (const char *required : REQUIRED_AREAS) {
 		if (areas.find(required) == areas.end()) {
 			std::fprintf(stderr, "error: missing corpus area '%s'\n", required);
+			failures++;
+		}
+	}
+
+	if (source == "none") {
+		const int classified = agree + gain + regression;
+		std::printf("classification: %d AGREE, %d GAIN, %d REGRESSION\n", agree, gain, regression);
+		if (classified != cases_run) {
+			std::fprintf(stderr, "error: %d case(s) executed but only %d classified\n", cases_run,
+					classified);
+			failures++;
+		}
+		if (gain == 0) {
+			std::fprintf(stderr,
+					"error: ZERO cases classified as GAIN — either the corpus expects nothing anywhere "
+					"or this leg is not comparing what it claims to\n");
 			failures++;
 		}
 	}
