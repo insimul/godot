@@ -49,6 +49,44 @@ const LOCAL = [
   'content/library.json',
 ];
 
+// CORE-SIDE PATHS DELIBERATELY NOT MIRRORED HERE — the mirror image of LOCAL.
+// LOCAL declares files that are this repo's own and have no counterpart in
+// core; this declares corpora that DO exist in core and are deliberately not
+// vendored, with the reason. Without it, every corpus core adds for a surface
+// this repo has not adopted reads as DRIFT, and the real signal drowns in it.
+//
+// Prefix match. Every exclusion is PRINTED on each --core run, with a count:
+// an exclusion nobody sees is exactly how a corpus silently stops being
+// checked, and this repo has shipped that failure before. Removing a corpus
+// from the mirror by adding it here is a visible act, not a quiet one.
+const NOT_MIRRORED = [
+  {
+    prefix: 'editor/',
+    why:
+      'the editor-core corpora (tasklist 101). This repo ships the RUNTIME; ' +
+      'editor-core adoption is a later wave — see RUNTIME_CORE_ADOPTION.md. ' +
+      'Vendor these when this repo implements the editor core, not before: a ' +
+      'corpus with no runner here would be a checked-in file nothing executes.',
+  },
+];
+
+/** The NOT_MIRRORED entry covering `rel`, or undefined. */
+function excludedBy(rel) {
+  return NOT_MIRRORED.find((n) => rel.startsWith(n.prefix));
+}
+
+/** Print every exclusion that actually matched something, so it stays visible. */
+function reportExclusions(srcFiles) {
+  for (const n of NOT_MIRRORED) {
+    const hits = srcFiles.filter((rel) => rel.startsWith(n.prefix));
+    if (hits.length > 0) {
+      console.log(
+        `vendor-conformance: NOT MIRRORED: ${hits.length} file(s) under conformance/${n.prefix} — ${n.why}`,
+      );
+    }
+  }
+}
+
 const args = process.argv.slice(2);
 const coreArg = argValue('--core') ?? process.env.INSIMUL_CORE_DIR ?? null;
 const checkOnly = args.includes('--check');
@@ -108,7 +146,9 @@ function prologCaseCount() {
 
 function write(coreDir) {
   const src = corpusDir(coreDir);
-  const files = walk(src);
+  const srcFiles = walk(src);
+  reportExclusions(srcFiles);
+  const files = srcFiles.filter((rel) => !excludedBy(rel));
   for (const rel of files) {
     const dest = path.join(CORPUS, rel);
     fs.mkdirSync(path.dirname(dest), { recursive: true });
@@ -181,8 +221,10 @@ function check(coreDir) {
   if (coreDir) {
     const src = corpusDir(coreDir);
     const srcFiles = walk(src);
+    reportExclusions(srcFiles);
     const drift = [];
     for (const rel of srcFiles) {
+      if (excludedBy(rel)) continue;
       const here = path.join(CORPUS, rel);
       if (!fs.existsSync(here)) {
         drift.push(`core has conformance/${rel}, this repo does not`);

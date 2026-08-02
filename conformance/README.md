@@ -30,6 +30,13 @@ two against each other. **Write cases as data, never as code.**
   (see "Content-library fixture format" below). The shared golden every
   per-engine importer validates against, run by
   `src/conformance/__tests__/content-library-corpus.test.ts`.
+- `editor/*.json` — the **edit-time** corpus (US-2 of `101-editor-plugin-core`;
+  see "Editor fixture format" below). Pins the binding resolution chain, the
+  scene-placement math and the five-way re-import diff — the three capabilities
+  every engine editor plugin implemented and core did not, which is why they had
+  already drifted with nothing to catch it. Run by
+  `src/conformance/__tests__/editor-corpus.test.ts`; regenerate the derived
+  `expected*` values with `npm run editor-goldens`.
 - `ui/*.json` — the default-UI view-model corpus (US-GU1). `theme-tokens.json` is
   the single-source-of-truth design token set every engine's theme maps;
   `registry-cases.json` pins the panel-registry behavior (default lookup, creator
@@ -430,6 +437,93 @@ Field semantics (a conforming importer MUST honour these):
 `riverside-starter.json` is the full-coverage golden: every kind populated, every
 cross-reference resolving, a KB slice attached. Add fixtures here whenever a new
 authored shape becomes load-bearing for import.
+
+## Editor fixture format
+
+`editor/` breaks the `{ area, description, cases }` envelope in the same way
+`content-library/` does: each file is one capability's whole contract, because
+placement and re-import take a *document* as input rather than a list of small
+cases. All three carry `area` + `description` + `version`, and every derived
+`expected*` value is machine-generated (`npm run editor-goldens`,
+`scripts/emit-editor-goldens.ts`) while every INPUT and every hand-written
+per-class id list is authored — so the corpus can never degrade into proving that
+the code agrees with itself.
+
+### `binding-resolver.json`
+
+```jsonc
+{
+  "area": "editor-binding",
+  "sources": [ { "name": "project", "priority": 100, "entries": [ { "key": "…", "scene": "…" } ] } ],
+  "cases": [
+    { "name": "…", "query": "building.residential.house",
+      "expect": { "source": "project", "key": "building.residential.house",
+                  "assetRef": "…" } },          // assetRef OPTIONAL; `expect: null` = unresolved
+    { "name": "…", "sources": [ … ], "query": "…", "expect": … }   // per-case source override
+  ],
+  "unboundCases": [
+    { "name": "…", "usedKeys": ["…"],
+      "expect": { "requestedCount": 3, "boundCount": 1, "missingKeys": ["…"] } }
+  ]
+}
+```
+
+The default `sources` block and the first nine cases ARE the shared resolver
+matrix Unreal and Godot each vendor (`unreal .../Tests/fixtures/resolver-matrix.json`,
+`godot .../binding/fixtures/resolver-matrix.json`); Unity had no copy, which is
+how the tie-break drifted. Semantics a conforming engine MUST reproduce:
+
+- the chain is a **fallback**, not a merge: the first source with ANY match wins
+  outright, even when a lower tier holds a more specific entry;
+- within a source, specificity is `(matchedSegments, kind)` with
+  `Exact > Descendant > Wildcard`, and a tie keeps the **earlier-declared** entry;
+- `prefix.*` matches the base node AND its descendants; a bare `*` matches
+  everything with zero matched segments; matching is **root-agnostic**, so a key
+  outside the taxonomy still resolves (taxonomy conformance is a separate,
+  reported diagnostic — `validateBindingSource`).
+
+### `scene-placement.json`
+
+```jsonc
+{
+  "area": "editor-scene",
+  "sources": [ … the CC0 placeholder tier … ],
+  "ir": { "meta": {"seed": …}, "geography": {"terrain": …, "roads": […]},
+          "entities": {"buildings": […], "props": […]} },
+  "expected": { "manifestVersion": 1, "seed": "…", "nodeCount": 13, "nodes": [ … ] },
+  "expectedUnbound": { "requestedCount": …, "boundCount": …, "missingKeys": [] },
+  "expectedNonTaxonomyKeys": []
+}
+```
+
+`ir` is the golden World IR all three legs already vendor, and `expected` was
+verified node-for-node identical to Unity's committed
+`golden-placement-manifest.json`. Contract points: coordinates quantized to
+`0.001` with ties **away from zero** (C++ `std::round`, NOT JS `Math.round`);
+buildings snapped to a 1.0 grid and scaled by zone role; terrain height sampled
+bilinearly with edge clamping; nodes emitted in ascending entityId (ordinal)
+order; the asset handle serialized as **`assetRef`** and `bindingSource` carrying
+the resolving tier's `name` verbatim.
+
+### `reimport.json`
+
+```jsonc
+{
+  "area": "editor-reimport",
+  "oldManifest": { "nodes": [ … ] },     // what the scene already has
+  "newManifest": { "nodes": [ … ] },     // what regeneration produced
+  "expectedReport": { "reportVersion": 1, "added": […], "updated": […],
+                      "unchanged": […], "skipped": […], "deprecated": […] },
+  "expectedCanonicalReport": "{\"added\":[…]}",   // byte-compared
+  "expectedMutatorCalls": ["update:…", "add:…", "deprecate:…"]
+}
+```
+
+`expectedCanonicalReport` is byte-identical to the `golden-diff-report.json`
+Unity, Unreal and Godot each commit. `expectedMutatorCalls` is what the goldens
+cannot express: the order core drives the host's `SceneMutator` in — updates,
+then adds, then deprecations, each ascending — and the fact that `unchanged` and
+`skipped` produce **no call at all**, which is how a creator's hand edit survives.
 
 ## Purpose — the cross-engine parity gate
 
