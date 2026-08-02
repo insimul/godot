@@ -1,6 +1,7 @@
 {
   "name": "@insimul/godot",
   "private": true,
+  "license": "Apache-2.0",
   "description": "Insimul Godot engine plugin (GDExtension + addon + game template)",
   "scripts": {
     "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check",
