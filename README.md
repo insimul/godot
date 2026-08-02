@@ -1,218 +1,150 @@
-# Insimul Godot Plugin
+# Insimul for Godot
 
-Connect any Godot 4.2+ game to the Insimul AI conversation service. NPCs speak, listen, and lip-sync via streaming text, audio, and viseme data.
+> Drop-in AI characters — and an optional shared game runtime — for Godot 4.2+.
 
-## Installation
+This is a Godot plugin that gives your game living, AI-driven characters: NPCs that hold real
+conversations, speak with streamed voice, lip-sync to that voice, and listen to the player's
+microphone. It's for Godot developers who want believable, reactive characters without building
+the dialogue, speech, and world-logic stack themselves.
+
+It is the Godot component of **Insimul**, a hybrid-AI platform for building fictional worlds and
+games whose canonical state lives in a logic (Prolog) knowledge base — but **you don't need to
+know the platform to use this plugin.** The conversation features work against a server or a local
+LLM out of the box, and the deeper world/quest/save runtime is there when you want it.
+
+## What you get
+
+- **AI conversations for NPCs** — streaming text, text-to-speech audio, viseme (mouth-shape) data
+  for lip-sync, and microphone voice input, all delivered through Godot nodes and signals.
+- **Bring your own brain** — talk to an Insimul server, or point the plugin at a local,
+  Ollama-style LLM endpoint. Same nodes either way.
+- **A real logic engine in Godot** — `InsimulProlog`, a native GDExtension wrapping a genuine
+  Prolog runtime (true unification and backtracking), for games whose world state is expressed as
+  facts and rules rather than scattered flags.
+- **A portable game runtime** — load worlds, save and restore them with an integrity-checked
+  codec, run a quest system, import shared content packs, and generate deterministic *radiant*
+  quests — all sharing one cross-engine core so behaviour matches the other Insimul engines.
+- **Editor tooling** — in-editor docks for browsing/importing worlds, running world generators,
+  testing conversations, and binding scene nodes to world entities.
+
+The conversation side is pure GDScript and needs no build step. The runtime side is native and
+needs the GDExtension compiled — but it degrades gracefully when the binary is absent.
+
+## The problem it solves
+
+Convincing game characters usually mean stitching together a dialogue system, an LLM integration,
+a TTS pipeline, facial animation, speech-to-text, *and* a world-state model that all of them can
+reason over. This plugin packages that whole stack behind a handful of Godot nodes, and keeps the
+"what the character knows and can do" part in a logic engine instead of ad-hoc script state — so a
+character's behaviour follows from the world's facts, not from booleans you have to keep in sync.
+
+## How it works
+
+The plugin has three layers, and most projects only touch the first:
+
+1. **The addon (GDScript)** — `addons/insimul/`. Nodes you drop into scenes (`InsimulNPC`,
+   `InsimulAudioPlayer`, `InsimulLipSync`, `InsimulMicrophone`) plus the `InsimulClient` autoload
+   that owns the connection. This is all you need for AI conversations.
+2. **The native core (C++ GDExtension)** — `gdextension/`. Exposes the Prolog engine and the save,
+   quest, and world cores to Godot. Behind a small C ABI (`libinsimulcore`) it runs the *shared*
+   Insimul runtime core, so the game logic is written once and reused by every engine rather than
+   re-implemented per platform.
+3. **The game-template tree** — `templates/`. A full Godot project the Insimul platform copies and
+   customizes when a creator exports a world for Godot. Relevant to platform/export work, not to
+   using the addon in your own project.
+
+A few terms, unpacked: **Prolog** is a logic language of facts and rules with a query engine;
+**GDExtension** is Godot's native (C++) plugin mechanism; a **viseme** is the mouth shape for a
+speech sound; **radiant quests** are procedurally generated side-quests (here, deterministically —
+same inputs always yield the same quests).
+
+## Getting started
 
 1. Copy the `addons/insimul/` folder into your project's `res://addons/` directory.
-2. Go to **Project → Project Settings → Plugins** and enable **Insimul**.
-3. The `InsimulClient` autoload singleton is registered automatically.
+2. In **Project → Project Settings → Plugins**, enable **Insimul**. The `InsimulClient` autoload
+   registers automatically.
+3. Select the **InsimulClient** autoload and set `server_url` (default `http://localhost:8080`),
+   and `api_key` / `world_id` / `language_code` as needed.
 
-## Quick Start
-
-### Configure the client
-
-Select the **InsimulClient** autoload in your scene tree and set these properties in the Inspector:
-
-| Property        | Description                                      |
-|-----------------|--------------------------------------------------|
-| `server_url`    | Insimul server URL (e.g. `http://localhost:5000`) |
-| `api_key`       | API key for authentication (optional)             |
-| `world_id`      | World ID to scope conversations                   |
-| `language_code` | Default language (e.g. `en`, `fr`, `es`)          |
-
-### Add conversation to an NPC
-
-1. Add an **InsimulNPC** node as a child of your NPC's `CharacterBody3D`.
-2. Set the `character_id` property to the Insimul character ID.
-3. Connect to the NPC's signals:
+Then give a character a voice — add an `InsimulNPC` node under it, set its `character_id`, and
+connect its signals:
 
 ```gdscript
 @onready var npc := $InsimulNPC
 
-func _ready():
+func _ready() -> void:
     npc.text_received.connect(_on_text)
-    npc.conversation_started.connect(_on_started)
-    npc.conversation_ended.connect(_on_ended)
 
-func talk_to_npc():
+func talk_to_npc() -> void:
     npc.start_conversation()
     npc.send_text("Hello!")
 
-func _on_text(text: String, is_final: bool):
+func _on_text(text: String, is_final: bool) -> void:
     print("NPC says: ", text)
 ```
 
-### Audio playback (TTS)
+That's a complete conversation. To add streamed voice, lip-sync, and microphone input — and to
+see the full signal reference — follow the walkthrough below.
 
-Add an **InsimulAudioPlayer** as a child of the NPC and connect it:
+> The runtime features (Prolog, saves, quests) additionally require the GDExtension to be built;
+> see [`gdextension/README.md`](gdextension/README.md) for the toolchain and build steps.
 
-```gdscript
-@onready var audio_player := $InsimulAudioPlayer
-@onready var npc := $InsimulNPC
+## Learn by example
 
-func _ready():
-    npc.audio_chunk_received.connect(func(chunk):
-        audio_player.queue_chunk(chunk)
-    )
-```
-
-### Lip sync
-
-Add an **InsimulLipSync** node and set `target_mesh` to the NPC's `MeshInstance3D` with blend shapes:
-
-```gdscript
-@onready var lip_sync := $InsimulLipSync
-@onready var npc := $InsimulNPC
-
-func _ready():
-    npc.facial_data_received.connect(func(data):
-        lip_sync.queue_facial_data(data)
-    )
-```
-
-### Microphone input
-
-Add an **InsimulMicrophone** node for voice input:
-
-```gdscript
-@onready var mic := $InsimulMicrophone
-@onready var npc := $InsimulNPC
-
-func _on_push_to_talk_pressed():
-    mic.start_recording()
-
-func _on_push_to_talk_released():
-    var audio_data := mic.stop_recording()
-    npc.send_audio(audio_data)
-```
+- **[Conversation walkthrough](docs/conversation-walkthrough.md)** — one AI character end to end:
+  configure, talk, hear (TTS), see (lip-sync), and answer (microphone), plus the complete signal
+  reference and how to run against a local LLM.
+- **[The runtime: worlds, saves, and quests](docs/runtime-and-worlds.md)** — the native side: the
+  Prolog world state, the save/quest/world classes, the one-call boot loop, and deterministic
+  radiant quest generation.
 
 ## Components
 
-| Component              | Description                                                |
-|------------------------|------------------------------------------------------------|
-| `InsimulClient`        | Autoload singleton — manages server connection and session |
-| `InsimulNPC`           | Node — attach to any NPC for conversation                  |
-| `InsimulAudioPlayer`   | Node — streams TTS audio to AudioStreamPlayer3D            |
-| `InsimulLipSync`       | Node — applies viseme data to blend shapes                 |
-| `InsimulMicrophone`    | Node — captures microphone audio for voice input           |
-| `InsimulHttpClient`    | RefCounted — HTTP/SSE transport (internal)                 |
-| `InsimulTypes`         | RefCounted — shared type definitions                       |
-| `InsimulCore`          | RefCounted — the `@insimul/core` bridge (JSON in / JSON out) |
-| `InsimulRadiantSource` | RefCounted — radiant quest generation, through core         |
+| Component | Kind | What it does |
+| --- | --- | --- |
+| `InsimulClient` | autoload | Manages the server connection and session for the whole game. |
+| `InsimulNPC` | node | Attach to any NPC to give it a conversation. |
+| `InsimulAudioPlayer` | node | Streams TTS audio into an `AudioStreamPlayer3D`. |
+| `InsimulLipSync` | node | Applies viseme data to a mesh's blend shapes. |
+| `InsimulMicrophone` | node | Captures microphone audio for voice input. |
+| `InsimulHttpClient` | `RefCounted` | HTTP/SSE transport (internal). |
+| `InsimulTypes` | `RefCounted` | Shared conversation-event type definitions. |
+| `InsimulProlog` | GDExtension | Native Prolog engine (query/assert/retract/snapshot). |
+| `InsimulRuntime` / `InsimulSaveSystem` / `InsimulQuestSystem` / `InsimulWorldSource` / `InsimulContentLibrary` / `InsimulRadiantSource` | `RefCounted` | The portable runtime — see [the runtime doc](docs/runtime-and-worlds.md). |
 
-### Radiant quests from `@insimul/core`
+## Repository layout
 
-`InsimulRadiantSource` is the first slice of the shared runtime core this plugin
-adopts: core's own deterministic, Prolog-driven quest generator, called across a
-C ABI rather than re-implemented here.
-
-```gdscript
-var radiant := InsimulRadiantSource.new()
-var quests := radiant.generate(world_facts, radiant.base_templates().split("\n"), "my-seed", world_time)
-for quest in quests:
-    prolog.consult(quest["questContent"])
-    for fact in quest["factsToRetract"]:
-        prolog.retract_fact(fact)
-    for fact in quest["factsToAssert"]:
-        prolog.assert_fact(fact)
-```
-
-Same seed, same world, same time ⇒ byte-identical quests, on every engine — the
-shared corpus `conformance/radiant/*.json` pins it (`npm run test:radiant`).
-`generate()` is a **decision-rate** call: tick it when the director should offer
-new work, never from `_process`. Set `source = InsimulRadiantSource.SOURCE_NONE`
-for pre-adoption behaviour (no generation). How the bridge works, and why the
-boundary is a C ABI rather than a language, is in
-[`gdextension/corebridge/README.md`](gdextension/corebridge/README.md).
-
-## Signals Reference
-
-### InsimulClient
-- `text_received(chunk: InsimulTypes.TextChunk)`
-- `audio_chunk_received(chunk: InsimulTypes.AudioChunk)`
-- `facial_data_received(data: InsimulTypes.FacialData)`
-- `action_trigger_received(action: InsimulTypes.ActionTrigger)`
-- `conversation_started(session_id: String)`
-- `conversation_ended(session_id: String)`
-- `error_occurred(message: String)`
-
-### InsimulNPC
-- `text_received(text: String, is_final: bool)`
-- `audio_chunk_received(chunk: InsimulTypes.AudioChunk)`
-- `facial_data_received(data: InsimulTypes.FacialData)`
-- `action_trigger_received(action: InsimulTypes.ActionTrigger)`
-- `conversation_started()`
-- `conversation_ended()`
-- `error_occurred(message: String)`
-
-## Type provenance
-
-Insimul's GDScript types fall into three tiers. **Only the *generated* tier is
-derived from the canonical `@insimul/core` schemas** (regenerate with
-`npm run codegen` from the `insimul-runtime` root); the others are hand-maintained
-and stay that way.
-
-| Tier | Files | Source of truth | Editable? |
-| --- | --- | --- | --- |
-| **Generated** | `addons/insimul/generated/{InsimulSaveFile,InsimulSaveFileEnvelope,InsimulWorldIR}.gd` — Godot 4 `class_name` DTOs with `from_dict`/`to_dict` | `packages/core/schemas/{save-file,save-envelope,world-ir}.schema.json` | **No** — `npm run codegen`, drift-guarded (`codegen:verify-gdscript`) |
-| **Hand-written (SDK)** | `addons/insimul/insimul_types.gd` (`InsimulTypes` — proto-derived conversation event types), `insimul_world_export.gd` (the distilled offline-export shape), and the addon runtime (`insimul_client.gd`, `insimul_npc.gd`, `insimul_http_client.gd`, `insimul_local_provider.gd`, audio/mic/lipsync) | Hand-maintained (engine-facing / proto-derived) | **Yes** |
-| **Template-legacy** | `templates/scripts/**/*.gd` (e.g. `systems/save_system.gd`, `core/data_loader.gd`, the world generators) — game-side scripts vendored into exported games | Hand-maintained | Retired by the per-engine Godot runtime PRD — **not** this PRD |
-
-**Why nothing in the addon was migrated to the generated classes:** no live addon
-type duplicates a generated schema DTO. `insimul_world_export.gd` parses the
-*distilled offline export* (`GET /api/conversation/export/{worldId}` →
-`world_export.json`) — a flattened dialogue-context shape, **not** the full
-`InsimulWorldIR` — so it stays hand-written. New save/world-IR code should parse
-into the generated classes and read fields off them (see the boundary convention
-in `addons/insimul/generated/README.md`).
-
-## Documents
-
-| file | what it is |
+| Path | Contents |
 | --- | --- |
-| [`MIGRATION.md`](MIGRATION.md) | what changed when the template moved off the fake Prolog engine, and the portable runtime core (US-GC1..GC4) |
-| [`VERIFICATION.md`](VERIFICATION.md) | every gate in this repo — the ones that run on any box, and the human checklists that need a `godot` binary |
-| [`RUNTIME_CORE_ADOPTION.md`](RUNTIME_CORE_ADOPTION.md) | the plan for adopting `@insimul/core`: what this engine keeps, what it adopts, the first slice — and the cross-engine **language-boundary decision** (§4) that Unity, Unreal and Babylon inherit |
-| [`gdextension/corebridge/README.md`](gdextension/corebridge/README.md) | `libinsimulcore` — how `@insimul/core`'s TypeScript actually runs from a native engine, and how to adopt more of it |
-| [`conformance/VENDORED.md`](conformance/VENDORED.md) | where the vendored cross-engine corpus comes from, and the drift guard that keeps it honest |
+| [`addons/insimul/`](addons/insimul/) | The drop-in Godot addon: conversation nodes, the runtime classes, editor docks, and generated DTOs. |
+| [`gdextension/`](gdextension/) | The native C++ core — `InsimulProlog` and the save/quest/world cores — plus `corebridge/`, which runs the shared runtime core behind a C ABI. |
+| [`templates/`](templates/) | The game-template tree the Insimul platform copies into exported Godot games. |
+| [`conformance/`](conformance/) | Vendored cross-engine test corpus that pins runtime parity. |
+| [`tools/`](tools/) · [`scripts/`](scripts/) | Verification, vendoring (drift guards), and release tooling. |
+| `docs/` | The walkthroughs and contributor guides linked from this README. |
 
-## Supported Versions
+## Going deeper
+
+Each of these top-level documents covers one concern in depth; open the one that matches what
+you're doing.
+
+| Document | When to read it |
+| --- | --- |
+| [`docs/conversation-walkthrough.md`](docs/conversation-walkthrough.md) | You're wiring up AI dialogue and want the full node/signal picture. |
+| [`docs/runtime-and-worlds.md`](docs/runtime-and-worlds.md) | You're using the native runtime — worlds, saves, quests, radiant generation. |
+| [`docs/export-pipeline.md`](docs/export-pipeline.md) | You're a contributor: the game-template export flow, how the generated types are produced, and how a release is staged. |
+| [`gdextension/README.md`](gdextension/README.md) | You need the native Prolog API surface and how to build the GDExtension. |
+| [`gdextension/corebridge/README.md`](gdextension/corebridge/README.md) | You want to know how a native engine runs the shared runtime core, and why the boundary is a C ABI. |
+| [`MIGRATION.md`](MIGRATION.md) | You care about the switch from the old fake substring "Prolog" stub to the real native engine, and the portable runtime. |
+| [`RUNTIME_CORE_ADOPTION.md`](RUNTIME_CORE_ADOPTION.md) | The plan for adopting the shared runtime core — what this engine keeps vs. adopts, and the cross-engine language-boundary decision. |
+| [`VERIFICATION.md`](VERIFICATION.md) | Every quality gate here — the ones that run on any machine, and the human checklists that need a `godot` binary. |
+| [`conformance/VENDORED.md`](conformance/VENDORED.md) | Where the vendored parity corpus comes from and the drift guard that keeps it honest. |
+| [`CHANGELOG.md`](CHANGELOG.md) | What changed, release by release. |
+
+## Supported versions
 
 - Godot **4.2+**
 
-## Export pipeline: what gets copied and substituted
-
-Everything under [`templates/`](templates/) is a **game-template tree** the Insimul
-platform export pipeline (`insimul-platform/scripts/copy-templates.js`, resolved
-through `server/services/game-export/template-paths.ts`) copies **verbatim** into a
-generated Godot game project when a creator exports a world for this engine. The
-platform then substitutes `{{UPPER_SNAKE_CASE}}` placeholder tokens in the text files
-with values derived from the exported world (world name, genre, counts, palette
-colors, player/combat tuning, etc.).
-
-- **The contract is machine-checked.** [`templates/TEMPLATE_MANIFEST.json`](templates/TEMPLATE_MANIFEST.json)
-  is the authoritative list of every file the pipeline copies and the exact set of
-  placeholders each file bears. Root `npm run engines:templates` is the drift guard:
-  it fails if the manifest and the tree disagree, if a placeholder-bearing file is
-  unlisted, or if any template file reaches into another engine package. Regenerate
-  after editing templates with
-  `node scripts/engines/validate-templates.mjs --write`.
-- **Placeholder syntax:** `{{TOKEN}}` where `TOKEN` is upper snake case (e.g.
-  `{{WORLD_NAME}}`, `{{TERRAIN_SIZE}}`, `{{ROAD_COLOR_R}}`). See the manifest's
-  top-level `placeholders` array for the full set this package uses.
-- **Dependency rule:** template files depend only on (a) this package, (b) generated
-  code, and (c) exported world-data JSON — never on `packages/unity` or
-  `packages/unreal`. The guard enforces the no-cross-engine-reach-in rule.
-
-## Releasing
-
-`node scripts/release/build-assetlib-zip.mjs` stages `addons/insimul/**` (plus
-docs, excluding `templates/`) into `dist/insimul-godot/`, zips it to
-`dist/insimul-godot-<version>.zip` in Asset Library layout, and asserts the file
-set. It does **not** publish. See the repo-root `docs/RELEASING.md` for the full
-version-bump + submission flow (`VERSIONS.json` is the single version source).
-
 ## License
 
-MIT
+MIT — see [`LICENSE`](LICENSE).
