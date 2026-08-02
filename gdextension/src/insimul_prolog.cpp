@@ -61,25 +61,34 @@ InsimulProlog::~InsimulProlog() {
 	}
 }
 
+// libinsimul reports success as **0** and error as -1 (vendor/insimul/insimul.h).
+// The stale contract copy this file was written against claimed the opposite, so
+// every mutating call used to return the inverse of what happened; tasklist 100
+// US-2 caught it by linking the real library. Keep this named constant in front
+// of the reader — `rc == 0` alone reads like a mistake.
+static constexpr int INSIMUL_OK = 0;
+
 bool InsimulProlog::consult(const String &source) {
 	if (!kb_) {
 		return false;
 	}
-	return insimul_kb_consult(kb_, source.utf8().get_data()) != 0;
+	return insimul_kb_consult(kb_, source.utf8().get_data()) == INSIMUL_OK;
 }
 
 bool InsimulProlog::assert_fact(const String &fact) {
 	if (!kb_) {
 		return false;
 	}
-	return insimul_kb_assert(kb_, fact.utf8().get_data()) != 0;
+	return insimul_kb_assert(kb_, fact.utf8().get_data()) == INSIMUL_OK;
 }
 
+// Returns true only when a clause was actually removed: libinsimul answers 0 for
+// "removed", 1 for "nothing matched" (not an error) and -1 for a real error.
 bool InsimulProlog::retract_fact(const String &fact) {
 	if (!kb_) {
 		return false;
 	}
-	return insimul_kb_retract(kb_, fact.utf8().get_data()) != 0;
+	return insimul_kb_retract(kb_, fact.utf8().get_data()) == INSIMUL_OK;
 }
 
 bool InsimulProlog::binding_json_to_dictionary(const char *json, Dictionary &out) {
@@ -125,7 +134,7 @@ bool InsimulProlog::restore(const String &image) {
 	if (!kb_) {
 		return false;
 	}
-	return insimul_kb_restore(kb_, image.utf8().get_data()) != 0;
+	return insimul_kb_restore(kb_, image.utf8().get_data()) == INSIMUL_OK;
 }
 
 String InsimulProlog::last_error() const {

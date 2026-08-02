@@ -34,11 +34,51 @@ The `InsimulProlog` class links **libinsimul**, the shared native Prolog core
 
 | Field       | Value                                                        |
 |-------------|--------------------------------------------------------------|
-| Source      | `insimul-native/` (plan §3.1) — becomes its own submodule    |
+| Source      | `insimul-native/` (`native/`) — its own submodule            |
+| Pin         | commit `a9287b579c2f998f78ef94c5f19bc3290dc397a2`, libinsimul 0.1.0, Trealla v2.106.1 |
 | Consumption | `insimul-native/dist/<platform>/` per `docs/consuming.md`    |
-| Header      | `vendor/insimul/insimul.h` here is a **contract copy** of the ABI |
+| Header      | `vendor/insimul/insimul.h` — a **verbatim copy** of the shipping header |
 | License     | see `insimul-native/THIRD_PARTY.md` (Trealla: MIT)           |
 
-Until libinsimul-bootstrap lands, `vendor/insimul/insimul.h` stands in for the
-real dist header so the wrapper is syntax-gated against the exact ABI. Replace it
-with the shipped header (and drop the libs under `bin/`) when consuming a build.
+`vendor/insimul/insimul.h` used to be a hand-written *contract copy* written
+before the library existed, and tasklist 100 US-2 — the first story to actually
+LINK libinsimul rather than syntax-gate against it — found it wrong on three
+counts, including the return-code polarity of every mutating call. It is now a
+verbatim copy of the shipping header. Re-copy it when the ABI moves; never edit
+it in place.
+
+## QuickJS (embedded JS engine for libinsimulcore)
+
+`corebridge/` embeds **QuickJS** to run `@insimul/core`'s TypeScript behind a C
+ABI — see `corebridge/README.md` and `RUNTIME_CORE_ADOPTION.md` §4.5.
+
+| Field       | Value                                                         |
+|-------------|---------------------------------------------------------------|
+| Upstream    | https://bellard.org/quickjs/ (Fabrice Bellard, Charlie Gordon) |
+| Pin         | `2025-04-26` (`corebridge/vendor/quickjs/VERSION`)            |
+| License     | MIT (`corebridge/vendor/quickjs/LICENSE`)                     |
+| Vendoring   | source drop, **unmodified**, in `corebridge/vendor/quickjs/`  |
+
+Vendored rather than submoduled for the same reason libinsimul vendors Trealla:
+it is a small, dependency-free C source set, and a plugin that a game developer
+unzips into `addons/` cannot ask them to init submodules. Only the engine core
+is taken — `quickjs-libc` is deliberately excluded, so the embedded runtime has
+no filesystem, process or network access at all.
+
+Bump by replacing the files and the `VERSION` stamp together, then re-running
+`npm run test:radiant`.
+
+## `@insimul/core` bundle (generated)
+
+`corebridge/vendor/core/` holds `@insimul/core`, bundled to a single script and
+embedded as a C array. It is a **generated build artifact**, not third-party
+code and not hand-written: regenerate it with `npm run vendor:core -- --core
+<path-to-packages/core>`. Provenance (source commit, module list, hash) is in
+`corebridge/vendor/core/VENDORED.json`; `npm run check` fails if the artifacts
+drift from each other.
+
+| Field       | Value                                                    |
+|-------------|----------------------------------------------------------|
+| Source      | `@insimul/core` (`packages/core`), Apache-2.0            |
+| Generator   | `tools/vendor-core-bundle.mjs` (esbuild)                 |
+| Provenance  | `corebridge/vendor/core/VENDORED.json`                   |

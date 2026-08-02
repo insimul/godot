@@ -25,7 +25,32 @@ if os.path.isdir(os.path.join(insimul_dist, "lib")):
     env.Append(LIBPATH=[os.path.join(insimul_dist, "lib")])
     env.Append(LIBS=["insimul"])
 
-sources = Glob("src/*.cpp")
+# libinsimulcore (corebridge/): `@insimul/core` running in an embedded QuickJS
+# behind the insimulcore.h C ABI — see corebridge/README.md and
+# RUNTIME_CORE_ADOPTION.md §4.5. Vendored third-party C is compiled with warnings
+# off; it is not ours to lint, and QuickJS is warning-noisy by design.
+quickjs_version = open("corebridge/vendor/quickjs/VERSION").read().strip()
+bridge_env = env.Clone()
+bridge_env.Append(CPPPATH=[
+    "corebridge/include", "corebridge/vendor/quickjs", "corebridge/vendor/core", insimul_dist,
+])
+bridge_env.Append(CPPDEFINES=[("CONFIG_VERSION", '\\"%s\\"' % quickjs_version)])
+
+vendor_env = bridge_env.Clone()
+vendor_env.Append(CCFLAGS=["/w"] if env.get("is_msvc") else ["-w"])
+
+corebridge_objects = [
+    vendor_env.SharedObject(source)
+    for source in Glob("corebridge/vendor/quickjs/*.c") + Glob("corebridge/vendor/core/*.c")
+] + [
+    bridge_env.SharedObject(source) for source in Glob("corebridge/src/*.c")
+]
+
+# src/insimul_core.cpp includes the ABI header by relative path, so only the
+# vendored-bundle include dir has to reach the C++ side.
+env.Append(CPPPATH=["corebridge/include"])
+
+sources = Glob("src/*.cpp") + corebridge_objects
 
 if env["platform"] == "macos":
     library = env.SharedLibrary(

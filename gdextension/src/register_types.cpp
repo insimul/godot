@@ -1,4 +1,4 @@
-// register_types.cpp — registers InsimulProlog with Godot's ClassDB and wires
+// register_types.cpp — registers the Insimul classes with Godot's ClassDB and wires
 // the GDExtension entry symbol referenced by insimul.gdextension.
 //
 // Syntax-gated only (needs godot-cpp). Follows the standard godot-cpp 4.x
@@ -6,6 +6,7 @@
 
 #include "register_types.h"
 
+#include "insimul_core.h"
 #include "insimul_prolog.h"
 #include "insimul_quest_core.h"
 #include "insimul_runtime_core.h"
@@ -22,6 +23,7 @@ void initialize_insimul_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+	GDREGISTER_CLASS(InsimulCore);
 	GDREGISTER_CLASS(InsimulProlog);
 	GDREGISTER_CLASS(InsimulQuestCore);
 	GDREGISTER_CLASS(InsimulRuntimeCore);
