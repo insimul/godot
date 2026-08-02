@@ -140,6 +140,15 @@ type duplicates a generated schema DTO. `insimul_world_export.gd` parses the
 into the generated classes and read fields off them (see the boundary convention
 in `addons/insimul/generated/README.md`).
 
+## Documents
+
+| file | what it is |
+| --- | --- |
+| [`MIGRATION.md`](MIGRATION.md) | what changed when the template moved off the fake Prolog engine, and the portable runtime core (US-GC1..GC4) |
+| [`VERIFICATION.md`](VERIFICATION.md) | every gate in this repo — the ones that run on any box, and the human checklists that need a `godot` binary |
+| [`RUNTIME_CORE_ADOPTION.md`](RUNTIME_CORE_ADOPTION.md) | the plan for adopting `@insimul/core`: what this engine keeps, what it adopts, the first slice — and the cross-engine **language-boundary decision** (§4) that Unity, Unreal and Babylon inherit |
+| [`conformance/VENDORED.md`](conformance/VENDORED.md) | where the vendored cross-engine corpus comes from |
+
 ## Supported Versions
 
 - Godot **4.2+**
