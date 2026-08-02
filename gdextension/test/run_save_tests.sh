@@ -19,9 +19,17 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(dirname "$here")"                          # packages/godot/gdextension
-pkg_godot="$(cd "$root/.." && pwd)"                 # packages/godot
-packages_dir="$(cd "$pkg_godot/.." && pwd)"        # packages
-fixtures="$packages_dir/core/conformance/saves"
+pkg_godot="$(cd "$root/.." && pwd)"                 # the plugin repo root
+# Prefer the corpus vendored into this repo (it is standalone by design); fall
+# back to the monorepo sibling layout. Without this fallback the gate silently
+# fails on every fixture path in a standalone checkout — see
+# RUNTIME_CORE_ADOPTION.md §6.4.
+if [ -d "$pkg_godot/conformance/saves" ]; then
+	conformance="$pkg_godot/conformance"
+else
+	conformance="$(cd "$pkg_godot/.." && pwd)/core/conformance"
+fi
+fixtures="$conformance/saves"
 crosscheck="$pkg_godot/tools/cross-check"
 out="$(mktemp -d)"
 trap 'rm -rf "$out"' EXIT

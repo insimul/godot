@@ -3,7 +3,9 @@
   "private": true,
   "description": "Insimul Godot engine plugin (GDExtension + addon + game template)",
   "scripts": {
-    "check": "node tools/verify-godot/check.mjs",
-    "test:conformance": "bash gdextension/test/run_conformance.sh"
+    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check",
+    "test:conformance": "bash gdextension/test/run_conformance.sh",
+    "test:radiant": "bash gdextension/test/run_radiant_tests.sh",
+    "vendor:core": "node tools/vendor-core-bundle.mjs"
   }
 }

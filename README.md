@@ -98,6 +98,33 @@ func _on_push_to_talk_released():
 | `InsimulMicrophone`    | Node — captures microphone audio for voice input           |
 | `InsimulHttpClient`    | RefCounted — HTTP/SSE transport (internal)                 |
 | `InsimulTypes`         | RefCounted — shared type definitions                       |
+| `InsimulCore`          | RefCounted — the `@insimul/core` bridge (JSON in / JSON out) |
+| `InsimulRadiantSource` | RefCounted — radiant quest generation, through core         |
+
+### Radiant quests from `@insimul/core`
+
+`InsimulRadiantSource` is the first slice of the shared runtime core this plugin
+adopts: core's own deterministic, Prolog-driven quest generator, called across a
+C ABI rather than re-implemented here.
+
+```gdscript
+var radiant := InsimulRadiantSource.new()
+var quests := radiant.generate(world_facts, radiant.base_templates().split("\n"), "my-seed", world_time)
+for quest in quests:
+    prolog.consult(quest["questContent"])
+    for fact in quest["factsToRetract"]:
+        prolog.retract_fact(fact)
+    for fact in quest["factsToAssert"]:
+        prolog.assert_fact(fact)
+```
+
+Same seed, same world, same time ⇒ byte-identical quests, on every engine — the
+shared corpus `conformance/radiant/*.json` pins it (`npm run test:radiant`).
+`generate()` is a **decision-rate** call: tick it when the director should offer
+new work, never from `_process`. Set `source = InsimulRadiantSource.SOURCE_NONE`
+for pre-adoption behaviour (no generation). How the bridge works, and why the
+boundary is a C ABI rather than a language, is in
+[`gdextension/corebridge/README.md`](gdextension/corebridge/README.md).
 
 ## Signals Reference
 
@@ -147,6 +174,7 @@ in `addons/insimul/generated/README.md`).
 | [`MIGRATION.md`](MIGRATION.md) | what changed when the template moved off the fake Prolog engine, and the portable runtime core (US-GC1..GC4) |
 | [`VERIFICATION.md`](VERIFICATION.md) | every gate in this repo — the ones that run on any box, and the human checklists that need a `godot` binary |
 | [`RUNTIME_CORE_ADOPTION.md`](RUNTIME_CORE_ADOPTION.md) | the plan for adopting `@insimul/core`: what this engine keeps, what it adopts, the first slice — and the cross-engine **language-boundary decision** (§4) that Unity, Unreal and Babylon inherit |
+| [`gdextension/corebridge/README.md`](gdextension/corebridge/README.md) | `libinsimulcore` — how `@insimul/core`'s TypeScript actually runs from a native engine, and how to adopt more of it |
 | [`conformance/VENDORED.md`](conformance/VENDORED.md) | where the vendored cross-engine corpus comes from |
 
 ## Supported Versions

@@ -1,5 +1,14 @@
 # Adopting `@insimul/core` in the Godot plugin — the adoption plan (US-1 of 100)
 
+> **US-2 has landed, and the plan held.** `libinsimulcore` exists
+> (`gdextension/corebridge/`), and all **11** radiant conformance vectors pass
+> through core's real TypeScript running in an embedded QuickJS on the natively
+> linked Trealla — `npm run test:radiant`. The language boundary of §4 is no
+> longer a proposal. Two things the plan did not predict were found by being the
+> first code to actually *link* libinsimul: §6.6 (the vendored ABI header was
+> wrong, and the Prolog wrapper inverted every result because of it) and §6.7 (a
+> libinsimul KB-lifecycle crash). §6.4's three broken gates are fixed and green.
+
 **Status: design document. No code changes accompany it.** It reads
 `packages/core/docs/runtime-contract.md` (US-4 of `93-runtime-logic-to-core`) and
 turns it into a concrete plan for *this* repo — its GDScript classes, its
@@ -19,7 +28,7 @@ and only for the decision layer. The first slice is **radiant quest generation**
 (§5). The recommended boundary is **one C ABI — `libinsimulcore` — shaped exactly
 like `libinsimul`'s**, with TypeScript running behind it inside an embedded JS
 engine today and Rust behind the *same* ABI later (§4). §7 lists what we should
-*not* adopt, and §6 lists five things this repo believes about itself that turned
+*not* adopt, and §6 lists seven things this repo believes about itself that turned
 out to be false.
 
 ---
@@ -397,7 +406,7 @@ InsimulRadiantSource  (addons/insimul/runtime/radiant_source.gd)  ← the ONLY t
 InsimulCore  (gdextension/src/insimul_core.{h,cpp})               ← RefCounted wrapper, mirrors InsimulProlog
         │  C ABI: insimul_core_call(handle, "radiant.generate", json)
         ▼
-libinsimulcore  (native/) = QuickJS + the vendored @insimul/core bundle
+libinsimulcore  (gdextension/corebridge/) = QuickJS + the vendored core bundle
 ```
 
 One-way by construction: core never learns a Godot type, and this repo gains no
@@ -420,7 +429,10 @@ answer while appearing to succeed.
 
 ---
 
-## 6. Five things that turned out to be false
+## 6. Seven things that turned out to be false
+
+*(Five found by US-1's audit; §6.6 and §6.7 added by US-2, which found them by
+linking libinsimul for the first time.)*
 
 Recorded because the next three tasklists will otherwise inherit them.
 
@@ -483,6 +495,66 @@ Every failure is a missing path, not a semantic disagreement. But **US-3 cannot
 claim a gate that does not run**, so giving the three C++ gates the same
 vendored-first fallback is the first task of US-2 — a handful of lines, and it
 restores the repo's own stated merge gate.
+
+> **Fixed in US-2.** All three now resolve the vendored corpus first and pass at
+> exactly the counts VERIFICATION.md states: save **58/0**, quest **33/0**,
+> bootstrap **42/0**. No test logic changed — only the path resolution.
+
+### 6.6 The vendored libinsimul header was wrong, and the wrapper believed it
+
+`gdextension/vendor/insimul/insimul.h` was written *before* libinsimul existed —
+a hand-authored "contract copy" the C++ was syntax-gated against. US-2 is the
+first story to LINK the shipping library, and the copy turned out to disagree
+with it on three points:
+
+| | the vendored copy said | libinsimul actually does |
+| --- | --- | --- |
+| `consult` / `assert` / `restore` | 1 = success, 0 = error | **0 = success, -1 = error** |
+| `retract` | 1 = success | **0 = removed, 1 = nothing matched, -1 = error** |
+| `last_error` when clear | `""` | **`NULL`** |
+| `assert` / `retract` argument | `"quest(q1, active)."` | term text **without** the trailing full stop |
+
+The polarity error was live: `insimul_prolog.cpp` tested `!= 0`, so
+`InsimulProlog.consult()` returned **`false` on success and `true` on failure**,
+and likewise for `assert_fact`, `retract_fact` and `restore`. Nothing caught it
+because nothing had ever linked the library — the host gates deliberately avoid
+it, and the GDScript end-to-end runner needs a Godot binary.
+
+Fixed in US-2: the header is now a verbatim copy of the shipping one, and the
+four call sites compare against a named `INSIMUL_OK`. **The lesson generalises to
+98 and 99** — Unity and Unreal carry their own copies of this ABI, written from
+the same source. Check their polarity before trusting a green syntax gate.
+
+### 6.7 libinsimul crashes when a KB is created after the live count reaches zero
+
+Reproduced with no Godot, no QuickJS and no core involved — create a KB, use it,
+destroy it, create another, use that one:
+
+```c
+for (int i = 0; i < 3; i++) {
+	insimul_kb *kb = insimul_kb_create();
+	insimul_kb_consult(kb, "threat_species(wolves).\n");
+	insimul_query *q = insimul_query_start(kb, "threat_species(X)");   /* SIGTRAP on i == 1 */
+	while (insimul_query_next(q)) {}
+	insimul_query_stop(q);
+	insimul_kb_destroy(kb);
+}
+```
+
+Keeping any one KB alive across the cycle makes it disappear, which points at a
+global engine bootstrap torn down with the last KB and not surviving
+re-initialisation.
+
+This is not academic: a radiant tick builds a **throwaway** KB and releases it
+(`radiant-engine.ts` destroys it deliberately, because wasm has no finalizers),
+so a game ticking its director would hit this on the second tick.
+
+`libinsimulcore` works around it by holding one `keepalive` KB open for the
+lifetime of the handle — a few KB of memory, and the comment in
+`corebridge/src/insimulcore.c` says to delete it when the library is fixed. **The
+fix belongs in `native/`, which is outside this tasklist's worktree**, so it is
+reported rather than fixed here. Unity and Unreal will hit the same wall the
+moment they create and release KBs.
 
 ### 6.5 The Prolog conformance gate does not run Prolog
 
@@ -550,7 +622,7 @@ outcome for part of this surface:
 
 | story | work |
 | --- | --- |
-| **US-2** | (a) fix the three host gates' corpus resolution (§6.4) — a prerequisite, not a nicety; (b) build `libinsimulcore` in `native/` + vendor its bundle here; (c) `InsimulCore` GDExtension wrapper; (d) `InsimulRadiantSource` as the single translation site, selectable `core` \| `none`. |
+| **US-2** ✅ | (a) three host gates fixed, 58/33/42 green; (b) `libinsimulcore` built — in `gdextension/corebridge/`, **not** `native/`, because that is a sibling submodule outside this worktree; the header is the part that must not fork when it moves; (c) `InsimulCore` GDExtension wrapper; (d) `InsimulRadiantSource` as the single translation site, selectable `core` \| `none`. All 11 vectors pass. |
 | **US-3** | (a) `run_radiant_tests.sh` over all **11** vectors, count asserted non-zero **and** equal to 11; (b) re-vendor the drifted Prolog corpus to the full 76 (§6.3) and say so; (c) the hydration/radiant-tick diff of §5.3, each difference classified fix / tolerable / regression; (d) retain option D's `quest_system.cpp` with the reason recorded — do not delete a passing implementation on the strength of one slice. |
 
 ---

@@ -600,3 +600,85 @@ pause-menu / save-slot shared matrices + the real SHA-256 corrupted-envelope cha
 `run_dialogue_menu_save_headless.sh` SKIPs without a `godot` binary as designed). The
 human full-loop checklist above is unchecked pending a `godot` binary — reviewed at
 merge (`autoMerge` is off).
+
+---
+
+# `@insimul/core` adoption verification (tasklist 100, US-2)
+
+The first slice of the shared runtime core — **radiant quest generation** —
+running through `libinsimulcore` (`gdextension/corebridge/`). This is the gate
+that proves the language-boundary decision of `RUNTIME_CORE_ADOPTION.md` §4:
+core's real TypeScript, in an embedded QuickJS, on the natively linked Trealla,
+against the same 11 vectors `packages/core` runs.
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:radiant                                        # source=core
+bash gdextension/test/run_radiant_tests.sh --source none    # pre-adoption leg
+```
+
+Expect **11 cases executed / 5 areas / 0 failures** on the `core` leg. The count
+is *asserted*, not merely printed: an empty corpus dir, a shrunken corpus, a
+missing area file, a duplicate case name or a bundle that no longer exposes
+`radiant.generate` all fail the gate. This repo has shipped gates that could not
+fail; this one can.
+
+The `none` leg reproduces pre-adoption behaviour (no generation) and reports
+**7 differences** — the four cases that expect zero quests agree, the seven that
+expect quests are the capability core adds. That table is the input to US-3's
+fix / tolerable / regression classification.
+
+> **Unlike every other host gate here, this one links libinsimul**, because
+> core's radiant algorithm is Prolog-driven and the whole point of the adoption
+> is that it runs on the engine this plugin already ships rather than a wasm copy
+> of it. It therefore **fails loudly** when the library is absent rather than
+> skipping. Point it at a build with `INSIMUL_NATIVE_DIR=<insimul-native
+> checkout>` or `INSIMUL_NATIVE_DIST=<dist/platform>`; otherwise it probes the
+> usual sibling layouts. No cmake, scons, godot-cpp or Godot binary is needed —
+> it builds QuickJS and the bridge with a plain C/C++ compiler in a few seconds.
+
+## Runs on any box, no libinsimul
+
+```sh
+npm run check          # GDScript structural lint + vendored-bundle drift guard
+```
+
+The second half verifies that `corebridge/vendor/core/`'s bundle, its generated C
+array and its `VENDORED.json` provenance all agree. To check for drift against
+core *itself* — which needs a checkout that has `packages/core` — add `--core`:
+
+```sh
+node tools/vendor-core-bundle.mjs --check --core ../babylon/packages/core
+```
+
+That re-bundles and diffs byte-for-byte, so a core change under an adopted method
+cannot slip in unnoticed.
+
+## Status on this machine
+
+| gate | result |
+| --- | --- |
+| `npm run check` | ✅ 173 `.gd` files structurally sound; bundle artifacts consistent |
+| `node tools/vendor-core-bundle.mjs --check --core …` | ✅ re-bundle reproduces the vendored artifact byte-for-byte |
+| `npm run test:conformance` | ✅ 7 files, 41 cases, 41 passed |
+| `npm run test:radiant` | ✅ **11 cases, 5 areas, 0 failures** |
+| `run_radiant_tests.sh --source none` | ✅ runs, reports 7 differences (expected) |
+| `bash gdextension/test/run_host_tests.sh` | ✅ 24/24 |
+| `bash gdextension/test/run_save_tests.sh` | ✅ 58 checks, 0 failures |
+| `bash gdextension/test/run_quest_tests.sh` | ✅ 33 checks, 0 failures |
+| `bash gdextension/test/run_bootstrap_tests.sh` | ✅ 42 checks, 0 failures |
+| `bash gdextension/test/run_binding_tests.sh` | ✅ |
+| `bash gdextension/test/run_placement_tests.sh` | ✅ |
+| `bash gdextension/test/run_reimport_tests.sh` | ✅ |
+
+The last three save/quest/bootstrap rows were **failing before this story** — not
+semantically, but because they hardcoded a monorepo corpus path and this repo is
+standalone (`RUNTIME_CORE_ADOPTION.md` §6.4). They now resolve the vendored
+corpus first, and hit exactly the counts this document always claimed.
+
+Still needs a `godot` binary, and so is unchecked here: `InsimulCore` and
+`InsimulRadiantSource` running inside the editor/exported game. What the host
+gate covers is the entire path below GDScript — the same C ABI calls, the same
+bundle, the same Prolog engine — so what is unverified is the GDScript wrapper
+itself, not the adoption.
