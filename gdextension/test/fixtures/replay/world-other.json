@@ -1,0 +1,56 @@
+{
+  "description": "The same world with one authored fact added. Present so world_content_mismatch is a REAL case rather than a hand-edited digest: a world that changed since recording makes a divergence say nothing about determinism.",
+  "world": {
+    "worldId": "w-riverwatch",
+    "facts": [
+      {
+        "predicate": "at",
+        "args": [
+          "hero",
+          "gate"
+        ]
+      },
+      {
+        "predicate": "at",
+        "args": [
+          "bandit",
+          "road"
+        ]
+      },
+      {
+        "predicate": "health",
+        "args": [
+          "bandit",
+          30,
+          30
+        ]
+      },
+      {
+        "predicate": "carries",
+        "args": [
+          "hero",
+          "lantern"
+        ]
+      },
+      {
+        "predicate": "locked",
+        "args": [
+          "gate"
+        ]
+      }
+    ],
+    "rules": [
+      "blocked(X) :- at(X, gate), locked(gate)."
+    ],
+    "packs": [
+      "base",
+      "rpg"
+    ]
+  },
+  "contentDigest": "sha256-38561657a54de383118bc8e7e9bf4b0bf99d3681644e7a99e6babe1e1ce2e8e2",
+  "descriptor": {
+    "worldId": "w-riverwatch",
+    "contentDigest": "sha256-38561657a54de383118bc8e7e9bf4b0bf99d3681644e7a99e6babe1e1ce2e8e2",
+    "label": "Riverwatch (locked gate)"
+  }
+}

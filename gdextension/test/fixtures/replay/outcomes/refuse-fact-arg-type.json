@@ -1,0 +1,43 @@
+{
+  "case": "refuse-fact-arg-type",
+  "why": "A host that stringifies `30` on the way out has diverged, and the reader says so rather than digesting the difference away.",
+  "document": {
+    "traceId": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "engine": "core-reference",
+    "finalTick": 23,
+    "inputTicks": 5,
+    "facts": [
+      {
+        "predicate": "health",
+        "args": [
+          "bandit",
+          true
+        ]
+      }
+    ],
+    "checkpoints": [
+      {
+        "tick": 6,
+        "factCount": 10,
+        "digest": "sha256-e0579161da778613bbe50dcf9eea2f54680fb6ce3850226724e6f1667bf581a6"
+      },
+      {
+        "tick": 12,
+        "factCount": 13,
+        "digest": "sha256-10a95cf4f4ed63e398e859bc9e74607b016b3da296b517e778f7a770275b0fe7"
+      },
+      {
+        "tick": 18,
+        "factCount": 16,
+        "digest": "sha256-0d3f1f2d6d6546ca6a7f0f6fe3d7334b5b89aea7412941d2845a236983c85682"
+      }
+    ],
+    "format": "insimul-replay-outcome-v1",
+    "digest": "sha256-a205fb587dd6989095772012b1be570f69848cc8c70cf9a86baef774b0e59969"
+  },
+  "expect": {
+    "ok": false,
+    "code": "invalid_outcome",
+    "message": "Replay outcome fact 0: `args` must hold only strings and finite numbers"
+  }
+}

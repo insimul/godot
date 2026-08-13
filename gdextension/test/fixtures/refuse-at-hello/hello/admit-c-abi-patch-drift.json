@@ -1,0 +1,43 @@
+{
+  "case": "admit — a C-ABI patch bump is not skew",
+  "why": "The C-ABI axis is proxied by the libinsimul semver on MAJOR.MINOR (libinsimul carries no compiled-in ABI symbol). 0.1.7 against a published 0.1.0 is a patch bump, not an ABI change, and refusing it would make every rebuild a version-skew incident.",
+  "matrix": "../matrix/SYNTHETIC-supported-cell.json",
+  "hello": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocol": "tbp/1.5",
+      "engine": "godot",
+      "engine_version": "4.6.2",
+      "plugin_version": "0.4.1",
+      "session_id": "sess-fixture-0001",
+      "resume_token": "rtok-fixture",
+      "run_mode": "uncooked",
+      "process_role": "standalone",
+      "capabilities": {
+        "injection_paths": [
+          "event"
+        ],
+        "consumption_echo": true,
+        "checkpoint_tier": 2,
+        "frame_tap": "in_engine",
+        "insimul": {
+          "core_version": "0.1.7",
+          "snapshot_version": "3.0",
+          "plugin_version": "1.0.0",
+          "world_id": "w-fixture",
+          "seed": "1234",
+          "active_modules": [
+            "combat",
+            "quests"
+          ],
+          "kb_query": true,
+          "kb_checkpoint": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "verdict": "admit"
+  }
+}

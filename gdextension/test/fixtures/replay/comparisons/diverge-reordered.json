@@ -1,0 +1,280 @@
+{
+  "case": "diverge-reordered",
+  "why": "Both hold the same facts in a different KB order. Clause order is solution order to a Prolog engine, so this is a real divergence and not a formatting difference.",
+  "recorded": {
+    "traceId": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "engine": "core-reference",
+    "finalTick": 23,
+    "inputTicks": 5,
+    "facts": [
+      {
+        "predicate": "at",
+        "args": [
+          "hero",
+          "gate"
+        ]
+      },
+      {
+        "predicate": "at",
+        "args": [
+          "bandit",
+          "road"
+        ]
+      },
+      {
+        "predicate": "health",
+        "args": [
+          "bandit",
+          30,
+          30
+        ]
+      },
+      {
+        "predicate": "carries",
+        "args": [
+          "hero",
+          "lantern"
+        ]
+      },
+      {
+        "predicate": "world_open",
+        "args": [
+          "riverwatch-0001"
+        ]
+      },
+      {
+        "predicate": "root_entropy",
+        "args": [
+          3059411694
+        ]
+      },
+      {
+        "predicate": "interacted",
+        "args": [
+          0,
+          "down"
+        ]
+      },
+      {
+        "predicate": "moved",
+        "args": [
+          0,
+          0.5
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          1,
+          1352591660
+        ]
+      },
+      {
+        "predicate": "interacted",
+        "args": [
+          3,
+          "up"
+        ]
+      },
+      {
+        "predicate": "aimed",
+        "args": [
+          7,
+          0.25,
+          -0.75
+        ]
+      },
+      {
+        "predicate": "typed",
+        "args": [
+          "yes"
+        ]
+      },
+      {
+        "predicate": "jumped",
+        "args": [
+          11
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          13,
+          4092531510
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          16,
+          4176419605
+        ]
+      },
+      {
+        "predicate": "moved",
+        "args": [
+          18,
+          -1
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          20,
+          2162664040
+        ]
+      }
+    ],
+    "checkpoints": [
+      {
+        "tick": 6,
+        "factCount": 10,
+        "digest": "sha256-e0579161da778613bbe50dcf9eea2f54680fb6ce3850226724e6f1667bf581a6"
+      },
+      {
+        "tick": 12,
+        "factCount": 13,
+        "digest": "sha256-10a95cf4f4ed63e398e859bc9e74607b016b3da296b517e778f7a770275b0fe7"
+      },
+      {
+        "tick": 18,
+        "factCount": 16,
+        "digest": "sha256-0d3f1f2d6d6546ca6a7f0f6fe3d7334b5b89aea7412941d2845a236983c85682"
+      }
+    ],
+    "format": "insimul-replay-outcome-v1",
+    "digest": "sha256-30922736bb07f33aab8d3c0cc50a6a4f680afb1af287209b0c4ee5cb70c89fd1"
+  },
+  "replayed": {
+    "traceId": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "engine": "godot-reordered",
+    "finalTick": 23,
+    "facts": [
+      {
+        "predicate": "at",
+        "args": [
+          "bandit",
+          "road"
+        ]
+      },
+      {
+        "predicate": "at",
+        "args": [
+          "hero",
+          "gate"
+        ]
+      },
+      {
+        "predicate": "health",
+        "args": [
+          "bandit",
+          30,
+          30
+        ]
+      },
+      {
+        "predicate": "carries",
+        "args": [
+          "hero",
+          "lantern"
+        ]
+      },
+      {
+        "predicate": "world_open",
+        "args": [
+          "riverwatch-0001"
+        ]
+      },
+      {
+        "predicate": "root_entropy",
+        "args": [
+          3059411694
+        ]
+      },
+      {
+        "predicate": "interacted",
+        "args": [
+          0,
+          "down"
+        ]
+      },
+      {
+        "predicate": "moved",
+        "args": [
+          0,
+          0.5
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          1,
+          1352591660
+        ]
+      },
+      {
+        "predicate": "interacted",
+        "args": [
+          3,
+          "up"
+        ]
+      },
+      {
+        "predicate": "aimed",
+        "args": [
+          7,
+          0.25,
+          -0.75
+        ]
+      },
+      {
+        "predicate": "typed",
+        "args": [
+          "yes"
+        ]
+      },
+      {
+        "predicate": "jumped",
+        "args": [
+          11
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          13,
+          4092531510
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          16,
+          4176419605
+        ]
+      },
+      {
+        "predicate": "moved",
+        "args": [
+          18,
+          -1
+        ]
+      },
+      {
+        "predicate": "beat",
+        "args": [
+          20,
+          2162664040
+        ]
+      }
+    ],
+    "format": "insimul-replay-outcome-v1",
+    "digest": "sha256-f21dd3c93ce8c7b58cd7f16cc95ad887f1d303b5ae1244b4ca3b8fed6e63c0a4"
+  },
+  "expect": {
+    "converged": false,
+    "kinds": [
+      "order"
+    ]
+  }
+}

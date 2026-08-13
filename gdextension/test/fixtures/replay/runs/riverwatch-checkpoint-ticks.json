@@ -1,0 +1,386 @@
+{
+  "case": "riverwatch-checkpoint-ticks",
+  "why": "Explicit checkpoint ticks alongside the periodic ones, deduplicated and ascending.",
+  "trace": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "down"
+        },
+        {
+          "tick": 0,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": 0.5
+        },
+        {
+          "tick": 3,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "up"
+        },
+        {
+          "tick": 7,
+          "channel": "pointer",
+          "signal": "pointer.aim",
+          "x": 0.25,
+          "y": -0.75
+        },
+        {
+          "tick": 11,
+          "channel": "text",
+          "signal": "text.entry",
+          "text": "yes"
+        },
+        {
+          "tick": 11,
+          "channel": "button",
+          "signal": "button.jump",
+          "edge": "down"
+        },
+        {
+          "tick": 18,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": -1
+        }
+      ]
+    },
+    "provenance": {
+      "recorder": "core@replay-fixtures",
+      "note": "minted by tools/vendor-replay-fixtures.mjs"
+    }
+  },
+  "options": {
+    "engine": "core-reference",
+    "throughTick": 20,
+    "checkpointEvery": 7,
+    "checkpointTicks": [
+      1,
+      7,
+      19
+    ]
+  },
+  "steps": [
+    {
+      "tick": 0,
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "down"
+        },
+        {
+          "tick": 0,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": 0.5
+        }
+      ],
+      "entropy": 1369369279
+    },
+    {
+      "tick": 1,
+      "inputs": [],
+      "entropy": 1352591660
+    },
+    {
+      "tick": 2,
+      "inputs": [],
+      "entropy": 1402924517
+    },
+    {
+      "tick": 3,
+      "inputs": [
+        {
+          "tick": 3,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "up"
+        }
+      ],
+      "entropy": 1386146898
+    },
+    {
+      "tick": 4,
+      "inputs": [],
+      "entropy": 1302258803
+    },
+    {
+      "tick": 5,
+      "inputs": [],
+      "entropy": 1285481184
+    },
+    {
+      "tick": 6,
+      "inputs": [],
+      "entropy": 1335814041
+    },
+    {
+      "tick": 7,
+      "inputs": [
+        {
+          "tick": 7,
+          "channel": "pointer",
+          "signal": "pointer.aim",
+          "x": 0.25,
+          "y": -0.75
+        }
+      ],
+      "entropy": 1319036422
+    },
+    {
+      "tick": 8,
+      "inputs": [],
+      "entropy": 1503590231
+    },
+    {
+      "tick": 9,
+      "inputs": [],
+      "entropy": 1486812612
+    },
+    {
+      "tick": 10,
+      "inputs": [],
+      "entropy": 4075753891
+    },
+    {
+      "tick": 11,
+      "inputs": [
+        {
+          "tick": 11,
+          "channel": "text",
+          "signal": "text.entry",
+          "text": "yes"
+        },
+        {
+          "tick": 11,
+          "channel": "button",
+          "signal": "button.jump",
+          "edge": "down"
+        }
+      ],
+      "entropy": 4058976272
+    },
+    {
+      "tick": 12,
+      "inputs": [],
+      "entropy": 4109309129
+    },
+    {
+      "tick": 13,
+      "inputs": [],
+      "entropy": 4092531510
+    },
+    {
+      "tick": 14,
+      "inputs": [],
+      "entropy": 4142864367
+    },
+    {
+      "tick": 15,
+      "inputs": [],
+      "entropy": 4126086748
+    },
+    {
+      "tick": 16,
+      "inputs": [],
+      "entropy": 4176419605
+    },
+    {
+      "tick": 17,
+      "inputs": [],
+      "entropy": 4159641986
+    },
+    {
+      "tick": 18,
+      "inputs": [
+        {
+          "tick": 18,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": -1
+        }
+      ],
+      "entropy": 4209974843
+    },
+    {
+      "tick": 19,
+      "inputs": [],
+      "entropy": 4193197224
+    },
+    {
+      "tick": 20,
+      "inputs": [],
+      "entropy": 2162664040
+    }
+  ],
+  "expect": {
+    "traceId": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "finalTick": 20,
+    "inputTicks": 5,
+    "ticks": 21,
+    "inputsApplied": 7,
+    "outcome": {
+      "traceId": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+      "engine": "core-reference",
+      "finalTick": 20,
+      "inputTicks": 5,
+      "facts": [
+        {
+          "predicate": "at",
+          "args": [
+            "hero",
+            "gate"
+          ]
+        },
+        {
+          "predicate": "at",
+          "args": [
+            "bandit",
+            "road"
+          ]
+        },
+        {
+          "predicate": "health",
+          "args": [
+            "bandit",
+            30,
+            30
+          ]
+        },
+        {
+          "predicate": "carries",
+          "args": [
+            "hero",
+            "lantern"
+          ]
+        },
+        {
+          "predicate": "world_open",
+          "args": [
+            "riverwatch-0001"
+          ]
+        },
+        {
+          "predicate": "root_entropy",
+          "args": [
+            3059411694
+          ]
+        },
+        {
+          "predicate": "interacted",
+          "args": [
+            0,
+            "down"
+          ]
+        },
+        {
+          "predicate": "moved",
+          "args": [
+            0,
+            0.5
+          ]
+        },
+        {
+          "predicate": "beat",
+          "args": [
+            1,
+            1352591660
+          ]
+        },
+        {
+          "predicate": "interacted",
+          "args": [
+            3,
+            "up"
+          ]
+        },
+        {
+          "predicate": "aimed",
+          "args": [
+            7,
+            0.25,
+            -0.75
+          ]
+        },
+        {
+          "predicate": "typed",
+          "args": [
+            "yes"
+          ]
+        },
+        {
+          "predicate": "jumped",
+          "args": [
+            11
+          ]
+        },
+        {
+          "predicate": "beat",
+          "args": [
+            13,
+            4092531510
+          ]
+        },
+        {
+          "predicate": "beat",
+          "args": [
+            16,
+            4176419605
+          ]
+        },
+        {
+          "predicate": "moved",
+          "args": [
+            18,
+            -1
+          ]
+        },
+        {
+          "predicate": "beat",
+          "args": [
+            20,
+            2162664040
+          ]
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "factCount": 9,
+          "digest": "sha256-829544dbe3816a4a51f16ce7eb46b1343693ae53cedf4840ead289083e9a6063"
+        },
+        {
+          "tick": 7,
+          "factCount": 11,
+          "digest": "sha256-35efc01d1cc14619d4d79ccea8917eb1c1297b42e515a3952ca76b50095996dc"
+        },
+        {
+          "tick": 14,
+          "factCount": 14,
+          "digest": "sha256-70135cc090e5000eba3b4f1fe1191540110cdb5ffb8eab015ff369b379fafe6e"
+        },
+        {
+          "tick": 19,
+          "factCount": 16,
+          "digest": "sha256-0d3f1f2d6d6546ca6a7f0f6fe3d7334b5b89aea7412941d2845a236983c85682"
+        }
+      ],
+      "format": "insimul-replay-outcome-v1",
+      "digest": "sha256-30922736bb07f33aab8d3c0cc50a6a4f680afb1af287209b0c4ee5cb70c89fd1"
+    }
+  }
+}

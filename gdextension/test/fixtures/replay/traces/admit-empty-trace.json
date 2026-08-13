@@ -1,0 +1,22 @@
+{
+  "case": "admit-empty-trace",
+  "why": "A session in which nobody touched a control is a legitimate session — it still has a seed, a world and an id.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-48d4f5908df54455eabd73abdb1fdc75fcdd6248bc8ec2c4a6634f37b7934c27",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": []
+    }
+  },
+  "expect": {
+    "ok": true,
+    "id": "sha256-48d4f5908df54455eabd73abdb1fdc75fcdd6248bc8ec2c4a6634f37b7934c27"
+  }
+}

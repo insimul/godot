@@ -988,3 +988,147 @@ godot --path templates/project -s scripts/mechanics/mechanic_courtyard_demo.gd
 | `npm run test:activation` | ✅ **30 checks, 0 failures** — 8 bundles, 88 KB witnesses, 6 scenario steps |
 | `vendor-conformance --check --core` | ✅ byte-identical to core `76782e5`; 64 files, 19 case floors + the table floors met |
 | the human scene pass | ⬜ needs a `godot` binary + a built extension |
+
+---
+
+# `insimul-talos-bridge` (tasklist 183)
+
+The third artifact of `TALOS_INSIMUL_BRIDGE.md` §7.5 — the Talos bridge for an
+Insimul game, which depends on both projects and is depended on by neither. Its
+two halves gate separately: the DECISIONS under a plain C++ compiler, the
+INSTALL under Node.
+
+## Runs on any box — no Godot binary, and no libinsimul either
+
+```sh
+npm run test:talos-bridge   # bash gdextension/test/run_talos_bridge_tests.sh
+npm run test:replay         # bash gdextension/test/run_talos_replay_tests.sh
+npm run check               # includes tools/verify-talos-bridge/check-bridge.mjs --self-test
+```
+
+Nothing in the decision half touches a knowledge base, so unlike the corpus
+gates this one has nothing it could be faking and always runs.
+
+**73 checks**, in seven parts:
+
+| part | what runs | count |
+| --- | --- | --- |
+| parity | every case `scripts/engine-versions/check-hello.mjs` publishes, mirrored into `gdextension/test/fixtures/refuse-at-hello/` and replayed through this port, demanding the same verdict AND the same token | 21 |
+| the controls | the untouched hello admitted; one axis nudged refused; the SAME hello refused once the matrix demotes an axis | 3 |
+| §7.5 | a state verb before a world is loaded is refused as `insimul_kb_uninitialized`, retryable, with its unblock recipe — never an empty success; and the refusal carries NO solution set while a genuinely empty query IS an admitted success with zero, so "no facts" and "no world yet" are different documents | 8 |
+| §7.8 | every way this artifact can be half-installed is named — the extension absent, each of the three shipped files absent, and each of them present but not the file it claims to be — with what installs it, and an install missing everything names the FIRST piece in decision order | 3 |
+| the mapping | six groups, the `capabilities.insimul` payload (null world half until there is a world; tier 1 / `kb_authoritative`), the four-axis checkpoint stamp, one refusal per verb class, the §3.6 template-write refusal | 22 |
+| §3.4 | two enumeration orders produce one digest, and the cap truncates deterministically because the sort happens first | 5 |
+| an unconfigured bridge | a bridge with no contract decides nothing rather than defaulting to something | 5 |
+
+The parity suite is **two-sided by construction** — it carries an admitted hello
+and a restored archive — because a decision procedure that refused everything
+would otherwise pass every refusal case. Proven to fail: making
+`evaluate_hello` stop reading the published axis status turns the run red on 4
+checks.
+
+**21 checks + 14 negative controls** in `check-bridge.mjs`, covering what a
+decision cannot see: the artifact is separate (its own `plugin.cfg`,
+`addons/insimul/` never mentions it, no Talos symbol anywhere in it), the six
+groups agree between `bridge-contract.json` and `talos.game.yaml` **in both
+directions**, every method and signal the group contracts name is really defined,
+all 25 TBP verbs are accounted for with a why-not token on every one this bridge
+does not answer, and no `insimul_*` token is spelled that a published vocabulary
+does not carry.
+
+Four of those checks are US-2's, and three of them are about code paths rather
+than data:
+
+- **§7.5 as a call graph.** Nothing reachable from `_init`/`_ready` may name
+  `_kb`, `_world_id`, `_state_goals`, `_progress` or `_replay_world`, and every
+  state answer must reach `_gate()` before it reaches the KB. Comments are
+  stripped first — the adapter is allowed to *describe* the rule it obeys.
+- **§7.8 visibility.** `_ready()` joins the groups BEFORE it configures, so a
+  half-installed adapter is found and its refusal is heard rather than being an
+  absence; and a broken install is a `push_error`, not a warning.
+- **§7.8 vocabulary.** The failure modes compiled into `talos_bridge.cpp` and the
+  contract's `stage: "install"` tokens are the same set, in both directions.
+- **§8.6 totality.** Every refusal code core's replay module can produce maps to
+  a published token the port really emits, and the shipped `input-vocabulary.json`
+  carries core's action ids.
+
+## The replay leg — one recorded session, four engines (§8.6)
+
+```sh
+npm run test:replay         # 20 checks, no libinsimul and no Godot binary
+```
+
+Tasklist 180 shipped, in core, a portable content-addressed input-trace artifact
+(`insimul-input-trace-v1`), a replay driver, and the outcome document a four-way
+comparison diffs (`insimul-replay-outcome-v1`). This is the Godot leg of that
+comparison, and it is a **port** rather than an adoption for one reason:
+`gdextension/corebridge/js/host-crypto.js` makes `createHash` throw on purpose
+and core's replay module hashes. The fix that file names for a slice that DOES
+need hashing is "route it to libinsimul/the C host rather than grow a second
+SHA-256 here" — and the C host hash already exists and is already the pinned one.
+
+The evidence that the port agrees is core's own answers.
+`tools/vendor-replay-fixtures.mjs` bundles `packages/core/src/replay/index.ts`
+under Node (where `node:crypto` works), runs it, and writes down every answer it
+gave into `gdextension/test/fixtures/replay/`:
+
+| part | what runs | count |
+| --- | --- | --- |
+| the addresses | the world-content digest core minted, for two worlds that differ by one authored fact | 2 |
+| entropy | `replayEntropy(seed)` and `replayEntropy(seed, tick)` for 24 ticks across 2 seeds — FNV-1a over UTF-16 code units, not bytes | 1 |
+| traces | 12 documents core read: 2 admitted with the id it minted, 10 refused with its own code — an action-layer key, an action id spelled as a signal, a payload on the wrong channel, ticks going backwards, an edited input with a stale id, the wrong world, a moved world | 3 |
+| outcomes | 7 documents core validated, including a digest that does not describe its own facts and a fact arg that is not a string or a finite number | 2 |
+| comparisons | 6 verdicts, kind for kind: converged, reordered (clause order is solution order), a localized checkpoint divergence, a truncated leg, two different sessions, differing counts | 2 |
+| runs | 4 whole replays compared step for step — the bucketing of inputs onto ticks, the ticks that carry NO input, the per-tick `uint32` — and then digest for digest against the KB core's own driver produced | 3 |
+| the control | the same run with every input applied ONE TICK LATE must diverge, and `compare()` must say so | 1 |
+| refusals and tokens | an unconfigured leg refuses rather than reading a trace loosely; an outcome of another session is refused, not compared; every token the leg can emit is published in the contract | 6 |
+
+The corpus is two-sided by construction (3 admitted, 16 refused) and floored per
+area, so an upstream corpus that lost its refusal cases fails rather than
+shrinking quietly.
+
+**Proven to fail**, twice, by sabotage on a scratch copy:
+
+| sabotage | result |
+| --- | --- |
+| the driver skips ticks that carry no input | ❌ 2 failures — the step plan and the KB digest |
+| `streamKey` counts bytes instead of UTF-16 code units | ❌ 3 failures — entropy, the step plan, the KB digest |
+
+The world both sides drive is DATA — `fixtures/replay/program.json`, a table of
+signal → fact plus an idle rule keyed on the tick's entropy. Two hand-written toy
+worlds would be two implementations to disagree, and their disagreement would be
+indistinguishable from the driver bug this corpus exists to measure.
+
+## Needs a `godot` binary + Talos — human end-to-end checklist
+
+The half no host gate reaches: whether the Bridge actually FINDS the adapter.
+
+- [ ] With `addons/insimul_talos/` enabled and its `talos.game.yaml` fragment
+      merged, a Talos session's `save_checkpoint` finds the hook rather than
+      refusing with `no_checkpoint_hooks`.
+- [ ] With the fragment **not** merged, it refuses with `no_checkpoint_hooks` and
+      the "would report success both times" message — the loud failure §7.4 says
+      a mis-installed adapter must produce.
+- [ ] Before `attach_world()`, `talos_ready_state()` is false and a `query_state`
+      answer carries the `insimul_kb_uninitialized` envelope rather than an empty
+      digest.
+- [ ] `InsimulTalos.hello_decision()` refuses on today's published matrix with
+      `insimul_engine_version_declared`, and the refusal reaches the run as an
+      `assert_failed` telemetry event.
+- [ ] With `input-vocabulary.json` deleted from the installed addon,
+      `InsimulTalos.install_diagnosis` names `insimul_bridge_vocabulary_absent`,
+      the node still joins its six groups, and the editor shows the pushed error.
+- [ ] `InsimulTalos.replay_input_trace()` over a real world, driven through a
+      game-supplied replay world, produces an `insimul-replay-outcome-v1`
+      document whose digest a Babylon leg can diff.
+
+## Status on this machine (talos-bridge)
+
+| gate | result |
+| --- | --- |
+| `npm run test:talos-bridge` | ✅ **73 checks, 0 failures** — 21 reference cases replayed, 3 controls, 7 install modes |
+| `npm run test:replay` | ✅ **20 checks, 0 failures** — 29 case files minted from core, 1 mis-ticked control |
+| `npm run check` | ✅ 188 `.gd` files; check-bridge 21 checks + 14 negative controls |
+| `vendor-supported-versions --check` | ✅ 3 engine rows, 42 why-not tokens, 21 reference cases |
+| `vendor-replay-fixtures --check` | ✅ 12 trace / 7 outcome / 6 comparison / 4 run cases, 133 action ids |
+| the human end-to-end checklist | ⬜ needs a `godot` binary, a built extension and Talos |

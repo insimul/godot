@@ -1,0 +1,21 @@
+{
+  "case": "restore — an archive stamped with the current axes",
+  "why": "The second vacuity control. Archive invalidation that invalidated everything would silently disable Go-Explore's persistence entirely, so the suite proves a matching archive restores.",
+  "matrix": "../matrix/SYNTHETIC-supported-cell.json",
+  "archive": {
+    "id": "ckpt-go-explore-00417",
+    "engine": "godot",
+    "recorded_at": "2026-08-01T00:00:00Z",
+    "tier": 2,
+    "note": "A Go-Explore archive entry. TBP's save_checkpoint response carries {id, tier, frame, latency_ms, bytes, level} and no version field, so these axes are stamped by the adapter alongside the id.",
+    "axes": {
+      "engine_version": "4.6.2",
+      "c_abi": "0.1.0",
+      "snapshot_version": "3.0",
+      "plugin_version": "1.0.0"
+    }
+  },
+  "expect": {
+    "verdict": "restore"
+  }
+}

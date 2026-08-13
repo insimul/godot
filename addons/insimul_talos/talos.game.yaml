@@ -1,0 +1,100 @@
+# talos.game.yaml — the fragment insimul-talos-bridge ships (BRIDGE §7.4, §7.5).
+#
+# MERGE THIS INTO THE GAME'S OWN `res://talos.game.yaml`. It is a fragment and not
+# a manifest: a real game declares its own `subject`, `navigation`, `screens`,
+# `capture` and `explore` sections, and none of those are this artifact's to
+# choose. What is here is the half that makes the adapter VISIBLE.
+#
+# THIS FILE IS THE WHOLE DEPENDENCY, and it runs in the direction nobody expects.
+# Talos's Godot contract is duck-typed — no interface, no base class, no preload —
+# so the adapter needs no Talos symbol at all. What it needs is for the manifest to
+# NAME its groups. A perfectly good adapter in an undeclared group is invisible:
+# `save_checkpoint` finds no hooks and refuses with `no_checkpoint_hooks` and the
+# message "an empty checkpoint would save nothing and restore nothing, and report
+# success both times". That refusal is the right one and it is the reason a
+# mis-installed bridge fails loudly instead of degrading (§7.4, §7.8).
+#
+# The group names are duplicated in exactly one other place — `bridge-contract.json`
+# — and `tools/verify-talos-bridge/check-bridge.mjs` fails when the two disagree,
+# in both directions.
+
+schema: talos.game/1
+
+# The digest, and it is a KB QUERY rather than a watch-list's guess at one
+# (§3.4). Every key below resolves through `InsimulTalosAdapter._get()`:
+#
+#   insimul/state/<key>      a projection the GAME declared with declare_state(),
+#                            answered by a real Prolog goal over the live KB,
+#                            canonically sorted and capped before it is reported
+#   insimul/progress/<name>  a progress var, which in an Insimul game IS a fact —
+#                            `progress_var: true` makes it settable, and a write
+#                            that would land on a world TEMPLATE is refused
+#
+# A game adds its own `insimul/state/*` and `insimul/progress/*` rows here for
+# whatever it declared. The four below are the artifact's own, and they are what
+# lets a Conductor tell "not applicable" from "unresponsive" (§3.1, §7.8).
+watch:
+  insimul.capabilities:
+    path: /root/InsimulTalos
+    property: capabilities
+    type: string
+  insimul.world_id:
+    path: /root/InsimulTalos
+    property: _world_id
+    type: string
+  insimul.kb_ready:
+    path: /root/InsimulTalos
+    property: _kb
+  # The most recent refusal envelope, or "". Watched on purpose: a refusal nobody
+  # can see reads as an outage, and §2.11's whole point is that a caller must be
+  # able to tell "try again in 50 ms" from "never going to work".
+  insimul.refusal:
+    path: /root/InsimulTalos
+    property: last_refusal
+    type: string
+    volatile: true
+
+# The six group families of §7.4. One group each rather than one group named six
+# times: a partial install is then attributable to the contract it broke.
+
+# talos_ready_state() — the game's own answer to "is the capability surface up?".
+# This adapter answers FALSE until a world is attached, which is §7.5's rule: the
+# knowledge base is never read at construction, and every state verb before that
+# is a retryable `insimul_kb_uninitialized` refusal rather than an empty success.
+readiness:
+  groups:
+    - insimul_talos_readiness
+  timeout_ms: 30000
+
+# talos_save() / talos_load() — insimul_kb_snapshot / insimul_kb_restore, stamped
+# with the four version axes. TIER 1, and `kb_authoritative` fidelity: a KB
+# snapshot restores the simulation and not the scene (§3.5).
+checkpoint:
+  groups:
+    - insimul_talos_checkpoint
+
+# talos_announce_markers() + talos_marker_registered — generated places with
+# entity ids that are stable across regenerations from one seed. The marker set is
+# a byproduct of generation, so announcing is a query (§3.5).
+markers:
+  groups:
+    - insimul_talos_markers
+
+# talos_set_seed() — the world seed.
+rng:
+  groups:
+    - insimul_talos_rng
+
+# talos_context_changed — the host game-state PHASE. Never Insimul's `@world`,
+# which is a different concept wearing the same word (§3.8).
+contexts:
+  groups:
+    - insimul_talos_contexts
+
+# talos_event — KB deltas. `assert_failed` is the one this artifact emits itself:
+# a bridge refusal reaches the run through it, because tbp/1.x has no carrier for
+# `capabilities.insimul` and a version refusal that never reached the run would be
+# the wasted run §7.7 exists to prevent.
+events:
+  groups:
+    - insimul_talos_events

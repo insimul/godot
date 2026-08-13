@@ -1,0 +1,16 @@
+{
+  "case": "invalidate — an archive with no version stamp",
+  "why": "The DEFAULT state, not an exotic one: TBP carries no version field on a checkpoint id, so an adapter that does not stamp the axes itself produces exactly this. An archive that cannot be proven to match is not restored.",
+  "matrix": "../matrix/SYNTHETIC-supported-cell.json",
+  "archive": {
+    "id": "ckpt-go-explore-00417",
+    "engine": "godot",
+    "recorded_at": "2026-08-01T00:00:00Z",
+    "tier": 2,
+    "note": "A Go-Explore archive entry. TBP's save_checkpoint response carries {id, tier, frame, latency_ms, bytes, level} and no version field, so these axes are stamped by the adapter alongside the id."
+  },
+  "expect": {
+    "verdict": "invalidate",
+    "token": "insimul_checkpoint_unstamped"
+  }
+}

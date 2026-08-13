@@ -1,0 +1,34 @@
+{
+  "case": "refuse-wrong-channel-payload",
+  "why": "A record that carries another channel's field is malformed rather than tolerated: a trace whose extra fields are silently dropped is a trace whose id is a lie.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "button.interact",
+          "value": 0.5
+        }
+      ]
+    },
+    "provenance": {
+      "recorder": "core@replay-fixtures",
+      "note": "minted by tools/vendor-replay-fixtures.mjs"
+    }
+  },
+  "expect": {
+    "ok": false,
+    "code": "malformed_input",
+    "message": "Input 0: `button` input is missing `edge`"
+  }
+}

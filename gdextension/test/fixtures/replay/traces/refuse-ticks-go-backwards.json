@@ -1,0 +1,40 @@
+{
+  "case": "refuse-ticks-go-backwards",
+  "why": "Inputs are recorded in sample order; a tick that goes backwards is a recorder fault, not a session.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": [
+        {
+          "tick": 4,
+          "channel": "button",
+          "signal": "button.jump",
+          "edge": "down"
+        },
+        {
+          "tick": 1,
+          "channel": "button",
+          "signal": "button.jump",
+          "edge": "up"
+        }
+      ]
+    },
+    "provenance": {
+      "recorder": "core@replay-fixtures",
+      "note": "minted by tools/vendor-replay-fixtures.mjs"
+    }
+  },
+  "expect": {
+    "ok": false,
+    "code": "malformed_input",
+    "message": "Input 1: tick 1 goes backwards from 4"
+  }
+}

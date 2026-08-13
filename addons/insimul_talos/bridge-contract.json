@@ -1,0 +1,426 @@
+{
+  "format": "insimul.talos-bridge.contract/1",
+  "artifact": "insimul-talos-bridge",
+  "engine": "godot",
+  "description": "The declared surface of the third artifact of TALOS_INSIMUL_BRIDGE.md §7.5 — which TBP verbs this bridge answers from the knowledge base, which node groups carry the answers, and the why-not token every other verb is refused with. DATA, because §7.5's whole point is that the bridge wraps Insimul's API and neither project depends on the other: nothing here names a Talos symbol, and nothing in addons/insimul/ reads this file.",
+  "protocol": {
+    "range": "tbp/1.x",
+    "source": "talos:docs/03-engine-bridge.md §2.1",
+    "carrier": {
+      "status": "absent",
+      "block": "capabilities.insimul",
+      "finding": "hello_response.schema.json declares `capabilities` with additionalProperties:false and rejects unknown keys BY DESIGN, so the payload this bridge assembles has nowhere to travel on the wire until Talos registers the namespaced block in an additive minor (BRIDGE §7.9 ask 2, REFUSE_AT_HELLO.md 'The carrier does not exist yet').",
+      "carried_meanwhile_as": "the `insimul.capabilities` watch key of talos.game.yaml — the one channel tbp/1.x already has for a game-declared value."
+    }
+  },
+  "groups": {
+    "checkpoint": {
+      "group": "insimul_talos_checkpoint",
+      "manifest_section": "checkpoint",
+      "methods": [
+        "talos_save",
+        "talos_load"
+      ],
+      "signals": [],
+      "maps": "insimul_kb_snapshot / insimul_kb_restore (BRIDGE §3.5)",
+      "note": "Tier 1, never tier 2. A KB snapshot restores the SIMULATION and not the SCENE — transform, animation, agent path and physics are host-side by the same decision that makes core portable — so `checkpoint_fidelity: kb_authoritative` is declared beside the tier and a tier-2 claim is not made."
+    },
+    "markers": {
+      "group": "insimul_talos_markers",
+      "manifest_section": "markers",
+      "methods": [
+        "talos_announce_markers"
+      ],
+      "signals": [
+        "talos_marker_registered"
+      ],
+      "maps": "a KB query for generated places, whose entity ids are stable across regenerations from one seed (BRIDGE §3.5)",
+      "note": "Talos's instrumentation contract item 6 is runtime marker registration for procgen. Here the marker set is a byproduct of generation, so announcing is a query rather than an authoring task. Navmesh validation stays host-side."
+    },
+    "readiness": {
+      "group": "insimul_talos_readiness",
+      "manifest_section": "readiness",
+      "methods": [
+        "talos_ready_state"
+      ],
+      "signals": [],
+      "maps": "KB liveness plus the refuse-at-hello decision (BRIDGE §7.5, §7.7)",
+      "note": "The §7.5 rule lives here: the adapter never reads the KB at construction, so this answers false until a world is live and every state verb before that is refused as insimul_kb_uninitialized rather than answered with an empty success."
+    },
+    "rng": {
+      "group": "insimul_talos_rng",
+      "manifest_section": "rng",
+      "methods": [
+        "talos_set_seed"
+      ],
+      "signals": [],
+      "maps": "the world seed — generation is measured deterministic end to end from it (BRIDGE §3.7)",
+      "note": "Seeding is a world-generation input, so a reseed after a world is open is recorded and reported rather than silently applied to a world that was not built from it."
+    },
+    "contexts": {
+      "group": "insimul_talos_contexts",
+      "manifest_section": "contexts",
+      "methods": [],
+      "signals": [
+        "talos_context_changed"
+      ],
+      "maps": "the host's game-state PHASE — never Insimul's @world(W) context (BRIDGE §3.8)",
+      "note": "The name collision §3.8 defuses: Talos's context is a phase enum that gates detectors; Insimul's context is the KINP world layer truth is true IN. This bridge says `phase` for the first and `@world` for the second, and never the bare word for either."
+    },
+    "events": {
+      "group": "insimul_talos_events",
+      "manifest_section": "events",
+      "methods": [],
+      "signals": [
+        "talos_event"
+      ],
+      "maps": "KB deltas — quest state, death, and schema-invalid facts (BRIDGE §3.8)",
+      "note": "The events Talos names are already state transitions in an Insimul game, so the stream is a KB delta feed rather than new instrumentation. assert_failed is the gift: a schema-invalid fact reaching the KB is a game bug no ordinary target can even see."
+    }
+  },
+  "verbs": {
+    "hello": {
+      "verdict": "partial",
+      "answered_by": "insimul",
+      "mapping": "capabilities.insimul (BRIDGE §3.1)",
+      "hook": null,
+      "why_not": null
+    },
+    "inject_input": {
+      "verdict": "partial",
+      "answered_by": "host",
+      "mapping": "the three-level consumption echo is the engine's; Insimul can add a fourth level below it",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned",
+      "trap": "Injecting at Insimul's action layer bypasses the engine's input pipeline entirely, which is the one thing inject_input exists to test (BRIDGE §3.3). This bridge refuses rather than manufacturing the false green."
+    },
+    "probe_injection_paths": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "input paths are host concerns by construction",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "execute_skill": {
+      "verdict": "partial",
+      "answered_by": "unmapped",
+      "mapping": "the predicate half of hold_until_predicate is a Prolog goal; the controllers are not Insimul's",
+      "hook": null,
+      "why_not": "insimul_verb_unmapped"
+    },
+    "cancel_skill": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "skill execution is the Bridge's",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "query_state": {
+      "verdict": "strong",
+      "answered_by": "insimul",
+      "mapping": "a Prolog query over the live KB, canonically sorted before the digest cap (BRIDGE §3.4)",
+      "hook": "readiness",
+      "why_not": null
+    },
+    "query_objects": {
+      "verdict": "partial",
+      "answered_by": "host",
+      "mapping": "the scene walk is host work; Insimul supplies the stable entity id that resolves into the KB",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "save_checkpoint": {
+      "verdict": "strong",
+      "answered_by": "insimul",
+      "mapping": "insimul_kb_snapshot, stamped with the four axes (BRIDGE §3.5, §7.7)",
+      "hook": "checkpoint",
+      "why_not": null
+    },
+    "restore_checkpoint": {
+      "verdict": "strong",
+      "answered_by": "insimul",
+      "mapping": "insimul_kb_restore, refused when the archive stamp does not match the published matrix",
+      "hook": "checkpoint",
+      "why_not": null
+    },
+    "teleport": {
+      "verdict": "strong",
+      "answered_by": "insimul",
+      "mapping": "generated markers with stable entity ids; navmesh validation stays host-side",
+      "hook": "markers",
+      "why_not": null
+    },
+    "set_progress_var": {
+      "verdict": "strong",
+      "answered_by": "insimul",
+      "mapping": "insimul_assert against a schema-validated predicate, routed through the promotion path (BRIDGE §3.6)",
+      "hook": "readiness",
+      "why_not": null
+    },
+    "play_input_trace": {
+      "verdict": "gap",
+      "answered_by": "unmapped",
+      "mapping": "the portable input-trace artifact (tasklist 180) is the better oracle; TBP refuses a foreign-session trace_ref by design (RISK-60)",
+      "hook": null,
+      "why_not": "insimul_verb_unmapped"
+    },
+    "step_frames": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "nothing on a per-frame path crosses the C ABI, so core has no clock to step",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "set_seed": {
+      "verdict": "strong",
+      "answered_by": "insimul",
+      "mapping": "the world seed (BRIDGE §3.7)",
+      "hook": "rng",
+      "why_not": null
+    },
+    "set_fixed_timestep": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "host clock",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "set_time_scale": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "host clock",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "load_level": {
+      "verdict": "partial",
+      "answered_by": "unmapped",
+      "mapping": "playthrough load plus an entry marker",
+      "hook": null,
+      "why_not": "insimul_verb_unmapped"
+    },
+    "screenshot": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "nothing in Insimul touches pixels — core's tsconfig omits the dom lib on purpose",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "start_frame_tap": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "pixels are the host's",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "stop_frame_tap": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "pixels are the host's",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "mark_event": {
+      "verdict": "partial",
+      "answered_by": "insimul",
+      "mapping": "a KB delta on the events channel (BRIDGE §3.8)",
+      "hook": "events",
+      "why_not": null
+    },
+    "run_native_test": {
+      "verdict": "partial",
+      "answered_by": "unmapped",
+      "mapping": "this repo's in-engine gates are conformance harnesses rather than gdUnit4/GUT suites, so they need the sibling run_conformance convention of BRIDGE §3.10",
+      "hook": null,
+      "why_not": "insimul_verb_unmapped"
+    },
+    "declare_context": {
+      "verdict": "partial",
+      "answered_by": "insimul",
+      "mapping": "the host PHASE, published on the contexts channel — never Insimul's @world (BRIDGE §3.8)",
+      "hook": "contexts",
+      "why_not": null
+    },
+    "clock_sync": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "host clock",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    },
+    "shutdown": {
+      "verdict": "gap",
+      "answered_by": "host",
+      "mapping": "process lifetime is the Bridge's",
+      "hook": null,
+      "why_not": "insimul_verb_host_owned"
+    }
+  },
+  "tokens": {
+    "insimul_verb_host_owned": {
+      "stage": "verb",
+      "retryable": false,
+      "means": "the verb is the engine host's job and the knowledge base has no reading for it. Not a gap in the install — a gap in what a KB is",
+      "unblock": "let the Talos Bridge answer this verb; the Insimul profile should not plan it against the KB"
+    },
+    "insimul_verb_unmapped": {
+      "stage": "verb",
+      "retryable": false,
+      "means": "the verb is within Insimul's reach and this artifact does not map it yet. Named apart from host_owned because the two have different fixes: one is a design boundary, the other is work",
+      "unblock": "map the verb in addons/insimul_talos/bridge-contract.json and implement its hook"
+    },
+    "insimul_verb_unknown": {
+      "stage": "verb",
+      "retryable": false,
+      "means": "a verb this contract does not declare at all. Under absent-means-absent semantics a typo is indistinguishable from a decision, so an undeclared verb is refused rather than guessed at",
+      "unblock": "check the verb against TBP v1's inventory (talos:docs/03-engine-bridge.md §2.3)"
+    },
+    "insimul_kb_uninitialized": {
+      "stage": "verb",
+      "retryable": true,
+      "means": "a state verb arrived before a world was loaded. BRIDGE §7.5: the adapter never reads the KB at construction, and an empty solution set read as 'no facts' is the silent degradation this rule exists to eliminate",
+      "unblock": "wait for talos_ready_state() to report ready, then retry — this is a warm-up, not a refusal to serve"
+    },
+    "insimul_world_template_write_refused": {
+      "stage": "verb",
+      "retryable": false,
+      "means": "a set_progress_var targeting a world TEMPLATE. Asserted runtime facts belong in save.currentState.prologFacts via the promotion pipeline; a write to a template would corrupt every future playthrough of that world, invisibly (BRIDGE §3.6)",
+      "unblock": "target the playthrough's own state, not the world template"
+    },
+    "insimul_module_inactive": {
+      "stage": "verb",
+      "retryable": false,
+      "means": "the verb is about a module this world's genre bundle never activated. capabilities.insimul.active_modules is what makes this 'not applicable' rather than 'unresponsive' (BRIDGE §3.1, §7.8)",
+      "unblock": "plan against a world whose genre activates the module, or drop the objective"
+    },
+    "insimul_bridge_not_configured": {
+      "stage": "verb",
+      "retryable": false,
+      "means": "the bridge was asked to decide before it was handed its contract and its matrix. A half-present install answers nothing rather than degrading to a default (BRIDGE §7.8)",
+      "unblock": "install addons/insimul_talos in full — bridge-contract.json and supported-versions.json ship with the addon"
+    },
+    "insimul_bridge_extension_absent": {
+      "stage": "install",
+      "retryable": false,
+      "means": "the InsimulTalosBridge GDExtension class is not registered, so the adapter can gather readings and decide nothing with them. Named apart from bridge_not_configured because the fix is a BUILD, not a file copy",
+      "unblock": "install the Insimul plugin and build its GDExtension — insimul-talos-bridge depends on both projects and ships neither"
+    },
+    "insimul_bridge_contract_absent": {
+      "stage": "install",
+      "retryable": false,
+      "means": "bridge-contract.json did not load. §7.8's first silent failure mode is a Talos session degrading to generic scene queries because it never found a working adapter; this is that install, saying so",
+      "unblock": "reinstall addons/insimul_talos in full — copying the .gd files alone leaves an adapter that joins its groups and can answer nothing"
+    },
+    "insimul_bridge_matrix_absent": {
+      "stage": "install",
+      "retryable": false,
+      "means": "supported-versions.json did not load. The refuse-at-hello decision is computed FROM the published matrix and is not baked into the build, so without it there is no decision to make",
+      "unblock": "reinstall addons/insimul_talos in full — supported-versions.json is a vendored mirror of the workspace matrix and ships beside the contract"
+    },
+    "insimul_bridge_vocabulary_absent": {
+      "stage": "install",
+      "retryable": false,
+      "means": "input-vocabulary.json did not load. Without core's action ids the replay leg would admit an action-layer trace core refuses, which is the one divergence §8.7's rider exists to prevent",
+      "unblock": "reinstall addons/insimul_talos in full, or re-run npm run vendor:replay to regenerate the mirrored vocabulary"
+    },
+    "insimul_bridge_contract_malformed": {
+      "stage": "install",
+      "retryable": false,
+      "means": "bridge-contract.json is present but is not an insimul.talos-bridge.contract/1 document. Present is not the same as valid, and a bridge configured from something else would decide from a default",
+      "unblock": "re-copy bridge-contract.json from the addon"
+    },
+    "insimul_bridge_matrix_malformed": {
+      "stage": "install",
+      "retryable": false,
+      "means": "supported-versions.json is present but publishes no engines or no refuse_at_hello.tokens vocabulary",
+      "unblock": "re-run npm run vendor:versions against the workspace matrix"
+    },
+    "insimul_bridge_vocabulary_malformed": {
+      "stage": "install",
+      "retryable": false,
+      "means": "input-vocabulary.json is present but is not an insimul.talos-bridge.input-vocabulary/1 document",
+      "unblock": "re-run npm run vendor:replay against a packages/core checkout"
+    },
+    "insimul_replay_not_configured": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "the replay leg was asked to read a trace before it was handed input-vocabulary.json. It refuses rather than reading the trace loosely, because the check it could not make is precisely the one that matters",
+      "unblock": "install addons/insimul_talos in full; input-vocabulary.json ships with it"
+    },
+    "insimul_trace_invalid_format": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `invalid_format`: the document is not an insimul-input-trace-v1 artifact, or is missing the seed, world descriptor or content address it must carry to be refusable at all",
+      "unblock": "produce the trace with core's buildInputTrace (packages/core/src/replay/input-trace.ts) rather than by hand"
+    },
+    "insimul_trace_malformed_input": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `malformed_input`: one recorded input is not an ENGINE input. Either it carries an action-layer key, or its signal names an Insimul action id, or its payload does not match its channel, or its tick goes backwards (§8.7 step 3)",
+      "unblock": "record what a hand did to a device — `button.interact`, `axis.move_x` — not the action it will be interpreted as"
+    },
+    "insimul_trace_id_mismatch": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `id_mismatch`: the content address does not describe the contents. The whole value of a content-addressed trace is that it cannot quietly become a different one",
+      "unblock": "re-seal the trace; an edited input needs a new id"
+    },
+    "insimul_trace_world_id_mismatch": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `world_id_mismatch`: the trace was recorded against another world. Refused before a single input is applied",
+      "unblock": "replay the trace on the world it names, or record a new one here"
+    },
+    "insimul_trace_world_content_mismatch": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `world_content_mismatch`: the world's authored content moved since the trace was recorded. A divergence caused by that says nothing about determinism, so it is caught by arithmetic rather than by watching a replay go wrong",
+      "unblock": "check out the world content the trace's digest names, or re-record the session"
+    },
+    "insimul_outcome_invalid": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `invalid_outcome`: the outcome document is not an insimul-replay-outcome-v1, cannot name its session, carries a fact whose args are not strings or finite numbers, or carries non-ascending checkpoints",
+      "unblock": "seal the outcome with core's buildReplayOutcome, or with this bridge's seal_outcome"
+    },
+    "insimul_outcome_digest_mismatch": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `outcome_digest_mismatch`: the document's digest does not describe the facts it carries. Whichever half a consumer believed, it would be believing a document that disagrees with itself",
+      "unblock": "re-seal the outcome from its facts"
+    },
+    "insimul_outcome_trace_mismatch": {
+      "stage": "replay",
+      "retryable": false,
+      "means": "core's `trace_mismatch`: the recorded outcome is of a different session from the trace being replayed. Comparing the two would report agreement or disagreement about nothing",
+      "unblock": "compare outcomes that cite the same trace id"
+    },
+    "insimul_replay_world_absent": {
+      "stage": "replay",
+      "retryable": true,
+      "means": "a trace was handed to the bridge before a replay world was. The world a trace is driven through is the GAME's — this artifact plans the ticks and refuses to invent a simulation to run them against",
+      "unblock": "call attach_replay_world() with the world this session should be driven through, then retry"
+    }
+  },
+  "hello_tokens": {
+    "vocabulary": "supported-versions.json → refuse_at_hello.tokens",
+    "note": "The 42-token hello/restore vocabulary is the workspace's, not this artifact's. tools/verify-talos-bridge/check-bridge.mjs fails when this bridge can emit a hello-stage token the published matrix does not carry — the same rule the reference implementation's selftest applies (docs/REFUSE_AT_HELLO.md)."
+  },
+  "replay": {
+    "artifact": "insimul-input-trace-v1",
+    "outcome": "insimul-replay-outcome-v1",
+    "source": "packages/core/src/replay/ (tasklist 180)",
+    "vocabulary": "input-vocabulary.json",
+    "why": "TALOS_INSIMUL_BRIDGE.md §8.6: TBP refuses a foreign-session trace_ref by design (Talos RISK-60, open), so `play_input_trace` is not how one recorded session reaches four engines — the portable artifact is. This bridge reads that artifact, plans the ticks and seals the KB outcome a four-way comparison diffs. The TBP verb itself stays refused as insimul_verb_unmapped, which is the same answer for a better reason.",
+    "codes": {
+      "invalid_format": "insimul_trace_invalid_format",
+      "malformed_input": "insimul_trace_malformed_input",
+      "id_mismatch": "insimul_trace_id_mismatch",
+      "world_id_mismatch": "insimul_trace_world_id_mismatch",
+      "world_content_mismatch": "insimul_trace_world_content_mismatch",
+      "invalid_outcome": "insimul_outcome_invalid",
+      "outcome_digest_mismatch": "insimul_outcome_digest_mismatch",
+      "trace_mismatch": "insimul_outcome_trace_mismatch"
+    }
+  }
+}

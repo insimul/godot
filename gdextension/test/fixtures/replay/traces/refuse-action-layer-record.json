@@ -1,0 +1,35 @@
+{
+  "case": "refuse-action-layer-record",
+  "why": "§8.7 step 3: a trace of already-decided actions begs the question the trace exists to answer, so a record carrying an action-layer key is refused BY NAME.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "down",
+          "action": "attack"
+        }
+      ]
+    },
+    "provenance": {
+      "recorder": "core@replay-fixtures",
+      "note": "minted by tools/vendor-replay-fixtures.mjs"
+    }
+  },
+  "expect": {
+    "ok": false,
+    "code": "malformed_input",
+    "message": "Input 0: input carries `action`, which records an already-decided action — a trace is recorded at the engine input layer, not Insimul's action layer"
+  }
+}
