@@ -9,16 +9,17 @@ README is that, `RUNTIME_CORE_ADOPTION.md` is the design record, and
 ```sh
 npm run check            # ALWAYS. Structural .gd lint + three drift/mirror guards.
 npm run test:mechanics   # the seven band-120 mechanic modules, 43 checks
+npm run test:corpus      # PARITY: 467 of core's golden cases, executed here
 npm run test:radiant     # the first adopted slice, 11 conformance vectors
 npm run test:quest-parity
 npm run test:conformance
 ```
 
 Everything under `gdextension/test/run_*.sh` builds with a **plain C/C++
-compiler** — no cmake, no scons, no godot-cpp, no Godot binary. Three of them
-(`run_radiant_tests.sh`, `run_quest_parity_tests.sh`, `run_mechanic_tests.sh`)
-additionally **link libinsimul** and fail loudly when it is absent rather than
-skipping. Point them at a build:
+compiler** — no cmake, no scons, no godot-cpp, no Godot binary. Four of them
+(`run_radiant_tests.sh`, `run_quest_parity_tests.sh`, `run_mechanic_tests.sh`,
+`run_corpus_tests.sh`) additionally **link libinsimul** and fail loudly when it
+is absent rather than skipping. Point them at a build:
 
 ```sh
 INSIMUL_NATIVE_DIR=<insimul-native checkout>   bash gdextension/test/run_mechanic_tests.sh
@@ -48,6 +49,18 @@ in a top-level `packages/`. All three tools also take `--check` (or run with no
 `--core` at all), which verifies the checked-in artifact's own hashes; adding
 `--core` is what actually diffs against core and is the only real drift check.
 
+**That checkout is shared and it moves under you.** Another agent's run can merge
+into it mid-story — it did during 147/US-2, between vendoring and the drift
+check, which reported one drifted file that was not this repo's doing. Re-vendor
+**all three** artifacts from one commit and re-run `--core` at the end; a corpus
+at one core sha with a bundle at another is real drift, and the guards will say
+so on the next run rather than this one.
+
+Case counts are floored, per area, by hand (`CASE_FLOORS` in
+`tools/vendor-conformance.mjs`). `prologCases` cannot catch a shrink on its own:
+it is written *from* the corpus on every re-vendor, so an upstream corpus that
+lost cases re-vendors to a smaller number and the guard agrees with it.
+
 ## Adopting more of core
 
 One row in `gdextension/corebridge/js/entry.js`, one host implementation, one
@@ -67,6 +80,15 @@ that will bite:
 3. **A session's KB must carry the packs its module's gates read.** Core's
    `checkAction` throws when `forbidden_by/4` raises, and Trealla raises for an
    undefined procedure. Facts alone are not enough.
+4. **A vendored corpus is not adopted until something RUNS it.** Adding a corpus
+   directory to `conformance/` means adding a runner in
+   `corebridge/js/host-corpus.js` keyed by the file's own `area` string, or a
+   NOT_MIRRORED entry in `tools/vendor-conformance.mjs` saying why not.
+   `check-mechanics.mjs`'s sixth check fails on either omission — in **both**
+   directions, plus a total accounting of every directory under `conformance/`.
+   The corpus case crosses the ABI whole (`conformance.run` takes `{area, case}`
+   and returns the entire `expected` shape), so the C++ harness compares rather
+   than interprets and adding an area never touches it.
 
 ## GDScript in this repo
 

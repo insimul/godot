@@ -704,7 +704,7 @@
   function fillTitle(title, bindings) {
     return title.replace(
       /\{(\w+)\}/g,
-      (whole, slot) => slot in bindings ? String(bindings[slot]) : whole
+      (whole2, slot) => slot in bindings ? String(bindings[slot]) : whole2
     );
   }
   function evalAmount(arg, tpl, bindMap) {
@@ -2872,6 +2872,7 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
     "stagger",
     "collapse"
   ]);
+  var DEFAULT_ANIMATION_INTENT = "idle";
   var INFERENCE_REQUEST_KINDS = Object.freeze(["proposal", "utterance"]);
   var MODEL_RESIDENCIES = Object.freeze(["resident", "on-demand", "absent"]);
   var INFERENCE_STATUSES = Object.freeze([
@@ -4662,6 +4663,9 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
       list.push(entry);
       childrenIndex.set(entry.parentAction, list);
     }
+  }
+  function getActionAnimation(actionId) {
+    return actionIndex.get(actionId)?.animation;
   }
 
   // @insimul/core/src/ai/action-selection.ts
@@ -7127,6 +7131,24 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
     }
     return new Map([...totals].sort(([a], [b]) => compareIds(a, b)));
   }
+  function modifierOf(effects, param) {
+    return skillModifiers(effects).get(param) ?? 0;
+  }
+  function parameterField(param) {
+    return param.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
+  }
+  function withSkillModifiers(snapshot2, effects) {
+    const modifiers = skillModifiers(effects);
+    if (modifiers.size === 0) return { ...snapshot2 };
+    const out = { ...snapshot2 };
+    for (const [param, amount] of modifiers) {
+      const field = param in out ? param : parameterField(param);
+      const current = out[field];
+      if (typeof current !== "number") continue;
+      out[field] = current + amount;
+    }
+    return out;
+  }
 
   // @insimul/core/src/skills/skill-view.ts
   function buildSkillView(input) {
@@ -8672,6 +8694,16 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
     SESSIONS.set(handle, s);
     return handle;
   }
+  async function created(s, layer, hydrate) {
+    const handle = openSession(s, layer);
+    try {
+      if (hydrate) await hydrate();
+    } catch (err) {
+      closeSession(handle);
+      throw err;
+    }
+    return { session: handle, orders: s.orders, asked: s.asked };
+  }
   function session(args, module) {
     const handle = args && args.session;
     const found = SESSIONS.get(handle);
@@ -8827,6 +8859,1192 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
     };
   }
 
+  // @insimul/core/src/traversal/fast-travel.ts
+  var DEFAULT_FAST_TRAVEL_TUNING = Object.freeze({
+    hoursPerCost: 1,
+    minimumHours: 1,
+    maxHours: 72,
+    stepHours: 6,
+    maxSteps: 12,
+    action: "fast_travel",
+    mode: "fast_travel"
+  });
+  function whole(value, fallback) {
+    const n = Math.floor(Number.isFinite(value) ? value : fallback);
+    return n > 0 ? n : 0;
+  }
+  function fastTravelCeiling(tuning) {
+    const byHours = whole(tuning.maxHours, DEFAULT_FAST_TRAVEL_TUNING.maxHours);
+    const bySteps = whole(tuning.stepHours, DEFAULT_FAST_TRAVEL_TUNING.stepHours) * whole(tuning.maxSteps, DEFAULT_FAST_TRAVEL_TUNING.maxSteps);
+    return Math.min(byHours, bySteps);
+  }
+  function fastTravelHours(routeCost, tuning) {
+    const ceiling = fastTravelCeiling(tuning);
+    const minimum = Math.min(whole(tuning.minimumHours, DEFAULT_FAST_TRAVEL_TUNING.minimumHours), ceiling);
+    const cost = Number.isFinite(routeCost) && routeCost > 0 ? routeCost : 0;
+    const rate = Number.isFinite(tuning.hoursPerCost) ? tuning.hoursPerCost : 1;
+    const raw = Math.floor(cost * rate);
+    return Math.min(Math.max(raw, minimum), ceiling);
+  }
+  function fastTravelDraw(identity, index) {
+    return roundDeterministic(
+      derivedValue(identity.seed, identity.actor, identity.from, identity.to, identity.journey, index)
+    );
+  }
+  function fastTravelSteps(hours, tuning, identity) {
+    const chunk = whole(tuning.stepHours, DEFAULT_FAST_TRAVEL_TUNING.stepHours) || 1;
+    const limit = whole(tuning.maxSteps, DEFAULT_FAST_TRAVEL_TUNING.maxSteps);
+    const steps = [];
+    let elapsed = 0;
+    while (elapsed < hours && steps.length < limit) {
+      const span = Math.min(chunk, hours - elapsed);
+      elapsed += span;
+      steps.push({
+        index: steps.length,
+        hours: span,
+        elapsed,
+        draw: fastTravelDraw(identity, steps.length)
+      });
+    }
+    return steps;
+  }
+  var FAST_TRAVEL_REFUSALS = Object.freeze([
+    /** The traveller is already there. Not a refusal so much as a no-op. */
+    "same_place",
+    /**
+     * No route the actor can currently use gets there. This is `reachable/3`, so a
+     * landslide, a mode they do not have and a link that was never authored all land
+     * here — you cannot fast travel past something you could not have walked past.
+     */
+    "unreachable",
+    /** `location_discovered/1` — you have not found the place yet. */
+    "undiscovered",
+    /** A `traversal_requires/3` goal on some leg of the route the rules layer did not satisfy. */
+    "requires",
+    /** `permissible/3` refused it — a law, a closed border, 123's skill gates. */
+    "forbidden"
+  ]);
+  function planFastTravel(input) {
+    const tuning = input.tuning ?? DEFAULT_FAST_TRAVEL_TUNING;
+    const ceiling = fastTravelCeiling(tuning);
+    const hours = fastTravelHours(input.route.cost, tuning);
+    const uncapped = Math.floor(
+      Math.max(input.route.cost, 0) * (Number.isFinite(tuning.hoursPerCost) ? tuning.hoursPerCost : 1)
+    );
+    const requires = [];
+    for (const step of input.route.steps) {
+      for (const goal of step.requires) if (!requires.includes(goal)) requires.push(goal);
+    }
+    return {
+      actor: input.actor,
+      from: input.from,
+      to: input.to,
+      journey: input.journey,
+      route: input.route,
+      cost: input.route.cost,
+      hours,
+      ceiling,
+      capped: uncapped > ceiling,
+      steps: fastTravelSteps(hours, tuning, input),
+      requires
+    };
+  }
+
+  // @insimul/core/src/traversal/fast-travel-facts.ts
+  var FAST_TRAVEL_RESOLUTION_PREDICATES = Object.freeze([
+    "location_discovered/1",
+    "at_location/2"
+  ]);
+  function locationDiscoveredFact(location) {
+    return `location_discovered(${prologAtom(location)}).`;
+  }
+  function discoveryDelta(location, known) {
+    return known ? { retract: [], assert: [] } : { retract: [], assert: [locationDiscoveredFact(location)] };
+  }
+  function fastTravelArrivalDelta(actor, from, to) {
+    return arrivalDelta(actor, from, to);
+  }
+
+  // @insimul/core/src/traversal/vehicles.ts
+  var DEFAULT_VEHICLE_ACTIONS = Object.freeze({
+    board: "board",
+    drive: "drive",
+    disembark: "disembark"
+  });
+  var DEFAULT_VEHICLE_SEATS = 1;
+  function vehicleActions(vehicle) {
+    return { ...DEFAULT_VEHICLE_ACTIONS, ...vehicle.actions ?? {} };
+  }
+  function vehicleSeats(vehicle) {
+    const seats = Math.floor(vehicle.seats ?? DEFAULT_VEHICLE_SEATS);
+    return Number.isFinite(seats) && seats > 0 ? seats : DEFAULT_VEHICLE_SEATS;
+  }
+  var VEHICLE_VERBS = Object.freeze(["board", "drive", "disembark"]);
+  var VEHICLE_REFUSALS = Object.freeze([
+    /** No such vehicle. Not a refusal so much as an absence. */
+    "unknown",
+    /** The actor and the vehicle are not in the same place. */
+    "elsewhere",
+    /** Every seat is taken. */
+    "full",
+    /** The actor is not aboard, and the verb needs them to be. */
+    "not_aboard",
+    /** Somebody else has the reins. */
+    "occupied",
+    /** Already true — boarding what you are already in, driving what you already drive. */
+    "redundant",
+    /** `permissible/3` refused it: a law, a norm, an owner who is not you. */
+    "forbidden"
+  ]);
+  function resolveVehicleVerb(input) {
+    const { vehicle, state, actor, verb } = input;
+    const action = vehicleActions(vehicle)[verb];
+    const aboard = state.occupants.includes(actor);
+    const refusal2 = refuseVerb(input, aboard);
+    return {
+      vehicle: vehicle.id,
+      actor,
+      verb,
+      action,
+      available: refusal2 === void 0,
+      refusal: refusal2,
+      grants: verb === "drive" ? vehicle.mode : void 0
+    };
+  }
+  function refuseVerb(input, aboard) {
+    const { vehicle, state, actor, at, verb } = input;
+    if (verb === "board") {
+      if (aboard) return "redundant";
+      if (state.location !== at) return "elsewhere";
+      if (state.occupants.length >= vehicleSeats(vehicle)) return "full";
+      return void 0;
+    }
+    if (verb === "drive") {
+      if (!aboard) return "not_aboard";
+      if (state.driver === actor) return "redundant";
+      if (state.driver !== void 0) return "occupied";
+      return void 0;
+    }
+    return aboard ? void 0 : "not_aboard";
+  }
+  function applyVehicleVerb(state, actor, verb, resolution) {
+    if (!resolution.available) return null;
+    const occupants = new Set(state.occupants);
+    let driver = state.driver;
+    if (verb === "board") occupants.add(actor);
+    if (verb === "drive") driver = actor;
+    if (verb === "disembark") {
+      occupants.delete(actor);
+      if (driver === actor) driver = void 0;
+    }
+    return {
+      ...state,
+      occupants: [...occupants].sort(compareIds),
+      driver
+    };
+  }
+  function isAnothersVehicle(state, actor) {
+    return state.owner !== void 0 && state.owner !== actor;
+  }
+
+  // @insimul/core/src/traversal/vehicle-facts.ts
+  var VEHICLE_RESOLUTION_PREDICATES = Object.freeze([
+    "vehicle_owner/2",
+    "vehicle_occupant/2",
+    "vehicle_driver/2",
+    "at_location/2"
+  ]);
+  var VEHICLE_AUTHORED_PREDICATES = Object.freeze(["vehicle_mode/2"]);
+  function vehicleModeFact(vehicle) {
+    return `vehicle_mode(${prologAtom(vehicle.id)}, ${prologAtom(vehicle.mode)}).`;
+  }
+  function vehicleOwnerFact(vehicleId, owner) {
+    return `vehicle_owner(${prologAtom(vehicleId)}, ${prologAtom(owner)}).`;
+  }
+  function vehicleOccupantFact(vehicleId, actor) {
+    return `vehicle_occupant(${prologAtom(vehicleId)}, ${prologAtom(actor)}).`;
+  }
+  function vehicleDriverFact(vehicleId, actor) {
+    return `vehicle_driver(${prologAtom(vehicleId)}, ${prologAtom(actor)}).`;
+  }
+  function vehicleStateFacts(state) {
+    const facts = [atLocationFact(state.id, state.location)];
+    if (state.owner !== void 0) facts.push(vehicleOwnerFact(state.id, state.owner));
+    for (const occupant of state.occupants) facts.push(vehicleOccupantFact(state.id, occupant));
+    if (state.driver !== void 0) facts.push(vehicleDriverFact(state.id, state.driver));
+    return facts;
+  }
+  function vehicleStateDelta(before, after) {
+    const delta = emptyTraversalDelta();
+    const had = new Set(before?.occupants ?? []);
+    const has2 = new Set(after.occupants);
+    if (before?.location !== after.location) {
+      if (before !== void 0) delta.retract.push(atLocationFact(after.id, before.location));
+      delta.assert.push(atLocationFact(after.id, after.location));
+    }
+    if (before?.owner !== after.owner) {
+      if (before?.owner !== void 0) delta.retract.push(vehicleOwnerFact(after.id, before.owner));
+      if (after.owner !== void 0) delta.assert.push(vehicleOwnerFact(after.id, after.owner));
+    }
+    for (const gone of before?.occupants ?? []) {
+      if (!has2.has(gone)) delta.retract.push(vehicleOccupantFact(after.id, gone));
+    }
+    for (const joined of after.occupants) {
+      if (!had.has(joined)) delta.assert.push(vehicleOccupantFact(after.id, joined));
+    }
+    if (before?.driver !== after.driver) {
+      if (before?.driver !== void 0) delta.retract.push(vehicleDriverFact(after.id, before.driver));
+      if (after.driver !== void 0) delta.assert.push(vehicleDriverFact(after.id, after.driver));
+    }
+    return delta;
+  }
+
+  // @insimul/core/src/items/items.ts
+  var DEFAULT_ITEM_TUNING = Object.freeze({
+    defaultSlotCapacity: 1,
+    carryCapacity: 100,
+    equipAction: "equip",
+    unequipAction: "unequip",
+    moveAction: "move_item"
+  });
+  function findSlot(slots, slotId) {
+    return slots.find((slot) => slot.id === slotId);
+  }
+  var ITEM_PLACE_KINDS = Object.freeze([
+    /** `has_item(Actor, ItemId, Qty)` — carried. */
+    "inventory",
+    /** `container_contains(ContainerId, ItemId, Qty)` — in a chest, a crate, a shelf. */
+    "container",
+    /** `has_equipped(Actor, Slot, ItemId)` — worn or wielded. */
+    "equipped",
+    /** `item_at(ItemId, LocationId, Qty)` — lying in the world, owned by nobody. */
+    "world"
+  ]);
+  function placeKey(place) {
+    return place.kind === "equipped" ? `equipped:${place.holder}:${place.slot ?? ""}` : `${place.kind}:${place.holder}`;
+  }
+  function sortStacks(stacks) {
+    return [...stacks].sort(
+      (a, b) => compareIds(placeKey(a.place), placeKey(b.place)) || compareIds(a.item, b.item)
+    );
+  }
+  function carriedWeight(stacks, definitions) {
+    let total = 0;
+    for (const stack of stacks) {
+      const unit = definitions.get(stack.item)?.weight ?? 0;
+      total += unit * stack.quantity;
+    }
+    return total;
+  }
+  function encumbered(weight, capacity) {
+    return weight > capacity;
+  }
+  function armorValue(worn, definitions) {
+    let total = 0;
+    for (const item of worn) total += definitions.get(item)?.armor ?? 0;
+    return total;
+  }
+  var EQUIP_REFUSALS = Object.freeze([
+    /** The catalogue declares no such item. Not a refusal so much as an absence. */
+    "unknown",
+    /** `has_item/3` does not hold — you cannot put on what you are not carrying. */
+    "not_held",
+    /** The item authored no `equip_slot/2`. It is not equipment. */
+    "no_slot",
+    /** It names a slot the world does not declare — authored content that is wrong. */
+    "unknown_slot",
+    /** `has_equipped/3` already holds for this item. */
+    "already_equipped",
+    /** `slot_free/2` fails — "two rings, not five". */
+    "slot_full",
+    /** An `item_requires/3` skill is missing or too low. */
+    "requires",
+    /** `permissible/3` refused it — a norm, a law, a cursed blade. */
+    "forbidden"
+  ]);
+  function resolveEquip(input) {
+    const tuning = input.tuning ?? DEFAULT_ITEM_TUNING;
+    const item = input.item;
+    const base = {
+      actor: input.actor,
+      item: item?.id ?? input.itemId ?? "",
+      slot: item?.equipSlot ?? "",
+      occupied: input.occupied,
+      capacity: input.slot?.capacity ?? 0,
+      unmet: [],
+      action: tuning.equipAction
+    };
+    if (!item) return { ...base, available: false, refusal: "unknown" };
+    if (!input.held && !input.equipped) return { ...base, available: false, refusal: "not_held" };
+    if (!item.equipSlot) return { ...base, available: false, refusal: "no_slot" };
+    if (!input.slot) return { ...base, available: false, refusal: "unknown_slot" };
+    if (input.equipped) return { ...base, available: false, refusal: "already_equipped" };
+    if (input.occupied >= input.slot.capacity) {
+      return { ...base, available: false, refusal: "slot_full" };
+    }
+    const unmet = unmetRequirements(item, input.levels);
+    if (unmet.length > 0) return { ...base, available: false, refusal: "requires", unmet };
+    return { ...base, available: true };
+  }
+  function unmetRequirements(item, levels) {
+    return item.requires.filter((requirement) => (levels[requirement.skill] ?? 0) < requirement.level).sort((a, b) => compareIds(a.skill, b.skill));
+  }
+  var MOVE_REFUSALS = Object.freeze([
+    /** The catalogue declares no such item. */
+    "unknown",
+    /** A quantity of zero or less, or a fractional one. */
+    "quantity",
+    /** The source and the destination are the same place. */
+    "same_place",
+    /**
+     * Either end is a slot. Equipping and unequipping are actions of their own,
+     * gated on their own atoms, so a generic move will not do either silently —
+     * a silent unequip is how an item ends up somewhere no rule agreed to.
+     */
+    "equipped",
+    /** Fewer than that many are there — `has_item/3` or `container_contains/3` disagrees. */
+    "absent",
+    /** `container_locked/1` on either end. */
+    "locked",
+    /** The destination has no room for it. */
+    "full",
+    /** `permissible/3` refused it — this is where a theft is refused. */
+    "forbidden"
+  ]);
+  function drawItems(input) {
+    const size = Math.floor(input.size);
+    if (!Number.isFinite(size) || size <= 0) return [];
+    const depth = Math.max(1, Math.floor(input.depth));
+    const cycle = Math.floor(input.cycle ?? 0);
+    return input.candidates.map((item) => ({
+      item: item.id,
+      // Weighted by `lootWeight`, so an authored rarity means the same thing on
+      // a shelf as it does in a chest. A `lootWeight` of 0 can still be drawn —
+      // a shop is not a loot table — but sorts last.
+      score: derivedStream(input.seed, input.subject, cycle, item.id)() * drawWeightOf(item)
+    })).sort((a, b) => b.score - a.score || compareIds(a.item, b.item)).slice(0, size).map((entry) => ({
+      item: entry.item,
+      quantity: 1 + Math.floor(derivedStream(input.seed, input.subject, cycle, entry.item, "qty")() * depth)
+    })).sort((a, b) => compareIds(a.item, b.item));
+  }
+  function drawWeightOf(item) {
+    const weight = item.lootWeight;
+    return Number.isFinite(weight) && weight > 0 ? weight : 1;
+  }
+
+  // @insimul/core/src/items/item-effects.ts
+  function equipmentModifiers(items) {
+    const totals = /* @__PURE__ */ new Map();
+    for (const item of items) {
+      for (const [param, amount] of Object.entries(item.effects)) {
+        if (typeof amount !== "number" || !Number.isFinite(amount)) continue;
+        totals.set(param, (totals.get(param) ?? 0) + amount);
+      }
+    }
+    return new Map([...totals].sort(([a], [b]) => compareIds(a, b)));
+  }
+  function equipmentModifierTotals(items) {
+    return Object.fromEntries(equipmentModifiers(items));
+  }
+
+  // @insimul/core/src/items/item-facts.ts
+  var ITEM_RESOLUTION_PREDICATES = Object.freeze([
+    "has_item/3",
+    "container_contains/3",
+    "has_equipped/3",
+    "item_at/3",
+    "carry_capacity/2",
+    "item_condition/2"
+  ]);
+  var ITEM_AUTHORED_PREDICATES = Object.freeze([
+    "item/1",
+    "item_name/2",
+    "item_type/2",
+    "item_weight/2",
+    "item_value/2",
+    "item_sell_value/2",
+    "item_tradeable/1",
+    "item_stackable/1",
+    "item_max_stack/2",
+    "item_tag/2",
+    "item_armor/2",
+    "equip_slot/2",
+    "equip_slot_capacity/2",
+    "item_requires/3"
+  ]);
+  function hasItemFact(actor, item, quantity) {
+    return `has_item(${prologAtom(actor)}, ${prologAtom(item)}, ${quantity}).`;
+  }
+  function containerContainsFact(container, item, quantity) {
+    return `container_contains(${prologAtom(container)}, ${prologAtom(item)}, ${quantity}).`;
+  }
+  function hasEquippedFact(actor, slot, item) {
+    return `has_equipped(${prologAtom(actor)}, ${prologAtom(slot)}, ${prologAtom(item)}).`;
+  }
+  function itemAtFact(item, location, quantity) {
+    return `item_at(${prologAtom(item)}, ${prologAtom(location)}, ${quantity}).`;
+  }
+  function placeFacts(place, item, quantity) {
+    switch (place.kind) {
+      case "inventory":
+        return [hasItemFact(place.holder, item, quantity)];
+      case "container":
+        return [containerContainsFact(place.holder, item, quantity)];
+      case "equipped":
+        return [
+          hasEquippedFact(place.holder, place.slot ?? "", item),
+          hasItemFact(place.holder, item, quantity)
+        ];
+      case "world":
+        return [itemAtFact(item, place.holder, quantity)];
+    }
+  }
+
+  // @insimul/core/src/items/economy.ts
+  var DEFAULT_ECONOMY_TUNING = Object.freeze({
+    markupPercent: 0,
+    sellMarginPercent: 100,
+    scarcityPercent: 0,
+    stockNormal: 0,
+    standingPercent: 0,
+    standingScale: 100,
+    proprietorPercent: 0,
+    minimumPrice: 0,
+    buyAction: "buy_item",
+    sellAction: "sell_item",
+    stockSize: 0,
+    stockDepth: 1
+  });
+  var PRICE_FACTORS = Object.freeze([
+    /** `vendor_markup/2` — the business's margin. Absent for a sale, which pays a margin instead. */
+    "markup",
+    /** How far below `item_stock_normal/2` the shelf has fallen. */
+    "scarcity",
+    /** `reputation/3` with the vendor's faction, scaled by `standingScale`. */
+    "standing",
+    /** `business_owner/2` names this actor — they are buying from their own shop. */
+    "proprietor"
+  ]);
+  function resolvePrice(input) {
+    const tuning = input.tuning ?? DEFAULT_ECONOMY_TUNING;
+    const item = input.item;
+    const quantity = Math.max(0, Math.floor(input.quantity ?? 1));
+    const buying = input.direction === "buy";
+    const market = input.market;
+    const base = item ? buying ? item.value : sellBase(item, tuning) : 0;
+    const adjustments = [];
+    if (item && market) {
+      if (buying && market.vendor.markupPercent !== 0) {
+        adjustments.push(
+          adjustment("markup", market.vendor.markupPercent, base, market.vendor.business)
+        );
+      }
+      const scarcity = scarcityPercent(market, tuning);
+      if (scarcity !== 0) adjustments.push(adjustment("scarcity", scarcity, base, market.vendor.id));
+      if (market.standing !== void 0 && tuning.standingPercent !== 0) {
+        const share = clampUnit(market.standing / tuning.standingScale);
+        const percent = round(tuning.standingPercent * share) * (buying ? -1 : 1);
+        if (percent !== 0) adjustments.push(adjustment("standing", percent, base, market.faction));
+      }
+      if (market.owner !== void 0 && market.owner === input.actor && tuning.proprietorPercent !== 0) {
+        const percent = tuning.proprietorPercent * (buying ? -1 : 1);
+        adjustments.push(adjustment("proprietor", percent, base, market.owner));
+      }
+    }
+    const raw = base + adjustments.reduce((sum, term4) => sum + term4.amount, 0);
+    const unit = Math.max(tuning.minimumPrice, raw);
+    return {
+      item: item?.id ?? input.itemId ?? "",
+      direction: input.direction,
+      base,
+      adjustments,
+      unit,
+      quantity,
+      total: unit * quantity,
+      fallback: market === void 0
+    };
+  }
+  function sellBase(item, tuning) {
+    return round(item.sellValue * tuning.sellMarginPercent / 100);
+  }
+  function scarcityPercent(market, tuning) {
+    if (tuning.scarcityPercent === 0) return 0;
+    const normal = market.stockNormal ?? tuning.stockNormal;
+    if (!Number.isFinite(normal) || normal <= 0) return 0;
+    const stock = Math.max(0, market.stock ?? 0);
+    if (stock >= normal) return 0;
+    return round(tuning.scarcityPercent * (normal - stock) / normal);
+  }
+  function adjustment(factor, percent, base, subject) {
+    return { factor, percent, amount: round(base * percent / 100), subject };
+  }
+  function round(value) {
+    return value < 0 ? -Math.round(-value) : Math.round(value);
+  }
+  function clampUnit(value) {
+    if (!Number.isFinite(value)) return 0;
+    return value < 0 ? 0 : value > 1 ? 1 : value;
+  }
+  var TRANSACTION_REFUSALS = Object.freeze([
+    /** The catalogue declares no such item. */
+    "unknown",
+    /** A quantity of zero or less, or a fractional one. */
+    "quantity",
+    /** `item_tradeable/1` does not hold — a quest letter is not merchandise. */
+    "not_tradeable",
+    /** Fewer on the shelf (a purchase) or in the pack (a sale) than were asked for. */
+    "out_of_stock",
+    /** `gold/2` says the buyer cannot cover it. */
+    "cannot_afford",
+    /** The vendor's till cannot cover what they offered — a sale, refused. */
+    "till_empty",
+    /** `permissible/3` refused it. A theft is what happens next anyway. */
+    "forbidden"
+  ]);
+  function resolveTransaction(input) {
+    const tuning = input.tuning ?? DEFAULT_ECONOMY_TUNING;
+    const item = input.item;
+    const buying = input.direction === "buy";
+    const price = resolvePrice({
+      actor: input.actor,
+      item,
+      itemId: input.itemId,
+      direction: input.direction,
+      quantity: input.quantity,
+      market: input.market,
+      tuning
+    });
+    const base = {
+      actor: input.actor,
+      vendor: input.market?.vendor.id ?? input.vendorId ?? "",
+      item: item?.id ?? input.itemId ?? "",
+      direction: input.direction,
+      quantity: input.quantity,
+      price,
+      action: buying ? tuning.buyAction : tuning.sellAction
+    };
+    if (!item) return { ...base, available: false, refusal: "unknown" };
+    if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
+      return { ...base, available: false, refusal: "quantity" };
+    }
+    if (!item.tradeable) return { ...base, available: false, refusal: "not_tradeable" };
+    if (input.supply < input.quantity) {
+      return { ...base, available: false, refusal: "out_of_stock" };
+    }
+    if (buying && input.actorGold !== void 0 && input.actorGold < price.total) {
+      return { ...base, available: false, refusal: "cannot_afford" };
+    }
+    if (!buying && input.vendorGold !== void 0 && input.vendorGold < price.total) {
+      return { ...base, available: false, refusal: "till_empty" };
+    }
+    return { ...base, available: true };
+  }
+
+  // @insimul/core/src/items/placement.ts
+  var DEFAULT_PLACEMENT_TUNING = Object.freeze({
+    lootDraws: 3,
+    lootDepth: 2
+  });
+  function placementTuningFromIR(ir) {
+    const d = DEFAULT_PLACEMENT_TUNING;
+    if (!ir) return { ...d };
+    const num2 = (value, fallback) => typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+    return {
+      lootDraws: num2(ir.lootDraws, d.lootDraws),
+      lootDepth: num2(ir.lootDepth, d.lootDepth)
+    };
+  }
+  function itemPlacementsFromIR(ir) {
+    return (ir?.placements ?? []).filter((row) => typeof row?.id === "string" && row.id !== "").map((row) => placementFromIR(row)).sort((a, b) => compareIds(a.id, b.id));
+  }
+  function placementFromIR(row) {
+    const quantity = Math.floor(row.quantity ?? 1);
+    const placement = {
+      id: row.id,
+      item: row.item ?? "",
+      quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+      location: row.locationId ?? "",
+      container: row.containerId,
+      declares: row.container ? containerFromIR(row.container) : void 0,
+      rotation: typeof row.rotation === "number" && Number.isFinite(row.rotation) ? row.rotation : void 0,
+      archetype: row.archetype
+    };
+    if (row.position) {
+      placement.position = {
+        x: finite(row.position.x, 0),
+        z: finite(row.position.z, 0),
+        y: typeof row.position.y === "number" && Number.isFinite(row.position.y) ? row.position.y : void 0
+      };
+    }
+    return placement;
+  }
+  function containerFromIR(container) {
+    const draws = Math.floor(container.draws ?? 0);
+    return {
+      type: container.type ?? "container",
+      locked: container.locked === true,
+      keyItem: container.keyItem,
+      lootTable: container.lootTable,
+      draws: Number.isFinite(draws) && draws > 0 ? draws : void 0
+    };
+  }
+  function finite(value, fallback) {
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  }
+  function placeOf(placement) {
+    return placement.container === void 0 ? { kind: "world", holder: placement.location } : { kind: "container", holder: placement.container };
+  }
+  function isContainerPlacement(placement) {
+    return placement.declares !== void 0;
+  }
+  function lootTablesFromIR(tables) {
+    const out = /* @__PURE__ */ new Map();
+    for (const table of tables ?? []) {
+      if (!table || typeof table.enemyType !== "string" || table.enemyType === "") continue;
+      out.set(table.enemyType, {
+        id: table.enemyType,
+        entries: (table.entries ?? []).filter((entry) => typeof entry?.itemId === "string" && entry.itemId !== "").map((entry) => ({
+          item: entry.itemId,
+          chance: normalizedChance(entry.dropChance),
+          minQuantity: Math.max(1, Math.floor(finite(entry.minQuantity, 1))),
+          maxQuantity: Math.max(1, Math.floor(finite(entry.maxQuantity, 1)))
+        })).sort((a, b) => compareIds(a.item, b.item)),
+        goldMin: Math.max(0, Math.floor(finite(table.goldMin, 0))),
+        goldMax: Math.max(0, Math.floor(finite(table.goldMax, 0)))
+      });
+    }
+    return out;
+  }
+  function normalizedChance(value) {
+    const chance = finite(value, 0);
+    if (chance <= 0) return 0;
+    if (chance <= 1) return chance;
+    return Math.min(1, chance / 100);
+  }
+  function generateLoot(input) {
+    const tuning = input.tuning ?? DEFAULT_PLACEMENT_TUNING;
+    const cycle = Math.floor(input.cycle ?? 0);
+    if (input.table) {
+      const entries = [];
+      for (const entry of input.table.entries) {
+        const roll2 = derivedStream(input.seed, input.container, cycle, entry.item)();
+        if (roll2 >= entry.chance) continue;
+        const span = Math.max(0, entry.maxQuantity - entry.minQuantity);
+        const extra = Math.floor(
+          derivedStream(input.seed, input.container, cycle, entry.item, "qty")() * (span + 1)
+        );
+        entries.push({ item: entry.item, quantity: entry.minQuantity + Math.min(span, extra) });
+      }
+      const goldSpan = Math.max(0, input.table.goldMax - input.table.goldMin);
+      const gold = input.table.goldMin + Math.min(
+        goldSpan,
+        Math.floor(derivedStream(input.seed, input.container, cycle, "gold")() * (goldSpan + 1))
+      );
+      return { entries: entries.sort((a, b) => compareIds(a.item, b.item)), gold };
+    }
+    return {
+      entries: drawItems({
+        seed: input.seed,
+        subject: input.container,
+        cycle,
+        candidates: input.catalogue ?? [],
+        size: input.draws ?? tuning.lootDraws,
+        depth: tuning.lootDepth
+      }),
+      gold: 0
+    };
+  }
+
+  // @insimul/core/src/routines/movement.ts
+  var DEFAULT_MOVEMENT_TUNING = Object.freeze({
+    // Above the 50 an ordinary routine block is worth: a shift about to start, a
+    // quest step, an appointment.
+    hurriedAt: 60,
+    // Flight, alarm, a threat. Deliberately high — an NPC that runs everywhere
+    // reads as broken, and `urgent` is the one rung a host may actually run on.
+    urgentAt: 85,
+    // A goal worth nothing much. Zero rather than negative so a world that authors
+    // `priority: 0` gets the stroll it asked for.
+    idleAt: 0,
+    attemptsBeforeReplan: 2
+  });
+  function urgencyFor(priority, tuning = DEFAULT_MOVEMENT_TUNING) {
+    if (typeof priority !== "number" || !Number.isFinite(priority)) return "ordinary";
+    const value = Math.trunc(priority);
+    if (value >= tuning.urgentAt) return "urgent";
+    if (value >= tuning.hurriedAt) return "hurried";
+    if (value <= tuning.idleAt) return "idle";
+    return "ordinary";
+  }
+  function movementIntent(input) {
+    if (input.suspended === true) return null;
+    if (!input.destination || !input.from) return null;
+    const tuning = input.tuning ?? DEFAULT_MOVEMENT_TUNING;
+    return {
+      actor: input.actor,
+      from: input.from,
+      destination: input.destination,
+      urgency: urgencyFor(input.priority, tuning),
+      stance: input.stance ?? "standing"
+    };
+  }
+  function inPlace(intent) {
+    return intent !== null && intent.from === intent.destination;
+  }
+  var NAVIGATION_FAILURES = Object.freeze([
+    "unplaced",
+    "no_route",
+    "refused",
+    "not_arrived"
+  ]);
+  function shouldReplan(failures, tuning = DEFAULT_MOVEMENT_TUNING) {
+    return failures >= Math.max(1, Math.trunc(tuning.attemptsBeforeReplan));
+  }
+
+  // @insimul/core/src/routines/animation.ts
+  var VOCABULARY = new Set(ANIMATION_INTENTS);
+  function isAnimationIntent(value) {
+    return typeof value === "string" && VOCABULARY.has(value);
+  }
+  var NO_AUTHORED_ANIMATIONS = /* @__PURE__ */ new Map();
+  function animationIntentFor(action, authored = NO_AUTHORED_ANIMATIONS) {
+    return authored.get(action) ?? getActionAnimation(action) ?? DEFAULT_ANIMATION_INTENT;
+  }
+
+  // @insimul/core/src/conformance/__tests__/headless-routine-host.ts
+  var RecordingKb = class {
+    constructor() {
+      /** Every write, in order, as `+clause` / `-clause`. The whole record. */
+      __publicField(this, "log", []);
+      __publicField(this, "held", /* @__PURE__ */ new Set());
+    }
+    async assertFact(fact) {
+      this.log.push(`+${fact}`);
+      this.held.add(fact);
+      return true;
+    }
+    async retractFact(fact) {
+      this.log.push(`-${fact}`);
+      return this.held.delete(fact);
+    }
+    /** Everything the KB now holds, canonically sorted. */
+    facts() {
+      return [...this.held].sort();
+    }
+    /** The writes since the mark, as `{ retract, assert }` — one step's delta. */
+    since(mark) {
+      const written = this.log.slice(mark);
+      return {
+        retract: written.filter((entry) => entry.startsWith("-")).map((entry) => entry.slice(1)),
+        assert: written.filter((entry) => entry.startsWith("+")).map((entry) => entry.slice(1))
+      };
+    }
+    /** How many writes have happened. The mark {@link since} counts from. */
+    mark() {
+      return this.log.length;
+    }
+    /** Satisfies the one parameter `RoutineDirector` takes. See {@link RoutineKbWriter}. */
+    asEngine() {
+      return this;
+    }
+  };
+  var RecordingPlans = class {
+    constructor() {
+      __publicField(this, "interrupts", []);
+    }
+    interrupt(agent, reason) {
+      this.interrupts.push({ agent, reason: reason ?? null });
+    }
+  };
+
+  // corebridge/js/host-corpus.js
+  function combatFactsFor(c, resolved) {
+    if (resolved.damage <= 0) return resolutionFacts(resolved);
+    const threat = threatAfterDamage(resolved.damage, resolved.targetMaxHealth, c.threatBefore ?? 0);
+    return resolutionFacts(resolved, { threat, priorThreat: c.threatBefore });
+  }
+  function runCombatResolution(c) {
+    if (c.kind === "defense") {
+      const resolved2 = resolveDefense(c.input);
+      return { resolution: resolved2, facts: defenseFacts(resolved2) };
+    }
+    const resolved = resolveAttack(c.input);
+    const out = { resolution: resolved, facts: combatFactsFor(c, resolved) };
+    if (c.expected && c.expected.threat !== void 0) {
+      out.threat = threatAfterDamage(resolved.damage, resolved.targetMaxHealth, c.threatBefore ?? 0);
+    }
+    return out;
+  }
+  function runCombatActionTable(c) {
+    const table = new CombatActionTable();
+    const loaded = table.loadFromIR(c.actions, c.combat);
+    const rows = table.all();
+    return {
+      loaded,
+      rows,
+      facts: rows.flatMap((row) => combatActionFacts(row)),
+      projectiles: table.projectileActions().map((row) => row.id),
+      defensive: table.defensiveActions().map((row) => row.id)
+    };
+  }
+  var ACT_CONTEXT = {
+    event: "evt:act:1",
+    actor: { kind: "ent", namespace: "insimul:world:alderforest", localId: "npc-thief" },
+    object: { kind: "ent", namespace: "insimul:world:alderforest", localId: "npc-guard" },
+    coarseActor: { kind: "ent", namespace: "insimul:world:alderforest", localId: "someone" }
+  };
+  function runStealthDetection(c) {
+    const result = runDetection(c.input);
+    return {
+      updates: result.updates,
+      memory: result.memory,
+      facts: detectionPassFacts(result.updates),
+      perceptions: result.perception.perceptions,
+      beliefFacts: result.perception.beliefFacts,
+      perceptFacts: result.perception.perceptFacts,
+      perceivedFacts: result.perception.perceivedFacts
+    };
+  }
+  function runStealthActions(c) {
+    const table = new StealthActionTable();
+    const loaded = table.loadFromIR(c.actions, c.columns);
+    const rows = table.all();
+    return {
+      loaded,
+      rows,
+      facts: rows.flatMap((row) => stealthActionFacts(row)),
+      effects: rows.map((row) => ({ id: row.id, effects: stealthActEffects(row) })),
+      percepts: rows.map((row) => ({ id: row.id, percept: stealthActFor(row, ACT_CONTEXT) ?? null }))
+    };
+  }
+  function runTraversalAffordances(c) {
+    const input = c.input;
+    const resolved = resolveAffordances(input);
+    return {
+      affordances: resolved,
+      best: c.best === null ? null : bestAffordance(resolved, c.best) ?? null,
+      route: c.route === null ? null : findRoute({ ...input, ...c.route }) ?? null,
+      graphFacts: traversalGraphFacts(input.links, input.tuning)
+    };
+  }
+  function runTraversalFastTravel(c) {
+    const input = c.input;
+    const route = findRoute({
+      actor: input.actor,
+      from: input.from,
+      to: input.to,
+      links: input.links,
+      modes: input.modes,
+      blocked: input.blocked,
+      tuning: input.graphTuning
+    });
+    const plan = route === void 0 ? null : planFastTravel({
+      seed: input.seed,
+      actor: input.actor,
+      from: input.from,
+      to: input.to,
+      journey: input.journey,
+      route,
+      tuning: input.tuning
+    });
+    return {
+      route: route ?? null,
+      plan,
+      arrival: plan === null ? null : fastTravelArrivalDelta(input.actor, input.from, input.to),
+      discovery: plan === null ? null : discoveryDelta(input.to, false),
+      discoveryWhenAlreadyKnown: plan === null ? null : discoveryDelta(input.to, true)
+    };
+  }
+  function runTraversalVehicles(c) {
+    const resolution = resolveVehicleVerb({
+      vehicle: c.vehicle,
+      state: c.state,
+      actor: c.actor,
+      at: c.at,
+      verb: c.verb
+    });
+    const next = applyVehicleVerb(c.state, c.actor, c.verb, resolution);
+    return {
+      resolution,
+      next,
+      actions: vehicleActions(c.vehicle),
+      seats: vehicleSeats(c.vehicle),
+      modeFact: vehicleModeFact(c.vehicle),
+      stateFacts: vehicleStateFacts(c.state),
+      delta: next === null ? { retract: [], assert: [] } : vehicleStateDelta(c.state, next),
+      anothers: isAnothersVehicle(c.state, c.actor)
+    };
+  }
+  function runSkillAdvance(c) {
+    const input = c.input;
+    const skill = input.skill ?? void 0;
+    const max = maxLevelOf(skill, input.tuning);
+    const curve = [];
+    for (let level = 0; level <= max + 1; level += 1) curve.push(xpForLevel(skill, level, input.tuning));
+    return { resolution: resolveAdvance({ ...input, skill }), curve, maxLevel: max };
+  }
+  function runSkillUnlock(c) {
+    const input = c.input;
+    const node = input.node ?? void 0;
+    return {
+      resolution: resolveUnlock({ ...input, node }),
+      requirements: node ? [...nodeRequirements(node)] : [],
+      cost: node ? nodeCost(node, input.tuning) : 0
+    };
+  }
+  function runSkillEffects(c) {
+    const input = c.input;
+    const modifiers = {};
+    for (const [param, amount] of skillModifiers(input.effects)) modifiers[param] = amount;
+    return {
+      modifiers,
+      unlocks: unlockedActions(input.effects),
+      permits: permittedThings(input.effects),
+      modified: withSkillModifiers(input.snapshot, input.effects),
+      modifierOf: modifierOf(input.effects, input.parameter)
+    };
+  }
+  function runSkillTrees(c) {
+    const input = c.input;
+    const depths = {};
+    for (const tree of input.trees) for (const n of tree.nodes) depths[n.id] = nodeDepth(tree, n.id);
+    return {
+      view: buildSkillView(input),
+      funded: treesFundedBy(input.trees, input.trees[0]?.skill ?? ""),
+      depths
+    };
+  }
+  function wornFrom(input) {
+    const declared = [...input.slots].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)).map((slot) => slot.id);
+    const order2 = (slot) => {
+      const index = declared.indexOf(slot);
+      return index === -1 ? declared.length : index;
+    };
+    return input.stacks.filter((stack) => stack.place.kind === "equipped" && stack.place.holder === input.actor).slice().sort(
+      (a, b) => order2(a.place.slot ?? "") - order2(b.place.slot ?? "") || (a.place.slot ?? "").localeCompare(b.place.slot ?? "") || a.item.localeCompare(b.item)
+    ).map((stack) => stack.item);
+  }
+  function runItemsEquipping(c) {
+    const input = c.input;
+    const item = input.item ?? void 0;
+    const definitions = new Map(input.catalogue.map((row) => [row.id, row]));
+    const worn = wornFrom(input);
+    const mine = input.stacks.filter(
+      (stack) => (stack.place.kind === "inventory" || stack.place.kind === "equipped") && stack.place.holder === input.actor
+    );
+    const weight = carriedWeight(mine, definitions);
+    return {
+      resolution: resolveEquip({
+        actor: input.actor,
+        item,
+        itemId: input.itemId,
+        slot: item?.equipSlot ? findSlot(input.slots, item.equipSlot) : void 0,
+        occupied: input.occupied,
+        held: input.held,
+        equipped: input.equipped,
+        levels: input.levels,
+        tuning: input.tuning
+      }),
+      unmet: item ? unmetRequirements(item, input.levels) : [],
+      facts: sortStacks(input.stacks).flatMap(
+        (stack) => placeFacts(stack.place, stack.item, stack.quantity)
+      ),
+      worn,
+      weight,
+      encumbered: encumbered(weight, input.tuning.carryCapacity),
+      armor: armorValue(worn, definitions),
+      modifiers: equipmentModifierTotals(
+        worn.map((id) => definitions.get(id)).filter((row) => !!row)
+      )
+    };
+  }
+  function runItemsPricing(c) {
+    const input = c.input;
+    return {
+      price: resolvePrice({
+        actor: input.actor,
+        item: input.item ?? void 0,
+        itemId: input.itemId,
+        direction: input.direction,
+        quantity: input.quantity,
+        market: input.market ?? void 0,
+        tuning: input.tuning
+      })
+    };
+  }
+  function runItemsTransactions(c) {
+    const input = c.input;
+    return {
+      resolution: resolveTransaction({
+        actor: input.actor,
+        item: input.item ?? void 0,
+        itemId: input.itemId,
+        direction: input.direction,
+        quantity: input.quantity,
+        market: input.market ?? void 0,
+        vendorId: input.vendorId,
+        supply: input.supply,
+        actorGold: input.actorGold,
+        vendorGold: input.vendorGold,
+        tuning: input.tuning
+      })
+    };
+  }
+  function runItemsPlacement(c) {
+    const input = c.input;
+    const tuning = placementTuningFromIR(input.ir);
+    const placements = itemPlacementsFromIR(input.ir);
+    const tables = lootTablesFromIR(input.lootTables);
+    const places = {};
+    const loot = {};
+    for (const row of placements) {
+      places[row.id] = placeOf(row);
+      if (!isContainerPlacement(row)) continue;
+      const named = row.declares?.lootTable;
+      loot[row.id] = generateLoot({
+        seed: input.seed,
+        container: row.id,
+        cycle: input.cycle,
+        table: named ? tables.get(named) : void 0,
+        catalogue: input.catalogue,
+        draws: row.declares?.draws,
+        tuning
+      });
+    }
+    return {
+      tuning,
+      placements,
+      places,
+      containers: placements.filter(isContainerPlacement).map((row) => row.id),
+      loot
+    };
+  }
+  function runRoutineGoals(c) {
+    const { tuning, clock, agent } = c.input;
+    const authored = c.input.routines.routines?.find((r) => r.id === c.input.routine);
+    if (authored === void 0) throw new Error(`${c.name} names a routine it did not author`);
+    const routine = resolveRoutine(authored, tuning);
+    const active = activeBlock(routine, clock, tuning);
+    return {
+      resolved: routine,
+      weekday: weekdayOf(clock, tuning),
+      due: dueBlocks(routine, clock, tuning).map((block) => block.id),
+      active: active?.id ?? null,
+      goal: active?.goal ?? null,
+      priority: active?.priority ?? null,
+      destination: active?.place ?? null,
+      graphFacts: routineGraphFacts([routine], tuning),
+      issues: routineIssues([routine], tuning),
+      delta: adoptedGoalDelta(
+        agent,
+        null,
+        active === null ? null : { goal: active.goal, priority: active.priority }
+      )
+    };
+  }
+  async function runRoutineInterruption(c) {
+    const input = c.input;
+    const kb = new RecordingKb();
+    const plans = new RecordingPlans();
+    const director = new RoutineDirector({ routines: input.routines, engine: kb.asEngine(), plans });
+    const steps = [];
+    for (const step of input.steps) {
+      const mark = kb.mark();
+      const before = plans.interrupts.length;
+      let outcomes;
+      switch (step.do) {
+        case "assign":
+          await director.assign(step.agent, step.routine);
+          break;
+        case "tick":
+          outcomes = [...(await director.tick(step.clock, input.roster)).outcomes];
+          break;
+        case "preempt":
+          await director.preempt(step.agent, step.reason, step.block);
+          break;
+        case "resume":
+          await director.resume(step.agent);
+          break;
+        case "forget":
+          await director.forget(step.agent);
+          break;
+      }
+      steps.push({
+        ...outcomes === void 0 ? {} : { outcomes },
+        delta: kb.since(mark),
+        interrupts: plans.interrupts.slice(before)
+      });
+    }
+    return { steps, facts: kb.facts(), state: director.serialize() };
+  }
+  function runRoutineIntents(c) {
+    const input = c.input;
+    const authored = new Map(
+      Object.entries(input.authored).flatMap(
+        ([action, intent2]) => isAnimationIntent(intent2) ? [[action, intent2]] : []
+      )
+    );
+    const intent = movementIntent({
+      actor: input.actor,
+      from: input.from,
+      destination: input.destination,
+      priority: input.priority,
+      stance: input.stance,
+      suspended: input.suspended,
+      tuning: input.tuning
+    });
+    return {
+      intent,
+      inPlace: inPlace(intent),
+      urgency: urgencyFor(input.priority, input.tuning),
+      replan: shouldReplan(input.failures, input.tuning),
+      animation: animationIntentFor(input.action, authored)
+    };
+  }
+  var CORPUS_AREAS = {
+    "combat-resolution": runCombatResolution,
+    "combat-action-table": runCombatActionTable,
+    "stealth-detection": runStealthDetection,
+    "stealth-actions": runStealthActions,
+    "traversal-affordances": runTraversalAffordances,
+    "traversal-fast-travel": runTraversalFastTravel,
+    "traversal-vehicles": runTraversalVehicles,
+    "skills-advancement": runSkillAdvance,
+    "skills-unlocks": runSkillUnlock,
+    "skills-effects": runSkillEffects,
+    "skills-trees": runSkillTrees,
+    "items-equipping": runItemsEquipping,
+    "items-pricing": runItemsPricing,
+    "items-transactions": runItemsTransactions,
+    "items-placement": runItemsPlacement,
+    "routine-goals": runRoutineGoals,
+    "routine-intents": runRoutineIntents,
+    "routine-interruption": runRoutineInterruption
+  };
+  var CORPUS_AREAS_BY_MODULE = {
+    combat: ["combat-resolution", "combat-action-table"],
+    perception: ["stealth-detection", "stealth-actions"],
+    traversal: ["traversal-affordances", "traversal-fast-travel", "traversal-vehicles"],
+    skill: ["skills-advancement", "skills-unlocks", "skills-effects", "skills-trees"],
+    equipment: ["items-equipping", "items-pricing", "items-transactions", "items-placement"],
+    routine: ["routine-goals", "routine-intents", "routine-interruption"],
+    // `stamina` has no decision corpus of its own: StaminaPool's arithmetic is
+    // pinned inside conformance/combat/resolution.json (every attack case
+    // carries the meter and pins `attackerStaminaAfter`) and its vocabulary in
+    // conformance/prolog/mechanic-stamina.json. Recorded as an empty list rather
+    // than omitted, so "no corpus" is a statement and not an oversight.
+    stamina: []
+  };
+  async function runCorpusCase(area, testCase) {
+    const runner = CORPUS_AREAS[area];
+    if (!runner) {
+      throw new Error(
+        `insimulcore: no conformance runner for area "${area}" \u2014 add one in gdextension/corebridge/js/host-corpus.js, or the vendored corpus is a checked-in file nothing executes.`
+      );
+    }
+    return await runner(testCase);
+  }
+
   // corebridge/js/entry.js
   var MECHANIC_MODULES = {
     combat: {
@@ -8937,10 +10155,10 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         combat: combatSystemShim(s),
         host: adapterFor(s)
       });
-      const handle = openSession(s, layer);
-      for (const combatant of args.combatants ?? []) layer.register(combatant);
-      if (engine && args.actions) await layer.publishActionTable();
-      return { session: handle, orders: s.orders };
+      return created(s, layer, async () => {
+        for (const combatant of args.combatants ?? []) layer.register(combatant);
+        if (engine && args.actions) await layer.publishActionTable();
+      });
     },
     "combat.attack": async (args) => {
       const s = beginCall(session(args, "combat"), args);
@@ -8994,10 +10212,10 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         ...args.state ? { state: args.state } : {},
         survival: survivalShim(s)
       });
-      const handle = openSession(s, layer);
-      for (const actor of args.actors ?? []) layer.register(actor);
-      if (engine && args.publishTuning) await layer.publishTuning();
-      return { session: handle, orders: s.orders };
+      return created(s, layer, async () => {
+        for (const actor of args.actors ?? []) layer.register(actor);
+        if (engine && args.publishTuning) await layer.publishTuning();
+      });
     },
     "stamina.spend": async (args) => {
       const s = beginCall(session(args, "stamina"), args);
@@ -9045,11 +10263,11 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         ...args.actions ? { actions: args.actions } : {},
         host: adapterFor(s)
       });
-      const handle = openSession(s, layer);
-      for (const observer of args.observers ?? []) layer.registerObserver(observer);
-      for (const target of args.targets ?? []) layer.registerTarget(target);
-      if (engine && args.actions) await layer.publishActions();
-      return { session: handle, orders: s.orders };
+      return created(s, layer, async () => {
+        for (const observer of args.observers ?? []) layer.registerObserver(observer);
+        for (const target of args.targets ?? []) layer.registerTarget(target);
+        if (engine && args.actions) await layer.publishActions();
+      });
     },
     "perception.observe": async (args) => {
       const s = beginCall(session(args, "perception"), args);
@@ -9084,10 +10302,10 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         host: adapterFor(s),
         ...args.state ? { state: args.state } : {}
       });
-      const handle = openSession(s, layer);
-      for (const actor of args.actors ?? []) await layer.register(actor);
-      if (engine && args.links) await layer.publishGraph();
-      return { session: handle, orders: s.orders };
+      return created(s, layer, async () => {
+        for (const actor of args.actors ?? []) await layer.register(actor);
+        if (engine && args.links) await layer.publishGraph();
+      });
     },
     "traversal.traverse": async (args) => {
       const s = beginCall(session(args, "traversal"), args);
@@ -9121,10 +10339,10 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         ...args.state ? { state: args.state } : {},
         skillModifiers: skillModifierSinkShim(s)
       });
-      const handle = openSession(s, layer);
-      if (engine && (args.skills || args.trees)) await layer.publishWorld();
-      for (const actor of args.actors ?? []) await layer.register(actor);
-      return { session: handle, orders: s.orders };
+      return created(s, layer, async () => {
+        if (engine && (args.skills || args.trees)) await layer.publishWorld();
+        for (const actor of args.actors ?? []) await layer.register(actor);
+      });
     },
     "skill.award": async (args) => {
       const s = beginCall(session(args, "skill"), args);
@@ -9150,8 +10368,7 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         ...args.state ? { state: args.state } : {},
         combatStats: combatStatSinkShim(s)
       });
-      const handle = openSession(s, layer);
-      return { session: handle, orders: s.orders, asked: s.asked };
+      return created(s, layer);
     },
     "equipment.equip": (args) => {
       const s = beginCall(session(args, "equipment"), args);
@@ -9178,12 +10395,12 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
         ...args.routines ? { routines: args.routines } : {},
         ...args.tuning ? { tuning: args.tuning } : {}
       });
-      const handle = openSession(s, layer);
-      if (engine && args.routines) await layer.publishRoutines();
-      for (const assignment of args.assign ?? []) {
-        await layer.assign(assignment.agent, assignment.routine ?? null);
-      }
-      return { session: handle, orders: s.orders, issues: layer.issues() };
+      return created(s, layer, async () => {
+        if (engine && args.routines) await layer.publishRoutines();
+        for (const assignment of args.assign ?? []) {
+          await layer.assign(assignment.agent, assignment.routine ?? null);
+        }
+      }).then((result) => ({ ...result, issues: layer.issues() }));
     },
     "routine.tick": async (args) => {
       const s = beginCall(session(args, "routine"), args);
@@ -9218,6 +10435,59 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
     "mechanic.modules": () => ({
       modules: MECHANIC_MODULES,
       hostInterfaces: HOST_INTERFACES
+    }),
+    // ── conformance (tasklist 147, US-2) ──────────────────────────────────────
+    //
+    // A vendored corpus nothing runs is a checked-in file. These three rows are
+    // what run it — in THIS engine, through the same bundle a game loads, on the
+    // same native Trealla the mechanic sessions use.
+    /**
+     * `prolog.run` — consult a corpus case's KB and run its query.
+     *
+     * The protocol is core's own `prolog-corpus.test.ts` verbatim: join the `kb`
+     * lines with newlines, consult, query with core's 1000-solution default, and
+     * hand back the binding sets. A fresh engine per case and an unconditional
+     * `destroy()`, for the same reason core's runner gives — one live KB per case
+     * exhausts the table partway through a 255-case corpus.
+     *
+     * A consult or query FAILURE is returned, not thrown: the harness needs to
+     * tell "this engine disagreed" from "this engine could not run it", and the
+     * one documented amendment (`assert-retract.json::asserta-prepends`) is
+     * applied only on the second kind. Throwing would collapse the two.
+     */
+    "prolog.run": async (args) => {
+      const program = Array.isArray(args.kb) ? args.kb.join("\n") : String(args.kb ?? "");
+      const engine = await createPrologEngine();
+      try {
+        const consulted = await engine.consult(program);
+        if (!consulted.success) {
+          return { ok: false, stage: "consult", error: consulted.error ?? "consult failed", solutions: [] };
+        }
+        const result = await engine.query(String(args.query ?? ""), args.maxResults ?? 1e3);
+        if (!result.success) {
+          return { ok: false, stage: "query", error: result.error ?? "query failed", solutions: [] };
+        }
+        return { ok: true, solutions: result.bindings };
+      } finally {
+        engine.destroy();
+      }
+    },
+    /**
+     * `conformance.run` — run one DECISION-corpus case and return the whole
+     * `expected` shape, so the harness compares rather than interprets.
+     */
+    "conformance.run": async (args) => ({
+      result: await runCorpusCase(String(args.area ?? ""), args.case ?? {})
+    }),
+    /**
+     * `conformance.areas` — which decision corpora this build can execute, and
+     * which module owns each. Asking the binary, again: a corpus vendored into
+     * `conformance/` with no runner behind it is exactly the failure this whole
+     * story exists to close, and it is only visible by comparing these two lists.
+     */
+    "conformance.areas": () => ({
+      areas: Object.keys(CORPUS_AREAS).sort(),
+      byModule: CORPUS_AREAS_BY_MODULE
     }),
     /** `core.methods` — introspection; lets a gate assert the adopted surface. */
     "core.methods": () => ({ methods: Object.keys(METHODS).sort() })

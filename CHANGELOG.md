@@ -12,6 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+- **The band-120 corpora are vendored AND executed — 467 cases, 0 divergences.**
+  `npm run test:corpus` (`gdextension/test/run_corpus_tests.sh`) runs core's own
+  golden vectors in this engine, on the natively linked Trealla, in two halves:
+  **255 Prolog cases** across 21 files, each one consulted and *queried* (the
+  vocabulary — `can_attack/2`, `routine_due/2`, `detects/2`), and **212 decision
+  cases** across 18 areas, each resolved by core's own `resolveAttack`,
+  `runDetection`, `findRoute`, `resolvePrice`, `resolveAdvance` … (the damage
+  number, the suspicion rung, the route, the price — the things no rule computes
+  and no Prolog corpus can pin). Result: `254 AGREE, 1 AMEND, 0 DIVERGE, 0 ERROR`
+  and `212 AGREE, 0 DIVERGE, 0 ERROR`. See `RUNTIME_CORE_ADOPTION.md` §12.
+- **The vendored corpus grew from 10 files / 76 cases to 63 files.** Every
+  band-120 corpus for the seven adopted modules is now mirrored — the eight
+  `prolog/mechanic-*` packs plus `scaffold`, `agent-ai`, `geo-map`, and the six
+  decision directories `combat/`, `stealth/`, `traversal/`, `skills/`, `items/`,
+  `routines/`. What is *not* mirrored is now six explicit NOT_MIRRORED entries in
+  `tools/vendor-conformance.mjs`, each with a reason, each PRINTED with a count on
+  every vendoring run.
+- **`prolog.run`, `conformance.run` and `conformance.areas`** — three bridge rows
+  that let a gate execute a corpus case through the same bundle a shipped game
+  loads. `conformance.run` takes the case whole and returns the whole `expected`
+  shape, so the C++ harness compares rather than interprets and adding an area is
+  one function in `gdextension/corebridge/js/host-corpus.js`.
 - **The band-120 mechanic modules — combat, stamina, perception, traversal,
   skill, equipment and routine — are reachable and implemented.** Seven of core's
   decision layers now run behind **27 new rows** in
@@ -49,12 +72,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reachable, readings reach core, orders reach the host, the host **cannot**
   decide, sessions are isolated and disposed, and the Prolog seam's new
   assert/retract path works.
-- **`tools/verify-mechanics/check-mechanics.mjs`** in `npm run check` — five
-  mirrors between core's module manifest, the GDScript hosts and the bridge rows,
-  with `--core` re-derivation and five negative controls that prove no check is
-  vacuous.
+- **`tools/verify-mechanics/check-mechanics.mjs`** in `npm run check` — six
+  mirrors between core's module manifest, the GDScript hosts, the bridge rows and
+  the vendored corpus, with `--core` re-derivation and six negative controls that
+  prove no check is vacuous.
 
 ### Changed
+
+- **The marshalling gate now covers 255 cases across 21 files** (was 76 / 10);
+  its floor moved with it. It still *decodes* pinned solutions rather than
+  running them — the two gates are complementary and `RUNTIME_CORE_ADOPTION.md`
+  §12.1 is the table that says why neither is enough alone.
+- **`npm run check` gained per-area case floors and a corpus-coverage check.**
+  `vendor-conformance.mjs` now carries 19 hand-written `CASE_FLOORS` (465 cases
+  pinned as a minimum) that a re-vendor cannot lower, and `check-mechanics.mjs`
+  gained a sixth check — with its own negative control — asserting that every
+  module's declared corpus is vendored, that everything vendored has a runner,
+  and that every directory under `conformance/` is accounted for by a named gate
+  or an explicit "nothing here runs it".
 - **The Prolog seam grew `assertFact`, `retractFact` and `queryOnce`** (the only
   `PrologEngine` members the mechanic layers reach that it lacked), and
   `__insimul_prolog_{assert,retract}` were added to the C host to back them.
@@ -104,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dist/insimul-godot-<version>.zip`.
 
 ### Fixed
+
 - **`InsimulProlog.consult()`, `assert_fact()`, `retract_fact()` and `restore()`
   returned the inverse of what happened.** The vendored libinsimul header was a
   hand-written contract copy predating the library, and it documented "1 on
@@ -130,6 +166,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   empty corpus directory; it now asserts a file and case floor. The quest-parity
   classifier asserts all five of its verdicts are reachable before it reports
   agreement.
+
+### Documented
+
+- **One divergence, classified as SHAPE rather than amended away.** This gate
+  applies libinsimul's *two*-substitution amendment to
+  `assert-retract.json::asserta-prepends` where core's TS runner applies one:
+  the natively linked Trealla reports a failing `:- dynamic(log/1).` directive as
+  a failed **consult**, where core's wasm wrapper only fails at the query. Same
+  answer, different stage. Every case runs unamended first, so a stale amendment
+  fails the gate. `RUNTIME_CORE_ADOPTION.md` §12.3.
+- **`conformance/ui/*.json` is executed by nothing on this tier**, and now says
+  so in code rather than by omission — the one `CORPUS_RUN_ELSEWHERE` entry whose
+  value is "nothing runs it". Closing it needs a GDScript runner, not a C++ one.
 
 ## [1.0.0]
 

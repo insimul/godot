@@ -35,13 +35,20 @@
 
 using namespace insimul;
 
-// The corpus as re-vendored in US-3 of tasklist 100: 10 files / 76 cases, the
-// full source set (it was 41 before — a 54% subset nothing was checking). This
-// harness used to return 0 on an empty corpus dir, so it was a gate that could
-// not fail; the floor below is what makes a shrinking or missing corpus red.
-// Growing the corpus must not break the gate, shrinking it must.
-static const int MIN_CORPUS_FILES = 10;
-static const int MIN_CASES = 76;
+// The corpus as re-vendored in US-2 of tasklist 147: 21 files / 255 cases —
+// tasklist 100's US-3 had brought it to 10 files / 76 cases (it was 41 before,
+// a 54% subset nothing was checking), and US-2 added the band-120 vocabulary
+// (the eight `mechanic-*` packs) plus `scaffold`, `agent-ai` and `geo-map`.
+// This harness used to return 0 on an empty corpus dir, so it was a gate that
+// could not fail; the floor below is what makes a shrinking or missing corpus
+// red. Growing the corpus must not break the gate, shrinking it must.
+//
+// NOTE what this gate is and is not. It DECODES every pinned solution through
+// the extension's marshalling layer; it does not RUN the queries. Running them
+// is run_prolog_conformance.sh, on the native Trealla, and the two together are
+// the whole of Prolog parity — see RUNTIME_CORE_ADOPTION.md §12.1.
+static const int MIN_CORPUS_FILES = 21;
+static const int MIN_CASES = 255;
 
 namespace {
 

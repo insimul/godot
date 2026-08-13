@@ -1,0 +1,1941 @@
+{
+  "area": "routine-goals",
+  "description": "Which authored block of a routine is open at this hour on this day, what goal that puts the NPC in pursuit of, what it is worth and where — plus the authored facts the KB carries and everything wrong with the authoring. US-1 of 125-npc-routines-and-locomotion.",
+  "cases": [
+    {
+      "name": "the-forge-shift-is-the-block-open-at-nine",
+      "note": "The ordinary case, and the one every other case is a departure from: one block’s window contains the hour, it names a goal and a place, and the whole output is one agent_goal/3 fact.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 1,
+          "hour": 9
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 1,
+        "due": [
+          "forge_shift"
+        ],
+        "active": "forge_shift",
+        "goal": "work",
+        "priority": 60,
+        "destination": "forge",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, work, 60)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "market-day-outranks-the-shift-it-overlaps",
+      "note": "Two blocks open at once on the fifth day. The weekly exception is worth more, so it wins on priority — not on being authored later, which is what the reversed re-run proves.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 5,
+          "hour": 11
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 5,
+        "due": [
+          "market_day",
+          "forge_shift"
+        ],
+        "active": "market_day",
+        "goal": "shop",
+        "priority": 70,
+        "destination": "market",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, shop, 70)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "market-day-is-shut-on-a-day-that-is-not-market-day",
+      "note": "The same hour on the fourth day. A block that names days runs on those days only, so the shift is alone and the NPC is at the forge — the negative half of the case above.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 4,
+          "hour": 11
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 4,
+        "due": [
+          "forge_shift"
+        ],
+        "active": "forge_shift",
+        "goal": "work",
+        "priority": 60,
+        "destination": "forge",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, work, 60)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "the-night-block-wraps-midnight-and-is-open-at-two",
+      "note": "endHour at or before startHour WRAPS, so the night is one block rather than two, and an implementation that compared start < hour < end finds nothing here.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 2,
+          "hour": 2
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 2,
+        "due": [
+          "night"
+        ],
+        "active": "night",
+        "goal": "sleep",
+        "priority": 50,
+        "destination": "cottage",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, sleep, 50)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "the-same-wrapping-block-is-open-at-twenty-three",
+      "note": "The other side of midnight, the same block. Two cases rather than one because a wrap is where an off-by-one lives, and each half fails independently.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 2,
+          "hour": 23
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 2,
+        "due": [
+          "night"
+        ],
+        "active": "night",
+        "goal": "sleep",
+        "priority": 50,
+        "destination": "cottage",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, sleep, 50)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-block-that-authored-no-priority-takes-the-world-default",
+      "note": "The night block authors none, so it is worth the world’s defaultPriority — which the graph facts also carry resolved, so a rule reading routine_block_priority/2 and core adopting the goal cannot disagree.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 35,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 35,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 2,
+          "hour": 23
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 35
+            }
+          ]
+        },
+        "weekday": 2,
+        "due": [
+          "night"
+        ],
+        "active": "night",
+        "goal": "sleep",
+        "priority": 35,
+        "destination": "cottage",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 35).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, sleep, 35)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "the-gap-between-supper-and-the-night-block",
+      "note": "NEGATIVE. Nine in the evening: supper is over and the night has not begun. A gap is a real answer — the NPC holds no routine goal and does whatever else the world gave it, which is the difference between a routine and a scheduler that must always have one.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 3,
+          "hour": 21
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 3,
+        "due": [],
+        "active": null,
+        "goal": null,
+        "priority": null,
+        "destination": null,
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    },
+    {
+      "name": "the-gap-between-waking-and-the-shift",
+      "note": "NEGATIVE, and a second one on purpose: an implementation that special-cased the evening gap still fails the morning one. Nothing is due, nothing is adopted, and the delta is empty in both directions.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 3,
+          "hour": 7
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 3,
+        "due": [],
+        "active": null,
+        "goal": null,
+        "priority": null,
+        "destination": null,
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    },
+    {
+      "name": "two-blocks-at-one-priority-break-on-the-block-id",
+      "note": "The whole reason ties are specified. Two blocks of the watch are open at seven and both are worth thirty; drill wins because “drill” sorts before “stand_down”, and never because of where it sits in the authored list.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "night_watch",
+              "name": "The night watch",
+              "blocks": [
+                {
+                  "id": "watch",
+                  "goal": "patrol",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "priority": 55
+                },
+                {
+                  "id": "stand_down",
+                  "goal": "rest",
+                  "startHour": 6,
+                  "endHour": 10,
+                  "place": "barracks",
+                  "priority": 30
+                },
+                {
+                  "id": "drill",
+                  "goal": "train",
+                  "startHour": 6,
+                  "endHour": 10,
+                  "place": "yard",
+                  "priority": 30
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "night_watch",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 1,
+          "hour": 7
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "night_watch",
+          "name": "The night watch",
+          "blocks": [
+            {
+              "id": "watch",
+              "goal": "patrol",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "priority": 55
+            },
+            {
+              "id": "stand_down",
+              "goal": "rest",
+              "startHour": 6,
+              "endHour": 10,
+              "days": [],
+              "place": "barracks",
+              "priority": 30
+            },
+            {
+              "id": "drill",
+              "goal": "train",
+              "startHour": 6,
+              "endHour": 10,
+              "days": [],
+              "place": "yard",
+              "priority": 30
+            }
+          ]
+        },
+        "weekday": 1,
+        "due": [
+          "drill",
+          "stand_down"
+        ],
+        "active": "drill",
+        "goal": "train",
+        "priority": 30,
+        "destination": "yard",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(night_watch, 'The night watch').",
+          "routine_block(night_watch, watch).",
+          "routine_block_window(watch, 22, 6).",
+          "routine_block_goal(watch, patrol).",
+          "routine_block_priority(watch, 55).",
+          "routine_block(night_watch, stand_down).",
+          "routine_block_window(stand_down, 6, 10).",
+          "routine_block_goal(stand_down, rest).",
+          "routine_block_priority(stand_down, 30).",
+          "routine_block_place(stand_down, barracks).",
+          "routine_block(night_watch, drill).",
+          "routine_block_window(drill, 6, 10).",
+          "routine_block_goal(drill, train).",
+          "routine_block_priority(drill, 30).",
+          "routine_block_place(drill, yard)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, train, 30)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-block-with-no-place-wants-nothing-of-where-the-npc-is",
+      "note": "The watch at midnight names a goal and no location, so the destination is null and US-2 forms no movement intent. Somewhere to be is optional; something to want is not.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "night_watch",
+              "name": "The night watch",
+              "blocks": [
+                {
+                  "id": "watch",
+                  "goal": "patrol",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "priority": 55
+                },
+                {
+                  "id": "stand_down",
+                  "goal": "rest",
+                  "startHour": 6,
+                  "endHour": 10,
+                  "place": "barracks",
+                  "priority": 30
+                },
+                {
+                  "id": "drill",
+                  "goal": "train",
+                  "startHour": 6,
+                  "endHour": 10,
+                  "place": "yard",
+                  "priority": 30
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "night_watch",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 1,
+          "hour": 23
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "night_watch",
+          "name": "The night watch",
+          "blocks": [
+            {
+              "id": "watch",
+              "goal": "patrol",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "priority": 55
+            },
+            {
+              "id": "stand_down",
+              "goal": "rest",
+              "startHour": 6,
+              "endHour": 10,
+              "days": [],
+              "place": "barracks",
+              "priority": 30
+            },
+            {
+              "id": "drill",
+              "goal": "train",
+              "startHour": 6,
+              "endHour": 10,
+              "days": [],
+              "place": "yard",
+              "priority": 30
+            }
+          ]
+        },
+        "weekday": 1,
+        "due": [
+          "watch"
+        ],
+        "active": "watch",
+        "goal": "patrol",
+        "priority": 55,
+        "destination": null,
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(night_watch, 'The night watch').",
+          "routine_block(night_watch, watch).",
+          "routine_block_window(watch, 22, 6).",
+          "routine_block_goal(watch, patrol).",
+          "routine_block_priority(watch, 55).",
+          "routine_block(night_watch, stand_down).",
+          "routine_block_window(stand_down, 6, 10).",
+          "routine_block_goal(stand_down, rest).",
+          "routine_block_priority(stand_down, 30).",
+          "routine_block_place(stand_down, barracks).",
+          "routine_block(night_watch, drill).",
+          "routine_block_window(drill, 6, 10).",
+          "routine_block_goal(drill, train).",
+          "routine_block_priority(drill, 30).",
+          "routine_block_place(drill, yard)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, patrol, 55)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-window-whose-ends-coincide-is-the-whole-day",
+      "note": "Twenty-two to twenty-two. The degenerate wrap, and it is the whole day rather than nothing — which is how a routine with a single block is authored, and the case an implementation that treated start == end as an empty window fails.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "wanderer",
+              "name": "The wanderer",
+              "blocks": [
+                {
+                  "id": "always",
+                  "goal": "wander",
+                  "startHour": 22,
+                  "endHour": 22,
+                  "priority": 20
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "wanderer",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 6,
+          "hour": 13
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "wanderer",
+          "name": "The wanderer",
+          "blocks": [
+            {
+              "id": "always",
+              "goal": "wander",
+              "startHour": 22,
+              "endHour": 22,
+              "days": [],
+              "priority": 20
+            }
+          ]
+        },
+        "weekday": 6,
+        "due": [
+          "always"
+        ],
+        "active": "always",
+        "goal": "wander",
+        "priority": 20,
+        "destination": null,
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(wanderer, 'The wanderer').",
+          "routine_block(wanderer, always).",
+          "routine_block_window(always, 22, 22).",
+          "routine_block_goal(always, wander).",
+          "routine_block_priority(always, 20)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, wander, 20)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-ten-day-week-puts-market-day-on-the-twenty-fifth",
+      "note": "The week length is AUTHORED. Day 25 of a ten-day week is weekday 5, so the market is open — and the same date in a seven-day week is weekday 4, which the next case pins.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 35,
+          "weekLength": 10
+        },
+        "tuning": {
+          "defaultPriority": 35,
+          "weekLength": 10
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 25,
+          "hour": 11
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 35
+            }
+          ]
+        },
+        "weekday": 5,
+        "due": [
+          "market_day",
+          "forge_shift"
+        ],
+        "active": "market_day",
+        "goal": "shop",
+        "priority": 70,
+        "destination": "market",
+        "graphFacts": [
+          "routine_week_length(10).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 35).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, shop, 70)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "the-same-date-in-a-seven-day-week-is-an-ordinary-shift",
+      "note": "NEGATIVE for the case above: one authored number moves the whole calendar, and an engine with seven compiled in disagrees with the world it is running.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "smithy_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 25,
+          "hour": 11
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "smithy_day",
+          "name": "The smith’s day",
+          "blocks": [
+            {
+              "id": "forge_shift",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 18,
+              "days": [],
+              "place": "forge",
+              "priority": 60
+            },
+            {
+              "id": "supper",
+              "goal": "eat",
+              "startHour": 18,
+              "endHour": 20,
+              "days": [],
+              "place": "tavern",
+              "priority": 45
+            },
+            {
+              "id": "market_day",
+              "goal": "shop",
+              "startHour": 10,
+              "endHour": 12,
+              "days": [
+                5
+              ],
+              "place": "market",
+              "priority": 70
+            },
+            {
+              "id": "night",
+              "goal": "sleep",
+              "startHour": 22,
+              "endHour": 6,
+              "days": [],
+              "place": "cottage",
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 4,
+        "due": [
+          "forge_shift"
+        ],
+        "active": "forge_shift",
+        "goal": "work",
+        "priority": 60,
+        "destination": "forge",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(smithy_day, 'The smith’s day').",
+          "routine_block(smithy_day, forge_shift).",
+          "routine_block_window(forge_shift, 8, 18).",
+          "routine_block_goal(forge_shift, work).",
+          "routine_block_priority(forge_shift, 60).",
+          "routine_block_place(forge_shift, forge).",
+          "routine_block(smithy_day, supper).",
+          "routine_block_window(supper, 18, 20).",
+          "routine_block_goal(supper, eat).",
+          "routine_block_priority(supper, 45).",
+          "routine_block_place(supper, tavern).",
+          "routine_block(smithy_day, market_day).",
+          "routine_block_window(market_day, 10, 12).",
+          "routine_block_goal(market_day, shop).",
+          "routine_block_priority(market_day, 70).",
+          "routine_block_place(market_day, market).",
+          "routine_block_day(market_day, 5).",
+          "routine_block(smithy_day, night).",
+          "routine_block_window(night, 22, 6).",
+          "routine_block_goal(night, sleep).",
+          "routine_block_priority(night, 50).",
+          "routine_block_place(night, cottage)."
+        ],
+        "issues": [],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, work, 60)."
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-goal-pursued-in-two-places-is-reported-rather-than-guessed-at",
+      "note": "NEGATIVE, of the authoring kind. A block’s place is a requirement of its GOAL, so one goal in two places can never be satisfied. The routine still resolves and still runs — a creator’s mistake is a report, not a crash — and issues names it, along with an hour no clock can match and a weekday outside the week. The block with no goal is DROPPED rather than defaulted, which is why resolved carries four blocks and not five.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "confused_day",
+              "name": "Two forges and a bad clock",
+              "blocks": [
+                {
+                  "id": "morning",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 12,
+                  "place": "forge"
+                },
+                {
+                  "id": "afternoon",
+                  "goal": "work",
+                  "startHour": 12,
+                  "endHour": 16,
+                  "place": "mill"
+                },
+                {
+                  "id": "bad_hour",
+                  "goal": "eat",
+                  "startHour": 26,
+                  "endHour": 30
+                },
+                {
+                  "id": "bad_day",
+                  "goal": "shop",
+                  "startHour": 9,
+                  "endHour": 10,
+                  "days": [
+                    9
+                  ]
+                },
+                {
+                  "id": "no_goal",
+                  "goal": "",
+                  "startHour": 1,
+                  "endHour": 2
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "routine": "confused_day",
+        "agent": "npc_smith",
+        "clock": {
+          "day": 3,
+          "hour": 9
+        }
+      },
+      "expected": {
+        "resolved": {
+          "id": "confused_day",
+          "name": "Two forges and a bad clock",
+          "blocks": [
+            {
+              "id": "morning",
+              "goal": "work",
+              "startHour": 8,
+              "endHour": 12,
+              "days": [],
+              "place": "forge",
+              "priority": 50
+            },
+            {
+              "id": "afternoon",
+              "goal": "work",
+              "startHour": 12,
+              "endHour": 16,
+              "days": [],
+              "place": "mill",
+              "priority": 50
+            },
+            {
+              "id": "bad_hour",
+              "goal": "eat",
+              "startHour": 26,
+              "endHour": 30,
+              "days": [],
+              "priority": 50
+            },
+            {
+              "id": "bad_day",
+              "goal": "shop",
+              "startHour": 9,
+              "endHour": 10,
+              "days": [
+                9
+              ],
+              "priority": 50
+            }
+          ]
+        },
+        "weekday": 3,
+        "due": [
+          "morning"
+        ],
+        "active": "morning",
+        "goal": "work",
+        "priority": 50,
+        "destination": "forge",
+        "graphFacts": [
+          "routine_week_length(7).",
+          "routine(confused_day, 'Two forges and a bad clock').",
+          "routine_block(confused_day, morning).",
+          "routine_block_window(morning, 8, 12).",
+          "routine_block_goal(morning, work).",
+          "routine_block_priority(morning, 50).",
+          "routine_block_place(morning, forge).",
+          "routine_block(confused_day, afternoon).",
+          "routine_block_window(afternoon, 12, 16).",
+          "routine_block_goal(afternoon, work).",
+          "routine_block_priority(afternoon, 50).",
+          "routine_block_place(afternoon, mill).",
+          "routine_block(confused_day, bad_hour).",
+          "routine_block_window(bad_hour, 26, 30).",
+          "routine_block_goal(bad_hour, eat).",
+          "routine_block_priority(bad_hour, 50).",
+          "routine_block(confused_day, bad_day).",
+          "routine_block_window(bad_day, 9, 10).",
+          "routine_block_goal(bad_day, shop).",
+          "routine_block_priority(bad_day, 50).",
+          "routine_block_day(bad_day, 9)."
+        ],
+        "issues": [
+          "confused_day.afternoon: goal \"work\" is pursued at \"mill\" here and at \"forge\" in confused_day.morning. A block's place is a requirement of its GOAL, so one goal in two places can never be satisfied — author two goals.",
+          "confused_day.bad_day: day 9 is outside a 7-day week, so the block never runs",
+          "confused_day.bad_hour: endHour 30 is not an hour of the day (0-24)",
+          "confused_day.bad_hour: startHour 26 is not an hour of the day (0-23)"
+        ],
+        "delta": {
+          "retract": [],
+          "assert": [
+            "agent_goal(npc_smith, work, 50)."
+          ]
+        }
+      }
+    }
+  ]
+}

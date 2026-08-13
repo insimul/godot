@@ -62,6 +62,11 @@ import {
 	skillModifierSinkShim,
 	survivalShim,
 } from './host-mechanics.js';
+// The conformance runners (tasklist 147, US-2). Adapter-owned, and deliberately
+// a separate module: they are the only code here whose caller is a gate rather
+// than a game, and keeping them out of the mechanic rows keeps the shipped
+// surface readable.
+import { CORPUS_AREAS, CORPUS_AREAS_BY_MODULE, runCorpusCase } from './host-corpus.js';
 
 /**
  * Which module owns which rows, which host interfaces it executes through, and
@@ -509,6 +514,63 @@ const METHODS = {
 	'mechanic.modules': () => ({
 		modules: MECHANIC_MODULES,
 		hostInterfaces: HOST_INTERFACES,
+	}),
+
+	// ── conformance (tasklist 147, US-2) ──────────────────────────────────────
+	//
+	// A vendored corpus nothing runs is a checked-in file. These three rows are
+	// what run it — in THIS engine, through the same bundle a game loads, on the
+	// same native Trealla the mechanic sessions use.
+
+	/**
+	 * `prolog.run` — consult a corpus case's KB and run its query.
+	 *
+	 * The protocol is core's own `prolog-corpus.test.ts` verbatim: join the `kb`
+	 * lines with newlines, consult, query with core's 1000-solution default, and
+	 * hand back the binding sets. A fresh engine per case and an unconditional
+	 * `destroy()`, for the same reason core's runner gives — one live KB per case
+	 * exhausts the table partway through a 255-case corpus.
+	 *
+	 * A consult or query FAILURE is returned, not thrown: the harness needs to
+	 * tell "this engine disagreed" from "this engine could not run it", and the
+	 * one documented amendment (`assert-retract.json::asserta-prepends`) is
+	 * applied only on the second kind. Throwing would collapse the two.
+	 */
+	'prolog.run': async (args) => {
+		const program = Array.isArray(args.kb) ? args.kb.join('\n') : String(args.kb ?? '');
+		const engine = await createPrologEngine();
+		try {
+			const consulted = await engine.consult(program);
+			if (!consulted.success) {
+				return { ok: false, stage: 'consult', error: consulted.error ?? 'consult failed', solutions: [] };
+			}
+			const result = await engine.query(String(args.query ?? ''), args.maxResults ?? 1000);
+			if (!result.success) {
+				return { ok: false, stage: 'query', error: result.error ?? 'query failed', solutions: [] };
+			}
+			return { ok: true, solutions: result.bindings };
+		} finally {
+			engine.destroy();
+		}
+	},
+
+	/**
+	 * `conformance.run` — run one DECISION-corpus case and return the whole
+	 * `expected` shape, so the harness compares rather than interprets.
+	 */
+	'conformance.run': async (args) => ({
+		result: await runCorpusCase(String(args.area ?? ''), args.case ?? {}),
+	}),
+
+	/**
+	 * `conformance.areas` — which decision corpora this build can execute, and
+	 * which module owns each. Asking the binary, again: a corpus vendored into
+	 * `conformance/` with no runner behind it is exactly the failure this whole
+	 * story exists to close, and it is only visible by comparing these two lists.
+	 */
+	'conformance.areas': () => ({
+		areas: Object.keys(CORPUS_AREAS).sort(),
+		byModule: CORPUS_AREAS_BY_MODULE,
 	}),
 
 	/** `core.methods` — introspection; lets a gate assert the adopted surface. */

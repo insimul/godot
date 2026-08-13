@@ -1,0 +1,320 @@
+{
+  "area": "combat-action-table",
+  "description": "How a world’s authored rows become combat actions (US-3/US-4 of 120-combat-and-stamina). `actions` is the SHARED action block (`systems.actions`) and `combat` is combat’s columns on those same rows (`WorldIR.combat.actions`) — never a second table, the way `item_damage/2` extends the item block. `expected.rows` is CombatActionTable.loadFromIR’s result in load order, `expected.facts` is what the table publishes back into the KB (`action_range/2`, and deliberately nothing else — §11 and §12 of docs/mechanic-predicates.md keep rolls and combat-loop tuning out of the vocabulary), and `projectiles`/`defensive` are the two shape queries. The precedence pinned here is combat column → shared row → unset, where a 0 on the shared row is unset and a 0 in a column is authored. Regenerate with `npm run combat-corpus`.",
+  "cases": [
+    {
+      "name": "a-combat-category-row-alone-is-a-complete-melee-action",
+      "note": "A world that authored no combat columns at all still has a table: an action the creator filed under `combat` with a range and an energy cost IS a melee attack. The row’s `range` becomes the action’s reach and its `energyCost` becomes the shared meter’s price — one action table, and combat reads the columns that already exist.",
+      "actions": [
+        {
+          "id": "swing",
+          "category": "combat",
+          "range": 2,
+          "energyCost": 8
+        },
+        {
+          "id": "haul_water",
+          "category": "chore",
+          "range": 0,
+          "energyCost": 12
+        }
+      ],
+      "combat": null,
+      "expected": {
+        "loaded": 1,
+        "rows": [
+          {
+            "id": "swing",
+            "range": 2,
+            "staminaCost": 8
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action_range",
+            "args": [
+              "swing",
+              2
+            ]
+          }
+        ],
+        "projectiles": [],
+        "defensive": []
+      }
+    },
+    {
+      "name": "combat-columns-win-over-the-shared-row",
+      "note": "The precedence, which is the thing four engines will each get subtly wrong: combat column → shared row → (at resolution) the weapon’s authored stat → the tuning. Here both rows author a range and a cost and the columns override both.",
+      "actions": [
+        {
+          "id": "swing",
+          "category": "combat",
+          "range": 2,
+          "energyCost": 8
+        }
+      ],
+      "combat": {
+        "style": "melee",
+        "settings": {
+          "baseDamage": 10,
+          "damageVariance": 0.2,
+          "criticalChance": 0.15,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0.05,
+          "attackCooldown": 1,
+          "comboWindowMs": 500,
+          "maxComboLength": 3
+        },
+        "actions": [
+          {
+            "id": "swing",
+            "damage": 15,
+            "damageType": "slashing",
+            "range": 3,
+            "staminaCost": 11
+          }
+        ]
+      },
+      "expected": {
+        "loaded": 1,
+        "rows": [
+          {
+            "id": "swing",
+            "damage": 15,
+            "damageType": "slashing",
+            "range": 3,
+            "staminaCost": 11
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action_range",
+            "args": [
+              "swing",
+              3
+            ]
+          }
+        ],
+        "projectiles": [],
+        "defensive": []
+      }
+    },
+    {
+      "name": "a-zero-on-the-shared-row-reads-as-unset",
+      "note": "`ActionIR.range` and `ActionIR.energyCost` default to 0, not to absent. Reading a literal 0 as a reach would silently defeat `item_range/2` — every weapon would be out of reach at any separation above zero — so a 0 leaves the field off the row and the weapon’s stat answers. A column of 0 is different: that one was authored, and it stands.",
+      "actions": [
+        {
+          "id": "swing",
+          "category": "combat",
+          "range": 0,
+          "energyCost": 0
+        }
+      ],
+      "combat": null,
+      "expected": {
+        "loaded": 1,
+        "rows": [
+          {
+            "id": "swing"
+          }
+        ],
+        "facts": [],
+        "projectiles": [],
+        "defensive": []
+      }
+    },
+    {
+      "name": "a-projectile-row-and-a-defensive-row-are-the-same-type-as-a-swing",
+      "note": "THE US-3 case, pinned. Three rows, one type: the bolt differs by `delivery` and `range`, the sidestep by a `defense` profile and no damage. There is no discriminator and no second shape — which is what makes adding a weapon or a dodge variant a row of authored content rather than a `switch` a native port has to grow a case in.",
+      "actions": [
+        {
+          "id": "swing",
+          "category": "combat",
+          "range": 2,
+          "energyCost": 8
+        },
+        {
+          "id": "crossbow_shot",
+          "category": "combat",
+          "range": 0,
+          "energyCost": 6
+        },
+        {
+          "id": "sidestep",
+          "category": "combat",
+          "range": 0,
+          "energyCost": 10
+        }
+      ],
+      "combat": {
+        "style": "ranged",
+        "settings": {
+          "baseDamage": 10,
+          "damageVariance": 0.2,
+          "criticalChance": 0.15,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0.05,
+          "attackCooldown": 1,
+          "comboWindowMs": 500,
+          "maxComboLength": 3
+        },
+        "actions": [
+          {
+            "id": "crossbow_shot",
+            "delivery": "projectile",
+            "range": 20,
+            "accuracy": 0.9,
+            "damage": 14,
+            "damageType": "piercing",
+            "appliesStatus": [
+              {
+                "status": "bleeding",
+                "magnitude": 3,
+                "duration": 10
+              }
+            ]
+          },
+          {
+            "id": "sidestep",
+            "defense": {
+              "status": "evading",
+              "evasionBonus": 0.55,
+              "window": 0.4,
+              "recovery": 0.25
+            }
+          }
+        ]
+      },
+      "expected": {
+        "loaded": 3,
+        "rows": [
+          {
+            "id": "swing",
+            "range": 2,
+            "staminaCost": 8
+          },
+          {
+            "id": "crossbow_shot",
+            "damage": 14,
+            "damageType": "piercing",
+            "range": 20,
+            "accuracy": 0.9,
+            "delivery": "projectile",
+            "staminaCost": 6,
+            "appliesStatus": [
+              {
+                "status": "bleeding",
+                "magnitude": 3,
+                "duration": 10
+              }
+            ]
+          },
+          {
+            "id": "sidestep",
+            "staminaCost": 10,
+            "defense": {
+              "status": "evading",
+              "evasionBonus": 0.55,
+              "window": 0.4,
+              "recovery": 0.25
+            }
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action_range",
+            "args": [
+              "swing",
+              2
+            ]
+          },
+          {
+            "predicate": "action_range",
+            "args": [
+              "crossbow_shot",
+              20
+            ]
+          }
+        ],
+        "projectiles": [
+          "crossbow_shot"
+        ],
+        "defensive": [
+          "sidestep"
+        ]
+      }
+    },
+    {
+      "name": "columns-whose-shared-row-is-absent-still-load",
+      "note": "A world may extend an action the export did not carry — a base action, a mod’s own — and refusing it would make the table depend on load order. The row loads from its columns alone, which is also the shape a runtime-added weapon takes (US-3 AC2): no TypeScript change, one more row.",
+      "actions": [
+        {
+          "id": "swing",
+          "category": "combat",
+          "range": 2,
+          "energyCost": 8
+        }
+      ],
+      "combat": {
+        "style": "melee",
+        "settings": {
+          "baseDamage": 10,
+          "damageVariance": 0.2,
+          "criticalChance": 0.15,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0.05,
+          "attackCooldown": 1,
+          "comboWindowMs": 500,
+          "maxComboLength": 3
+        },
+        "actions": [
+          {
+            "id": "silver_dagger_thrust",
+            "damage": 9,
+            "damageType": "silver",
+            "range": 1,
+            "staminaCost": 5
+          }
+        ]
+      },
+      "expected": {
+        "loaded": 2,
+        "rows": [
+          {
+            "id": "swing",
+            "range": 2,
+            "staminaCost": 8
+          },
+          {
+            "id": "silver_dagger_thrust",
+            "damage": 9,
+            "damageType": "silver",
+            "range": 1,
+            "staminaCost": 5
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action_range",
+            "args": [
+              "swing",
+              2
+            ]
+          },
+          {
+            "predicate": "action_range",
+            "args": [
+              "silver_dagger_thrust",
+              1
+            ]
+          }
+        ],
+        "projectiles": [],
+        "defensive": []
+      }
+    }
+  ]
+}

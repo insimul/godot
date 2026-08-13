@@ -52,6 +52,8 @@ const HOSTS_GD = path.join(REPO, 'addons/insimul/runtime/mechanics/insimul_mecha
 const SESSION_GD = path.join(REPO, 'addons/insimul/runtime/mechanics/insimul_mechanic_session.gd');
 const ENTRY_JS = path.join(REPO, 'gdextension/corebridge/js/entry.js');
 const HOST_MECHANICS_JS = path.join(REPO, 'gdextension/corebridge/js/host-mechanics.js');
+const HOST_CORPUS_JS = path.join(REPO, 'gdextension/corebridge/js/host-corpus.js');
+const CORPUS_DIR = path.join(REPO, 'conformance');
 
 /**
  * The modules this repo adopts. Core's manifest has nine; `agentAi` and `map`
@@ -292,6 +294,97 @@ export function parseSessionOrders(source) {
   return out;
 }
 
+/**
+ * `CORPUS_AREAS` and `CORPUS_AREAS_BY_MODULE` out of host-corpus.js — which
+ * decision corpora this build can EXECUTE, and which module owns each.
+ */
+export function parseCorpusRunners(source) {
+  const areas = [];
+  const areaTable = source.slice(
+    source.indexOf('export const CORPUS_AREAS = {'),
+    source.indexOf('\n};', source.indexOf('export const CORPUS_AREAS = {')),
+  );
+  for (const m of areaTable.matchAll(/^\t'([a-z-]+)': /gm)) areas.push(m[1]);
+
+  const byModule = {};
+  const moduleTable = source.slice(
+    source.indexOf('export const CORPUS_AREAS_BY_MODULE = {'),
+    source.indexOf('\n};', source.indexOf('export const CORPUS_AREAS_BY_MODULE = {')),
+  );
+  for (const m of moduleTable.matchAll(/^\t([a-z]+): \[([^\]]*)\]/gm)) {
+    byModule[m[1]] = [...m[2].matchAll(/'([a-z-]+)'/g)].map((x) => x[1]);
+  }
+  return { areas, byModule };
+}
+
+/**
+ * The band-120 DECISION corpora — the six directories US-2 taught this repo to
+ * execute through `conformance.run`.
+ */
+const DECISION_DIRS = ['combat', 'items', 'routines', 'skills', 'stealth', 'traversal'];
+
+/**
+ * Every OTHER vendored corpus directory, and what executes it. Hand-maintained,
+ * total, and the reason it is here rather than in prose: a directory that
+ * appears under conformance/ and is in neither list fails this gate, which is
+ * the only mechanism that stops the next corpus from being vendored with
+ * nothing behind it. `null` means nothing here runs it — allowed, but it has to
+ * be SAID, with where the claim is written up.
+ */
+const CORPUS_RUN_ELSEWHERE = {
+  prolog:
+    'gdextension/test/run_corpus_tests.sh runs every query on the native Trealla; ' +
+    'run_conformance.sh marshals every pinned solution',
+  quests: 'gdextension/test/run_quest_parity_tests.sh and run_quest_tests.sh',
+  radiant: 'gdextension/test/run_radiant_tests.sh',
+  saves: 'gdextension/test/run_save_tests.sh and run_bootstrap_tests.sh',
+  ui:
+    'nothing on this tier — the UI models are GDScript and the corpus is read by ' +
+    'the Godot-binary checklist in VERIFICATION.md, not by a host gate. ' +
+    'RUNTIME_CORE_ADOPTION.md §12.5',
+  'content-library': null, // documented in RUNTIME_CORE_ADOPTION.md §10.5: no reader here
+  content: null, // this repo's own fixture, declared local in conformance/VENDORED.json
+};
+
+/**
+ * What is actually VENDORED under conformance/ — the Prolog corpus files by
+ * base name, every `area` a band-120 decision corpus declares, and any
+ * directory that is accounted for by neither list.
+ *
+ * Read from disk rather than from the manifest on purpose: the manifest says
+ * what was copied, this says what is there to run, and US-2's whole subject is
+ * the gap between those two.
+ */
+export function readVendoredCorpus(root = CORPUS_DIR) {
+  const prolog = new Set();
+  const prologDir = path.join(root, 'prolog');
+  if (fs.existsSync(prologDir)) {
+    for (const f of fs.readdirSync(prologDir)) {
+      if (f.endsWith('.json')) prolog.add(f.slice(0, -'.json'.length));
+    }
+  }
+  const decisionAreas = new Set();
+  const unaccounted = [];
+  for (const dir of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    if (!DECISION_DIRS.includes(dir.name)) {
+      if (!(dir.name in CORPUS_RUN_ELSEWHERE)) unaccounted.push(dir.name);
+      continue;
+    }
+    for (const f of fs.readdirSync(path.join(root, dir.name))) {
+      if (!f.endsWith('.json')) continue;
+      let doc;
+      try {
+        doc = JSON.parse(read(path.join(root, dir.name, f)));
+      } catch {
+        continue;
+      }
+      if (typeof doc.area === 'string' && Array.isArray(doc.cases)) decisionAreas.add(doc.area);
+    }
+  }
+  return { prolog, decisionAreas, unaccounted };
+}
+
 // ── the checks ──────────────────────────────────────────────────────────────
 
 const problems = [];
@@ -397,6 +490,78 @@ export function runChecks(manifest, repo) {
     }
   }
 
+  // 6. CORPUS — every module's vectors are vendored AND have something that
+  //    runs them. This is US-2's whole subject: a corpus copied into
+  //    conformance/ that nothing executes is a checked-in file, and this
+  //    repository has shipped exactly that. Both directions are checked,
+  //    because each catches a different way of ending up back there.
+  const runners = repo.corpusRunners;
+  const vendored = repo.vendoredCorpus;
+  for (const id of BAND_120) {
+    const declared = manifest.modules[id];
+    if (!declared) continue;
+    // 6a. Core names a Prolog corpus per module; it must be on disk here.
+    for (const name of declared.conformanceCorpus) {
+      if (!vendored.prolog.has(name)) {
+        problem(
+          'corpus',
+          `module "${id}" declares conformance corpus "${name}", which is not vendored — ` +
+            're-vendor with `npm run vendor:conformance -- --core <packages/core>`',
+        );
+      }
+    }
+    if (declared.conformanceCorpus.length === 0) {
+      problem('corpus', `module "${id}" declares no conformance corpus at all`);
+    }
+    // 6b. Its DECISION areas (host-corpus.js) must be vendored and runnable.
+    const owned = runners.byModule[id];
+    if (owned === undefined) {
+      problem(
+        'corpus',
+        `module "${id}" has no entry in host-corpus.js's CORPUS_AREAS_BY_MODULE — ` +
+          'list its decision areas, or an empty list with the reason there are none',
+      );
+      continue;
+    }
+    for (const area of owned) {
+      if (!runners.areas.includes(area)) {
+        problem('corpus', `module "${id}" claims decision area "${area}", which has no runner`);
+      }
+      if (!vendored.decisionAreas.has(area)) {
+        problem('corpus', `module "${id}" claims decision area "${area}", which is not vendored`);
+      }
+    }
+  }
+  // 6c. Nothing vendored is orphaned, and no runner is unreachable. The first
+  //     is the checked-in file; the second is a runner whose corpus was quietly
+  //     dropped from the mirror, which reads as green because it never runs.
+  for (const area of vendored.decisionAreas) {
+    if (!runners.areas.includes(area)) {
+      problem(
+        'corpus',
+        `conformance/ vendors decision area "${area}" and nothing executes it — ` +
+          'add a runner in host-corpus.js, or exclude the corpus in vendor-conformance.mjs\'s NOT_MIRRORED with a reason',
+      );
+    }
+    if (!Object.values(runners.byModule).some((areas) => areas.includes(area))) {
+      problem('corpus', `decision area "${area}" is vendored and run but belongs to no module`);
+    }
+  }
+  for (const area of runners.areas) {
+    if (!vendored.decisionAreas.has(area)) {
+      problem('corpus', `host-corpus.js can run "${area}" and no vendored corpus declares it`);
+    }
+  }
+  // 6d. Every vendored directory is accounted for by SOMETHING — a band-120
+  //     runner, or a named gate, or an explicit "nothing here runs it".
+  for (const dir of vendored.unaccounted ?? []) {
+    problem(
+      'corpus',
+      `conformance/${dir}/ is vendored and appears in neither DECISION_DIRS nor ` +
+        'CORPUS_RUN_ELSEWHERE — say what runs it, or say that nothing does and where that is written up',
+    );
+  }
+
   return problems.slice();
 }
 
@@ -414,6 +579,8 @@ function readRepo() {
     bridge: parseBridge(read(ENTRY_JS)),
     adapterOrders: parseAdapterOrders(read(HOST_MECHANICS_JS)),
     sessionOrders: parseSessionOrders(read(SESSION_GD)),
+    corpusRunners: parseCorpusRunners(read(HOST_CORPUS_JS)),
+    vendoredCorpus: readVendoredCorpus(),
   };
 }
 
@@ -462,6 +629,16 @@ function runSelfTest(manifest, repo) {
       () => {
         const copy = structuredClone(repo);
         copy.sessionOrders = [];
+        return [manifest, copy];
+      },
+    ],
+    [
+      // The control that matters most: a corpus present on disk with nothing
+      // behind it is the failure this repo has actually shipped.
+      'corpus',
+      () => {
+        const copy = structuredClone(repo);
+        copy.corpusRunners = { areas: [], byModule: {} };
         return [manifest, copy];
       },
     ],
@@ -525,6 +702,11 @@ function main() {
   console.log(
     `check-mechanics: ${BAND_120.length} module(s), ${interfaces} host interface(s) implemented, ` +
       `${rows} bridge row(s), core ${String(manifest.coreCommit).slice(0, 7)}`,
+  );
+  console.log(
+    `check-mechanics: ${repo.vendoredCorpus.prolog.size} vendored Prolog corpus file(s), ` +
+      `${repo.corpusRunners.areas.length} decision area(s) with a runner — ` +
+      'executed by gdextension/test/run_corpus_tests.sh',
   );
   if (!coreArg) {
     console.log('check-mechanics: no --core given, so drift against core itself was NOT checked');

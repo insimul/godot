@@ -1,0 +1,669 @@
+{
+  "area": "routine-intents",
+  "description": "The two things core says to a host about a routine: where to go and how pressing it is (US-2), and what the body looks like doing it (US-3). Four atoms and an integer — no path, no speed, no clip, no frame. US-2 and US-3 of 125-npc-routines-and-locomotion.",
+  "cases": [
+    {
+      "name": "a-shift-about-to-start-is-hurried-and-standing",
+      "note": "The ordinary case. Two location atoms and two vocabulary atoms — there is no field on this that could carry a coordinate, and the urgency comes from the goal’s OWN priority rather than a second number authored to say the same thing twice.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "an-ordinary-errand-is-ordinary",
+      "note": "Fifty is what an ordinary routine block is worth, and it sits below hurriedAt. The default rung, and the one most movements in a world land on.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 50,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "ordinary",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "ordinary",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "flight-is-the-one-rung-a-host-may-run-on",
+      "note": "Ninety. urgent is deliberately high — an NPC that runs everywhere reads as broken — and it is still an ATOM: what running looks like, and how fast it is, are the engine’s.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 90,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "urgent",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "urgent",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-goal-worth-nothing-much-is-a-stroll",
+      "note": "Zero, which is idleAt by default, so the NPC has somewhere to be and is in no hurry whatever about it. Authoring priority 0 gets the stroll it asked for rather than the default rung.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 0,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "idle",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "idle",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-goal-that-named-no-priority-is-ordinary",
+      "note": "Not idle, and not a throw. A movement nobody prioritised deserves the default, because the alternative is four engines each choosing a different one.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": null,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "ordinary",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "ordinary",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-placid-world-moves-the-whole-ladder",
+      "note": "The same priority of sixty, and a world that authored its own thresholds: it is ordinary here and hurried under core’s defaults. A balance number compiled into four engines is four numbers.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 75,
+          "urgentAt": 95,
+          "idleAt": 10,
+          "attemptsBeforeReplan": 4
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "ordinary",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "ordinary",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-world-that-authored-its-ladder-upside-down-still-answers",
+      "note": "urgentAt below hurriedAt is an authoring mistake, and the rungs are tested highest-first so it produces a legible answer — everything above forty is urgent — rather than an unreachable rung nobody can debug.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 80,
+          "urgentAt": 40,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "urgent",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "urgent",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-thief-moving-in-cover-carries-the-stance-core-was-given",
+      "note": "stance is an explicit carriage a caller supplies, and it is PerceptionReading.stance’s own three atoms — core states the carriage it intends and the host reports the carriage it has, so a guard’s senses and a thief’s intent are talking about the same thing.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 70,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {},
+        "stance": "crouching"
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "crouching"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "an-actor-crawling-out-of-a-fight",
+      "note": "The third stance, pinned so the vocabulary is closed by the data rather than only by the type.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 85,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {},
+        "stance": "prone"
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "urgent",
+          "stance": "prone"
+        },
+        "inPlace": false,
+        "urgency": "urgent",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "an-npc-already-at-the-forge-still-has-an-intent",
+      "note": "Being somewhere is a state a host may want to present, so arriving does not null the intent — inPlace is how a caller asks, and it is routine_in_place/1’s answer.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "forge",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "forge",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": true,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-preempted-routine-wants-nothing-about-where-the-npc-is",
+      "note": "NEGATIVE. Whatever displaced the routine owns the movement now, so core forms no intent at all — and note that the urgency is still resolvable, because a null intent is a decision about the ROUTINE and not a failure to read a number.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {},
+        "suspended": true
+      },
+      "expected": {
+        "intent": null,
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-block-that-names-no-place-produces-no-intent",
+      "note": "NEGATIVE. The watch wants patrolling and does not care where. Somewhere to be is optional; core wanting nothing of an actor’s position is a real answer rather than a movement to nowhere.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": null,
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": null,
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "an-actor-nobody-placed-produces-no-intent",
+      "note": "NEGATIVE, and a different one: the destination is known and where they are is not. An entity the host holds an id for after it left the world, and the failure a caller reports as unplaced rather than re-planning over.",
+      "input": {
+        "actor": "npc_smith",
+        "from": null,
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": null,
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "one-failure-is-a-door-that-happened-to-be-shut",
+      "note": "NEGATIVE for the re-plan ladder. Re-planning on the first failure is how an NPC that walked into a chair abandons a day it could have finished.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 1,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "two-failures-in-a-row-are-the-world-saying-the-plan-will-not-work",
+      "note": "The authored threshold, reached. What is invalidated is the PLAN and never the goal: an NPC that cannot reach the forge should try another way to work, not stop wanting to.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 2,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": true,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-patient-world-tolerates-four-attempts",
+      "note": "attemptsBeforeReplan is authored like every other threshold here, and three failures under a four-attempt world are not yet a re-plan.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 75,
+          "urgentAt": 95,
+          "idleAt": 10,
+          "attemptsBeforeReplan": 4
+        },
+        "failures": 3,
+        "action": "work_forge",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "ordinary",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "ordinary",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "an-action-the-world-invented-declares-its-own-intent",
+      "note": "US-3’s AC4, as data. tend_beehive is in no catalogue and in no engine’s asset table, and it animates because the world SAID what it looks like — no new atom, no rule, no core change of any kind.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "tend_beehive",
+        "authored": {
+          "tend_beehive": "work"
+        }
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "work"
+      }
+    },
+    {
+      "name": "a-world-may-override-what-one-of-cores-own-actions-looks-like",
+      "note": "attack is in core’s catalogue as strike, and this world says its attack is a cast. Authored beats catalogue, because a world is the authority on its own actions.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "attack",
+        "authored": {
+          "attack": "cast"
+        }
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "cast"
+      }
+    },
+    {
+      "name": "an-action-core-carries-resolves-from-the-catalogue",
+      "note": "No world declaration at all, and it still animates: the 133 actions in action-matrix.ts each declare an intent, which is what makes the vocabulary derived from actions that exist rather than imagined.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "sleep",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "sleep"
+      }
+    },
+    {
+      "name": "an-action-nobody-said-anything-about-leaves-the-body-standing",
+      "note": "NEGATIVE. Not a throw and not an “unknown” atom: a world author who forgot a declaration gets a character standing still, and animationIssues is what NAMES the omission.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "perform_obscure_rite",
+        "authored": {}
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    },
+    {
+      "name": "a-clip-name-that-got-as-far-as-the-export-is-not-passed-through",
+      "note": "NEGATIVE, and the reason the vocabulary is closed. “smith_idle_01” is an asset name, not an intent; it is ignored rather than handed to a host through a field typed as an atom, and the action falls through to the catalogue.",
+      "input": {
+        "actor": "npc_smith",
+        "from": "cottage",
+        "destination": "forge",
+        "priority": 60,
+        "tuning": {
+          "hurriedAt": 60,
+          "urgentAt": 85,
+          "idleAt": 0,
+          "attemptsBeforeReplan": 2
+        },
+        "failures": 0,
+        "action": "attack",
+        "authored": {
+          "attack": "smith_idle_01"
+        }
+      },
+      "expected": {
+        "intent": {
+          "actor": "npc_smith",
+          "from": "cottage",
+          "destination": "forge",
+          "urgency": "hurried",
+          "stance": "standing"
+        },
+        "inPlace": false,
+        "urgency": "hurried",
+        "replan": false,
+        "animation": "idle"
+      }
+    }
+  ]
+}

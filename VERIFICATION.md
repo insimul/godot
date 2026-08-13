@@ -739,7 +739,7 @@ npm run check
 
 The fourth stage is new: `tools/verify-mechanics/check-mechanics.mjs --self-test`.
 It mirrors this repo against a vendored derivation of core's own module manifest
-(`tools/verify-mechanics/MODULE_HOSTS.json`) five ways —
+(`tools/verify-mechanics/MODULE_HOSTS.json`) six ways —
 
 1. **manifest** — the seven modules are present and each names a host interface
    and a decision layer;
@@ -751,10 +751,16 @@ It mirrors this repo against a vendored derivation of core's own module manifest
 4. **bridge** — `entry.js`'s module table agrees with core on host interfaces and
    decision layers, and every row it declares exists in its `METHODS` table;
 5. **orders** — every order the adapter can emit has a dispatch branch in
-   `insimul_mechanic_session.gd`.
+   `insimul_mechanic_session.gd`;
+6. **corpus** (US-2) — every module's declared conformance corpus is vendored,
+   every vendored decision area has a runner in
+   `gdextension/corebridge/js/host-corpus.js`, every runner has a corpus, and
+   every directory under `conformance/` is accounted for by a named gate or by an
+   explicit "nothing here runs it". Both directions, because each catches a
+   different way of ending up with a checked-in file nobody executes.
 
 `--self-test` breaks each check on purpose first and requires it to fail, so a
-green run means five checks that *can* fail did not. To check drift against core
+green run means six checks that *can* fail did not. To check drift against core
 itself — which needs a checkout that has `packages/core`:
 
 ```sh
@@ -817,10 +823,84 @@ following is a human pass in a project with a scene, a `NavigationRegion3D` and 
 
 | gate | result |
 | --- | --- |
-| `npm run check` | ✅ 182 `.gd` files structurally sound; bundle + corpus artifacts consistent; 7 modules / 8 interfaces / 27 rows; 5/5 negative controls fail as designed |
-| `check-mechanics.mjs --core …` | ✅ manifest matches core `84be9ad` |
+| `npm run check` | ✅ 182 `.gd` files structurally sound; bundle + corpus artifacts consistent; 19 case floors met; 7 modules / 8 interfaces / 27 rows; 6/6 negative controls fail as designed |
+| `check-mechanics.mjs --core …` | ✅ manifest matches core `76782e5` |
 | `npm run test:mechanics` | ✅ **43 checks, 0 failures** |
+| `npm run test:corpus` | ✅ **467 cases** — 254 AGREE / 1 AMEND / 0 DIVERGE prolog, 212 AGREE / 0 DIVERGE decisions |
+| `npm run test:conformance` | ✅ 255 cases / 217 solutions marshalled across 21 files (was 76 / 10) |
 | `npm run test:radiant` | ✅ 11 cases, 5 areas — unchanged by the new bundle |
 | `npm run test:quest-parity` | ✅ 7 AGREE, 0 REGRESSION — unchanged |
-| every other host gate | ✅ 24 / 76 / 42 / 19 / 3 / 33 / 11 / 58 — unchanged |
+| every other host gate | ✅ 24 / 42 / 19 / 3 / 33 / 11 / 58 — unchanged |
 | human checklist above | ⬜ needs a Godot editor; unchecked here |
+
+---
+
+# Band-120 corpora, executed (tasklist 147, US-2)
+
+The seven modules' **parity**, as distinct from their reachability above:
+`RUNTIME_CORE_ADOPTION.md` §12 is the report, this is how to run it.
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:corpus        # bash gdextension/test/run_corpus_tests.sh
+```
+
+**467 cases in two halves**, both through the same bundle a shipped game loads:
+
+| half | what runs | count |
+| --- | --- | --- |
+| vocabulary | every `conformance/prolog/*.json` case consulted and **queried** on the natively linked Trealla, solutions compared as an unordered multiset | 255 cases, 21 files |
+| decision | every `conformance/{combat,items,routines,skills,stealth,traversal}/` case resolved by core's own `resolveAttack`, `runDetection`, `findRoute`, `resolvePrice`, `resolveAdvance`, `RoutineDirector` …, deep-compared to the pinned `expected` | 212 cases, 18 areas |
+
+Every case is classified — **AGREE / AMEND / DIVERGE / ERROR** — and the counts
+are printed. Only AGREE and AMEND are green. Expect:
+
+```
+prolog vocabulary : 254 AGREE, 1 AMEND, 0 DIVERGE, 0 ERROR  (255 case(s), 21 file(s))
+module decisions  : 212 AGREE, 0 AMEND, 0 DIVERGE, 0 ERROR  (212 case(s), 18 area(s))
+47 check(s), 0 failure(s)
+```
+
+The one `AMEND` is `assert-retract.json::asserta-prepends` and it prints a
+`[AMEND]` line saying why. It is not a defect of this repo — no Trealla runs that
+case as authored, and all five legs that read the file rename the predicate in
+memory rather than editing the corpus. §12.3 classifies it.
+
+Like the other libinsimul-linked gates it **fails loudly when the library is
+absent** rather than skipping; point it at a build with `INSIMUL_NATIVE_DIR=` or
+`INSIMUL_NATIVE_DIST=`.
+
+### The seven checks on the gate itself
+
+Because a parity gate that quietly stopped visiting an area would print a
+smaller green number rather than red:
+
+1–4. file, case and area **floors** for both halves (21 / 255 / 18 / 212);
+5. every vendored area ran through a **declared** runner;
+6. every runner the build declares had a vendored corpus **to** run;
+7. every listed amendment was **still needed** — a stale one fails like a
+   divergence, because an engine that got better and a table nobody re-validated
+   look identical from the outside.
+
+## Drift against core — the check that actually diffs
+
+```sh
+CORE=../babylon/packages/core
+node tools/vendor-conformance.mjs  --check --core "$CORE"   # byte-for-byte, + 19 case floors
+node tools/vendor-core-bundle.mjs  --check --core "$CORE"   # re-bundles and diffs
+node tools/verify-mechanics/check-mechanics.mjs --core "$CORE"
+```
+
+All three print their NOT_MIRRORED exclusions with a count on every run. Without
+`--core` they only verify the artifact's own hashes and say so.
+
+## Status on this machine
+
+| gate | result |
+| --- | --- |
+| `npm run test:corpus` | ✅ **47 checks, 0 failures — 467 cases, 0 divergences** |
+| `vendor-conformance --check --core` | ✅ byte-identical to core `76782e5`; 63 files, 19 floors met |
+| `vendor-core-bundle --check --core` | ✅ re-bundle reproduces the artifact byte-for-byte |
+| `check-mechanics --core` | ✅ manifest matches core `76782e5` |
+| `conformance/ui/*.json` | ⬜ **executed by nothing on this tier** — declared, not hidden (§12.5) |

@@ -1,0 +1,2198 @@
+{
+  "area": "items-placement",
+  "description": "Things existing in the world before anybody owns them, and staying the same things afterwards (US-3 and US-4 of `124-items-equipment-economy`). Each case carries an authored `WorldIR.items` slice, the world’s loot tables, the catalogue and the seed, and pins what a host materializes: every placement resolved in canonical id order, the `ItemPlace` each row’s contents land in, and what every container turned out to hold. The identity claim is the point and it is two-sided — a placement id is the SCENE NODE’s `entityId` and therefore `editor/reimport/diff.ts`’s match key, while the item atom is what core resolves it back to — so the hand-moved case pins the same chest at a different position holding the same hoard down to the coin. Loot has two paths and one discipline: an authored `systems.lootTables` row rolled per entry, or the catalogue drawn against `item_loot_weight/2` through the same function that stocks a merchant’s shelf, each keyed per `(seed, placement id, cycle, item)` so catalogue order, generation order and how many containers were filled first cannot move a single chest. Regenerate with `npm run items-corpus`.",
+  "cases": [
+    {
+      "name": "a-barrow-the-world-placed",
+      "note": "Everything US-3 claims, in one export: a sword lying where nobody owns it, a locked chest stocked from an authored table, and a letter that only ever sits inside that chest. Each row resolves to a place — `item_at/3` for the sword, the chest’s own container for the letter — and the chest’s contents are drawn deterministically from `(seed, placement id, cycle)`.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 0,
+        "ir": {
+          "lootDraws": 3,
+          "lootDepth": 2,
+          "placements": [
+            {
+              "id": "barrow_sword_01",
+              "item": "steel_sword",
+              "quantity": 1,
+              "locationId": "barrow_deep",
+              "position": {
+                "x": 12,
+                "y": 0,
+                "z": -4
+              },
+              "rotation": 90,
+              "archetype": "weapon_rack"
+            },
+            {
+              "id": "barrow_chest_01",
+              "locationId": "barrow_deep",
+              "position": {
+                "x": 2,
+                "y": 0,
+                "z": 8
+              },
+              "container": {
+                "type": "chest",
+                "locked": true,
+                "keyItem": "iron_key",
+                "lootTable": "barrow_hoard"
+              }
+            },
+            {
+              "id": "barrow_letter_01",
+              "item": "sealed_letter",
+              "quantity": 1,
+              "containerId": "barrow_chest_01"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 3,
+          "lootDepth": 2
+        },
+        "placements": [
+          {
+            "id": "barrow_chest_01",
+            "item": "",
+            "quantity": 1,
+            "location": "barrow_deep",
+            "declares": {
+              "type": "chest",
+              "locked": true,
+              "keyItem": "iron_key",
+              "lootTable": "barrow_hoard"
+            },
+            "position": {
+              "x": 2,
+              "z": 8,
+              "y": 0
+            }
+          },
+          {
+            "id": "barrow_letter_01",
+            "item": "sealed_letter",
+            "quantity": 1,
+            "location": "",
+            "container": "barrow_chest_01"
+          },
+          {
+            "id": "barrow_sword_01",
+            "item": "steel_sword",
+            "quantity": 1,
+            "location": "barrow_deep",
+            "rotation": 90,
+            "archetype": "weapon_rack",
+            "position": {
+              "x": 12,
+              "z": -4,
+              "y": 0
+            }
+          }
+        ],
+        "places": {
+          "barrow_chest_01": {
+            "kind": "world",
+            "holder": "barrow_deep"
+          },
+          "barrow_letter_01": {
+            "kind": "container",
+            "holder": "barrow_chest_01"
+          },
+          "barrow_sword_01": {
+            "kind": "world",
+            "holder": "barrow_deep"
+          }
+        },
+        "containers": [
+          "barrow_chest_01"
+        ],
+        "loot": {
+          "barrow_chest_01": {
+            "entries": [
+              {
+                "item": "arrow",
+                "quantity": 4
+              },
+              {
+                "item": "silver_ring",
+                "quantity": 1
+              }
+            ],
+            "gold": 23
+          }
+        }
+      }
+    },
+    {
+      "name": "a-creator-moved-the-chest-and-it-is-the-same-chest",
+      "note": "The re-import claim as data. The identical world with the chest three metres over and turned around: the id is unchanged, so `editor/reimport/diff.ts` matches it, the ledger keys the same container place, and the hoard inside is the same hoard down to the coin. A port that derived a container’s identity from its transform loses a creator’s afternoon here.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 0,
+        "ir": {
+          "lootDraws": 3,
+          "lootDepth": 2,
+          "placements": [
+            {
+              "id": "barrow_sword_01",
+              "item": "steel_sword",
+              "quantity": 1,
+              "locationId": "barrow_deep",
+              "position": {
+                "x": 12,
+                "y": 0,
+                "z": -4
+              },
+              "rotation": 90,
+              "archetype": "weapon_rack"
+            },
+            {
+              "id": "barrow_chest_01",
+              "locationId": "barrow_deep",
+              "position": {
+                "x": 5,
+                "y": 0,
+                "z": 11
+              },
+              "container": {
+                "type": "chest",
+                "locked": true,
+                "keyItem": "iron_key",
+                "lootTable": "barrow_hoard"
+              },
+              "rotation": 180
+            },
+            {
+              "id": "barrow_letter_01",
+              "item": "sealed_letter",
+              "quantity": 1,
+              "containerId": "barrow_chest_01"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 3,
+          "lootDepth": 2
+        },
+        "placements": [
+          {
+            "id": "barrow_chest_01",
+            "item": "",
+            "quantity": 1,
+            "location": "barrow_deep",
+            "declares": {
+              "type": "chest",
+              "locked": true,
+              "keyItem": "iron_key",
+              "lootTable": "barrow_hoard"
+            },
+            "rotation": 180,
+            "position": {
+              "x": 5,
+              "z": 11,
+              "y": 0
+            }
+          },
+          {
+            "id": "barrow_letter_01",
+            "item": "sealed_letter",
+            "quantity": 1,
+            "location": "",
+            "container": "barrow_chest_01"
+          },
+          {
+            "id": "barrow_sword_01",
+            "item": "steel_sword",
+            "quantity": 1,
+            "location": "barrow_deep",
+            "rotation": 90,
+            "archetype": "weapon_rack",
+            "position": {
+              "x": 12,
+              "z": -4,
+              "y": 0
+            }
+          }
+        ],
+        "places": {
+          "barrow_chest_01": {
+            "kind": "world",
+            "holder": "barrow_deep"
+          },
+          "barrow_letter_01": {
+            "kind": "container",
+            "holder": "barrow_chest_01"
+          },
+          "barrow_sword_01": {
+            "kind": "world",
+            "holder": "barrow_deep"
+          }
+        },
+        "containers": [
+          "barrow_chest_01"
+        ],
+        "loot": {
+          "barrow_chest_01": {
+            "entries": [
+              {
+                "item": "arrow",
+                "quantity": 4
+              },
+              {
+                "item": "silver_ring",
+                "quantity": 1
+              }
+            ],
+            "gold": 23
+          }
+        }
+      }
+    },
+    {
+      "name": "a-chest-that-names-no-table-draws-from-the-world’s-own-rarity",
+      "note": "The second loot path: no authored table, so the catalogue is drawn against `item_loot_weight/2` through the SAME function that stocks a merchant’s shelf. A loaf turns up more often than a cuirass because the world said so, not because a loot system has its own opinion.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 0,
+        "ir": {
+          "lootDraws": 3,
+          "lootDepth": 2,
+          "placements": [
+            {
+              "id": "roadside_crate_01",
+              "locationId": "kings_road",
+              "container": {
+                "type": "crate"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 3,
+          "lootDepth": 2
+        },
+        "placements": [
+          {
+            "id": "roadside_crate_01",
+            "item": "",
+            "quantity": 1,
+            "location": "kings_road",
+            "declares": {
+              "type": "crate",
+              "locked": false
+            }
+          }
+        ],
+        "places": {
+          "roadside_crate_01": {
+            "kind": "world",
+            "holder": "kings_road"
+          }
+        },
+        "containers": [
+          "roadside_crate_01"
+        ],
+        "loot": {
+          "roadside_crate_01": {
+            "entries": [
+              {
+                "item": "arrow",
+                "quantity": 1
+              },
+              {
+                "item": "copper_ring",
+                "quantity": 1
+              },
+              {
+                "item": "loaf",
+                "quantity": 1
+              }
+            ],
+            "gold": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "two-chests-in-one-world-hold-different-things",
+      "note": "The stream’s subject is the placement id, so identical containers in one world are not identical hoards — and neither of them moves when the other is generated first, because no stream is advanced per candidate.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 0,
+        "ir": {
+          "placements": [
+            {
+              "id": "crypt_chest_01",
+              "locationId": "crypt",
+              "container": {
+                "type": "chest",
+                "lootTable": "barrow_hoard"
+              }
+            },
+            {
+              "id": "crypt_chest_02",
+              "locationId": "crypt",
+              "container": {
+                "type": "chest",
+                "lootTable": "barrow_hoard"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 3,
+          "lootDepth": 2
+        },
+        "placements": [
+          {
+            "id": "crypt_chest_01",
+            "item": "",
+            "quantity": 1,
+            "location": "crypt",
+            "declares": {
+              "type": "chest",
+              "locked": false,
+              "lootTable": "barrow_hoard"
+            }
+          },
+          {
+            "id": "crypt_chest_02",
+            "item": "",
+            "quantity": 1,
+            "location": "crypt",
+            "declares": {
+              "type": "chest",
+              "locked": false,
+              "lootTable": "barrow_hoard"
+            }
+          }
+        ],
+        "places": {
+          "crypt_chest_01": {
+            "kind": "world",
+            "holder": "crypt"
+          },
+          "crypt_chest_02": {
+            "kind": "world",
+            "holder": "crypt"
+          }
+        },
+        "containers": [
+          "crypt_chest_01",
+          "crypt_chest_02"
+        ],
+        "loot": {
+          "crypt_chest_01": {
+            "entries": [
+              {
+                "item": "arrow",
+                "quantity": 5
+              }
+            ],
+            "gold": 22
+          },
+          "crypt_chest_02": {
+            "entries": [
+              {
+                "item": "arrow",
+                "quantity": 5
+              },
+              {
+                "item": "steel_sword",
+                "quantity": 1
+              }
+            ],
+            "gold": 37
+          }
+        }
+      }
+    },
+    {
+      "name": "the-same-chest-on-the-next-cycle",
+      "note": "A respawn is the same chest with the cycle advanced, which is what keeps a reload from rerolling a hoard the player already emptied: the fill is a function of the cycle, and the cycle is a save field.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 1,
+        "ir": {
+          "placements": [
+            {
+              "id": "crypt_chest_01",
+              "locationId": "crypt",
+              "container": {
+                "type": "chest",
+                "lootTable": "barrow_hoard"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 3,
+          "lootDepth": 2
+        },
+        "placements": [
+          {
+            "id": "crypt_chest_01",
+            "item": "",
+            "quantity": 1,
+            "location": "crypt",
+            "declares": {
+              "type": "chest",
+              "locked": false,
+              "lootTable": "barrow_hoard"
+            }
+          }
+        ],
+        "places": {
+          "crypt_chest_01": {
+            "kind": "world",
+            "holder": "crypt"
+          }
+        },
+        "containers": [
+          "crypt_chest_01"
+        ],
+        "loot": {
+          "crypt_chest_01": {
+            "entries": [
+              {
+                "item": "arrow",
+                "quantity": 8
+              },
+              {
+                "item": "silver_ring",
+                "quantity": 1
+              }
+            ],
+            "gold": 20
+          }
+        }
+      }
+    },
+    {
+      "name": "a-world-that-authored-its-own-loot-numbers",
+      "note": "Neither draw count nor depth is core’s: a world that wants a dragon’s pile authors one, and the per-container `draws` overrides even that. Nothing here is a compiled constant.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 0,
+        "ir": {
+          "lootDraws": 5,
+          "lootDepth": 6,
+          "placements": [
+            {
+              "id": "hoard_01",
+              "locationId": "lair",
+              "container": {
+                "type": "pile",
+                "draws": 7
+              }
+            },
+            {
+              "id": "hoard_02",
+              "locationId": "lair",
+              "container": {
+                "type": "pile"
+              }
+            }
+          ]
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 5,
+          "lootDepth": 6
+        },
+        "placements": [
+          {
+            "id": "hoard_01",
+            "item": "",
+            "quantity": 1,
+            "location": "lair",
+            "declares": {
+              "type": "pile",
+              "locked": false,
+              "draws": 7
+            }
+          },
+          {
+            "id": "hoard_02",
+            "item": "",
+            "quantity": 1,
+            "location": "lair",
+            "declares": {
+              "type": "pile",
+              "locked": false
+            }
+          }
+        ],
+        "places": {
+          "hoard_01": {
+            "kind": "world",
+            "holder": "lair"
+          },
+          "hoard_02": {
+            "kind": "world",
+            "holder": "lair"
+          }
+        },
+        "containers": [
+          "hoard_01",
+          "hoard_02"
+        ],
+        "loot": {
+          "hoard_01": {
+            "entries": [
+              {
+                "item": "iron_ring",
+                "quantity": 1
+              },
+              {
+                "item": "loaf",
+                "quantity": 2
+              },
+              {
+                "item": "pilgrims_cloak",
+                "quantity": 6
+              },
+              {
+                "item": "sealed_letter",
+                "quantity": 2
+              },
+              {
+                "item": "silver_ring",
+                "quantity": 6
+              },
+              {
+                "item": "steel_cuirass",
+                "quantity": 2
+              },
+              {
+                "item": "steel_sword",
+                "quantity": 2
+              }
+            ],
+            "gold": 0
+          },
+          "hoard_02": {
+            "entries": [
+              {
+                "item": "copper_ring",
+                "quantity": 2
+              },
+              {
+                "item": "iron_ring",
+                "quantity": 3
+              },
+              {
+                "item": "loaf",
+                "quantity": 3
+              },
+              {
+                "item": "steel_cuirass",
+                "quantity": 6
+              },
+              {
+                "item": "steel_sword",
+                "quantity": 1
+              }
+            ],
+            "gold": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "a-world-that-placed-nothing",
+      "note": "The empty case, which is the shape of every world that did not author a placement: no rows, no containers, no draws — and the world’s tuning still resolved, so a host asking for it gets numbers rather than an absence.",
+      "input": {
+        "lootTables": [
+          {
+            "enemyType": "barrow_hoard",
+            "entries": [
+              {
+                "itemId": "arrow",
+                "dropChance": 90,
+                "minQuantity": 4,
+                "maxQuantity": 12
+              },
+              {
+                "itemId": "silver_ring",
+                "dropChance": 35,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              },
+              {
+                "itemId": "steel_sword",
+                "dropChance": 20,
+                "minQuantity": 1,
+                "maxQuantity": 1
+              }
+            ],
+            "goldMin": 10,
+            "goldMax": 40
+          }
+        ],
+        "catalogue": [
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 10,
+            "sellValue": 4,
+            "tradeable": true,
+            "stackable": true,
+            "maxStack": 40,
+            "tags": [
+              "steel"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 9,
+            "id": "arrow",
+            "name": "Arrow",
+            "stockNormal": 20
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 8,
+            "sellValue": 3,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 6,
+            "id": "copper_ring",
+            "name": "Copper Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 20,
+            "sellValue": 8,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 4,
+            "id": "iron_ring",
+            "name": "Iron Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "food",
+            "weight": 1,
+            "value": 4,
+            "sellValue": 2,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "food"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 12,
+            "id": "loaf",
+            "name": "Loaf"
+          },
+          {
+            "itemType": "armor",
+            "weight": 3,
+            "value": 30,
+            "sellValue": 12,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "cloth"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 2,
+            "id": "pilgrims_cloak",
+            "name": "Pilgrim’s Cloak",
+            "equipSlot": "back",
+            "armor": 1
+          },
+          {
+            "itemType": "misc",
+            "weight": 0,
+            "value": 0,
+            "sellValue": 0,
+            "tradeable": false,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "paper"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "sealed_letter",
+            "name": "Sealed Letter"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 45,
+            "sellValue": 20,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {},
+            "requires": [],
+            "lootWeight": 1,
+            "id": "serpent_torc",
+            "name": "Serpent Torc",
+            "equipSlot": "tail"
+          },
+          {
+            "itemType": "accessory",
+            "weight": 0,
+            "value": 60,
+            "sellValue": 30,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "jewellery"
+            ],
+            "effects": {
+              "dodge": 1
+            },
+            "requires": [],
+            "lootWeight": 1,
+            "id": "silver_ring",
+            "name": "Silver Ring",
+            "equipSlot": "ring"
+          },
+          {
+            "itemType": "armor",
+            "weight": 30,
+            "value": 240,
+            "sellValue": 120,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "armour",
+              "steel"
+            ],
+            "effects": {
+              "defense": 4,
+              "move_speed": -1
+            },
+            "requires": [
+              {
+                "skill": "heavy_armour",
+                "level": 2
+              }
+            ],
+            "lootWeight": 2,
+            "id": "steel_cuirass",
+            "name": "Steel Cuirass",
+            "equipSlot": "chest",
+            "armor": 6
+          },
+          {
+            "itemType": "weapon",
+            "weight": 8,
+            "value": 100,
+            "sellValue": 50,
+            "tradeable": true,
+            "stackable": false,
+            "maxStack": 1,
+            "tags": [
+              "steel",
+              "weapon"
+            ],
+            "effects": {
+              "attack": 3
+            },
+            "requires": [],
+            "lootWeight": 3,
+            "id": "steel_sword",
+            "name": "Steel Sword",
+            "equipSlot": "weapon"
+          }
+        ],
+        "seed": "barrow-01",
+        "cycle": 0,
+        "ir": {
+          "placements": []
+        }
+      },
+      "expected": {
+        "tuning": {
+          "lootDraws": 3,
+          "lootDepth": 2
+        },
+        "placements": [],
+        "places": {},
+        "containers": [],
+        "loot": {}
+      }
+    }
+  ]
+}
