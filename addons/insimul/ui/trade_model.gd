@@ -19,6 +19,19 @@ extends RefCounted
 ## merchant.goldReserve constant). Shared matrices:
 ## packages/core/conformance/ui/trade-cases.json. Each item stack is a Dictionary
 ## { itemId, quantity, value? }.
+##
+## ## One model, several panels
+##
+## The inventory, container and merchant panels SHARE a model (set_model), because
+## they share the state it is bound to: a take in the container panel is already
+## visible in the inventory panel's `player.inventory` the instant it happens, and
+## [signal state_changed] is what tells the other panels to redraw. Two models over
+## one currentState would still agree — there is no private store to diverge — but
+## nothing would tell the second one to look.
+
+## Emitted after any op that changed currentState. Panels sharing this model redraw
+## off it; nothing else in the model reads it.
+signal state_changed
 
 var _state: Dictionary = {}
 
@@ -191,6 +204,7 @@ func _remove_stack(items: Array, item_id: String, qty: int) -> void:
 
 
 func _ok(moved: int) -> Dictionary:
+	state_changed.emit()
 	return {"ok": true, "reason": "", "moved": moved}
 
 

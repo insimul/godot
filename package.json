@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "description": "Insimul Godot engine plugin (GDExtension + addon + game template)",
   "scripts": {
-    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check && node tools/vendor-supported-versions.mjs --check && node tools/vendor-replay-fixtures.mjs --check && node tools/verify-mechanics/check-mechanics.mjs --self-test && node tools/verify-talos-bridge/check-bridge.mjs --self-test",
+    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check && node tools/vendor-supported-versions.mjs --check && node tools/vendor-replay-fixtures.mjs --check && node tools/verify-mechanics/check-mechanics.mjs --self-test && node tools/verify-talos-bridge/check-bridge.mjs --self-test && node tools/verify-ui/check-ui.mjs --self-test",
     "test:conformance": "bash gdextension/test/run_conformance.sh",
     "test:radiant": "bash gdextension/test/run_radiant_tests.sh",
     "test:quest-parity": "bash gdextension/test/run_quest_parity_tests.sh",
@@ -16,6 +16,9 @@
     "test:talos-bridge": "bash gdextension/test/run_talos_bridge_tests.sh",
     "vendor:versions": "node tools/vendor-supported-versions.mjs",
     "test:replay": "bash gdextension/test/run_talos_replay_tests.sh",
-    "vendor:replay": "node tools/vendor-replay-fixtures.mjs"
+    "vendor:replay": "node tools/vendor-replay-fixtures.mjs",
+    "test:ui": "bash addons/insimul/tests/run_ui_registry_headless.sh",
+    "test:ui-quest-trade": "bash addons/insimul/tests/run_quest_trade_headless.sh",
+    "test:ui-dialogue-menu-save": "bash addons/insimul/tests/run_dialogue_menu_save_headless.sh"
   }
 }

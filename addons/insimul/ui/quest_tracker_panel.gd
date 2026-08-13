@@ -21,9 +21,19 @@ func _ready() -> void:
 
 
 ## Bind the shared journal model (so the HUD reflects the journal's tracked set).
+## The model's `changed` signal keeps the HUD live: a quest tracked in the journal
+## or completed by the quest system redraws here with no polling.
 func set_model(model: InsimulQuestJournalModel) -> void:
+	if _model != null and _model.changed.is_connected(_refresh):
+		_model.changed.disconnect(_refresh)
 	_model = model
+	if _model != null and not _model.changed.is_connected(_refresh):
+		_model.changed.connect(_refresh)
 	_refresh()
+
+
+func model() -> InsimulQuestJournalModel:
+	return _model
 
 
 func refresh() -> void:

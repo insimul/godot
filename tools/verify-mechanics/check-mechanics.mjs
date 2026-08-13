@@ -405,9 +405,11 @@ const CORPUS_RUN_ELSEWHERE = {
   radiant: 'gdextension/test/run_radiant_tests.sh',
   saves: 'gdextension/test/run_save_tests.sh and run_bootstrap_tests.sh',
   ui:
-    'nothing on this tier — the UI models are GDScript and the corpus is read by ' +
-    'the Godot-binary checklist in VERIFICATION.md, not by a host gate. ' +
-    'RUNTIME_CORE_ADOPTION.md §12.5',
+    'addons/insimul/tests/run_ui_registry_headless.sh (npm run test:ui) runs the ' +
+    'registry, loading-phase and token cases against the GDScript view-models on a ' +
+    'real Godot binary, and SKIPS without one; tools/verify-ui/check-ui.mjs holds ' +
+    'the shipped panel manifest and the token set to the same corpus with nothing ' +
+    'but Node, so the parity claim still has a gate on a box with no Godot',
   'content-library': null, // documented in RUNTIME_CORE_ADOPTION.md §10.5: no reader here
   content: null, // this repo's own fixture, declared local in conformance/VENDORED.json
 };

@@ -1132,3 +1132,135 @@ The half no host gate reaches: whether the Bridge actually FINDS the adapter.
 | `vendor-supported-versions --check` | ✅ 3 engine rows, 42 why-not tokens, 21 reference cases |
 | `vendor-replay-fixtures --check` | ✅ 12 trace / 7 outcome / 6 comparison / 4 run cases, 133 action ids |
 | the human end-to-end checklist | ⬜ needs a `godot` binary, a built extension and Talos |
+
+---
+
+# Default UI in this repo (tasklist 192)
+
+The standalone Godot repo's own default-UI legs. The `US-GU*` sections above are
+the pre-standalone record and describe a `packages/` layout this repo no longer
+has; what follows is what runs here.
+
+## Runs on any box — no Godot binary, no libinsimul
+
+```sh
+npm run check               # includes tools/verify-ui/check-ui.mjs --self-test
+```
+
+`check-ui.mjs` is the whole data side of the panel registry, and every one of its
+checks has a negative control:
+
+| check | claim |
+| --- | --- |
+| 1 | the PINNED panel set equals `conformance/ui/registry-cases.json -> panel_keys`, both ways |
+| 1b | every ahead-of-corpus entry (`pending_corpus`) says what it waits for, is not already in the corpus, and — when it gates on nothing — carries a `gate_note` |
+| 1c | a composite's `children` are panels the manifest has and never itself; its script names no panel key |
+| 2 | every panel's scene, and every resource that scene loads, is a real file |
+| 3 | every `requires` id is in the band-111 activation table AND some genre bundle activates it |
+| 4 | `insimul_ui_registry.gd` names no panel key and no module id |
+| 5 | `insimul_ui_tokens.gd` mirrors `conformance/ui/theme-tokens.json`, both ways |
+| 6 | nothing under `addons/insimul/ui/` names `InsimulCore` |
+| 7 | every shipped ESC-menu tab has a body (`pauseMenuTabs`) or a written reason it has none (`pauseMenuTabNotes`) — never both, never neither; the close tab is a shipped tab and mounts nothing |
+| 8 | `InsimulPauseMenuModel.DEFAULT_TABS` is exactly the tab set the shared cases gate, in declaration order |
+| 9 | anything under `ui/` that resolves panels (`children()`, `tab_panel()`, `tab_panels()`) names none of them — check 4's rule, reaching files the gate was never told about |
+
+## Needs a `godot` binary (this box has one)
+
+```sh
+npm run test:ui                     # addons/insimul/tests/run_ui_registry_headless.sh
+npm run test:ui-quest-trade         # addons/insimul/tests/run_quest_trade_headless.sh
+npm run test:ui-dialogue-menu-save  # addons/insimul/tests/run_dialogue_menu_save_headless.sh
+```
+
+All three stage **only** `addons/insimul/ui/` plus the one test into a throwaway
+project, run `--import` first (without it Godot registers no global `class_name`,
+every script fails to parse, and `godot -s` still exits 0), and then fail on any
+`SCRIPT ERROR` in the log as well as on a non-clean pass line. All three SKIP with
+exit 0 when no `godot` binary is on PATH.
+
+`test:ui` covers the shared registry + loading-phase + theme cases, the shipped
+manifest, the creator override through a project setting, the module gate across
+every genre bundle, **every shipped panel instantiating and reaching `_ready()`
+inside a real tree**, and the composite HUD mounting exactly the children the
+world's modules allow.
+
+`test:ui-quest-trade` runs the shared quest + trade matrices
+(`conformance/ui/{quest-journal-cases,trade-cases}.json`) against
+`InsimulQuestJournalModel` / `InsimulTradeModel`, the state-location invariant,
+the real-quest-system binding (a `quest_offered` radiant arrival reaching the
+journal as available), and the view-models behind the ahead-of-corpus panels
+(map projection, skill-tree unlock rules, document pagination, radial selection,
+quickbar slots, notice board).
+
+`test:ui-dialogue-menu-save` runs the shared dialogue + pause-menu + save-slot
+matrices (`conformance/ui/{chat-cases,pause-menu-cases,save-slot-cases}.json`)
+against `InsimulChatModel` / `InsimulPauseMenuModel` / `InsimulSaveSlotModel`, and
+then the Controls in a real tree: the dialogue panel on a stub streaming service
+(chunks accumulating into the in-flight bubble, a second line refused mid-turn, TTS
+and the `insimul_lip_sync` hook fired once from the settled line and never from an
+errored one, a triggered action's Prolog fact asserted exactly once, the transcript
+landing in `save.conversations` and UPDATING that NPC's row rather than appending a
+second), the ESC menu regating its tab bar between bundles and mounting its tab
+bodies through the registry — including a body the band-111 gate takes away, with
+the `module_inactive` diagnostic that names which module did it — the menu shell
+mounting its manifest children and forwarding open/close, the save/load rows as
+RENDERED text (the integrity message, Load disabled, Save not) and the main-menu
+Continue gate.
+
+## Needs a `godot` binary + a game — human end-to-end checklist
+
+- [ ] **Quest journal + tracker** — open `quest_journal`, switch tabs and confirm
+      the list partitions by status; track up to `max_tracked` active quests and
+      confirm `quest_tracker` mirrors them **without a manual refresh**; complete a
+      quest and confirm it drops off the tracker and lands under Completed.
+- [ ] **Radiant offer** — run a radiant tick and confirm the arrival appears under
+      Available with the quest system's own title, and that `quest_offer` Accept
+      moves it to Active while Decline removes it.
+- [ ] **Trade against a live save** — loot a container into the inventory with both
+      panels open and confirm the inventory redraws itself; buy and sell at a
+      merchant and confirm gold + stock update on BOTH sides; reload the save and
+      confirm the same numbers come back (there is no store but `currentState`).
+- [ ] **The module gate, visibly** — run an `educational` world and confirm the HUD
+      comes up with no minimap and no quickbar and the menus offer no skill tree,
+      no merchant and no container, while the notice board and the document reader
+      are still there; run an `rpg` world and confirm all of them appear.
+- [ ] **A creator override** — point `insimul/ui/panel_overrides` at a replacement
+      `quest_journal` scene and confirm it is what opens, with no engine code
+      changed.
+- [ ] **Dialogue streaming** — open `dialogue` on an NPC: the greeting shows, a sent
+      line streams the reply chunk-by-chunk into the NPC bubble, and the send box is
+      locked until the turn completes. A stream error renders an `[Error: …]` bubble
+      and unlocks the box.
+- [ ] **TTS + lip-sync** — with a TTS provider and an `insimul_lip_sync` hook
+      registered, the settled NPC line is spoken and the speaker's visemes animate;
+      neither fires for an errored turn.
+- [ ] **KB action trigger** — an NPC reply that triggers an action (`give_item`)
+      asserts the mapped fact (`has_item(player,sword)`) into the PrologEngine KB
+      exactly once, and the world reflects it.
+- [ ] **History persists** — close the conversation, save, reload: the NPC's row in
+      `save.conversations` carries the settled turns and the total, a second
+      conversation with the same NPC updates that row instead of adding another, and
+      the errored turn is not in it.
+- [ ] **The unified ESC menu** — ESC opens the menu and pauses the game; Resume
+      dismisses it. With an `rpg` bundle the Assessment tab is gone; with a
+      language-learning bundle every gated tab is back. Journal / Inventory / Map /
+      Skills open the REAL panels inside the menu, and a tab whose panel the world
+      gates off (Map in a world with no `map` module) says which module is missing
+      rather than showing an empty pane.
+- [ ] **Main menu** — Continue and Load are disabled on a fresh install and after a
+      slot goes corrupt, and enable once a healthy slot exists; New Game starts a
+      fresh run.
+- [ ] **Save/load slots incl. corrupted** — a healthy slot shows its summary and
+      loads; a slot whose codec integrity check fails renders as **Corrupted Save**
+      with the integrity message, cannot be loaded, and can still be overwritten.
+
+## Status on this machine (default UI)
+
+| gate | result |
+| --- | --- |
+| `npm run check` | ✅ 199 `.gd` files; check-ui **461 checks, 0 failures** (29 negative controls) |
+| `npm run test:ui` | ✅ **637 checks, 0 failures** (godot 4.6) |
+| `npm run test:ui-quest-trade` | ✅ **172 checks, 0 failures** (godot 4.6) |
+| `npm run test:ui-dialogue-menu-save` | ✅ **179 checks, 0 failures** (godot 4.6) |
+| the eight native gates | ✅ conformance 255, radiant 11, quest-parity PASS, mechanics 43, corpus 47, activation 30, talos-bridge 73, replay 20 |
+| the human checklist above | ⬜ needs a game project — reviewed at merge |

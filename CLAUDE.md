@@ -16,6 +16,9 @@ npm run test:conformance
 npm run test:activation  # 8 genre bundles, 88 KB witnesses, the sample scenario
 npm run test:talos-bridge # the insimul-talos-bridge decision half, 73 checks
 npm run test:replay      # the bridge's replay leg vs core's own answers, 20 checks
+npm run test:ui          # the default-UI registry/theme/panel gate (needs godot), 637 checks
+npm run test:ui-quest-trade  # the shared quest + trade matrices + state-location, 172 checks
+npm run test:ui-dialogue-menu-save # the dialogue/menu/save matrices + the Controls, 179 checks
 ```
 
 Everything under `gdextension/test/run_*.sh` builds with a **plain C/C++
@@ -140,6 +143,68 @@ that will bite:
   (4.4) and friends are out.
 - One `class_name` per file; use inner `class Foo extends Bar:` for the rest.
 - Tabs, typed locals (`var x := ...`), `##` doc comments.
+
+## The default UI is DATA, and the GDScript gates need an import pass
+
+`addons/insimul/ui/` is the shipped default-UI. Six things that will bite:
+
+1. **The panel set lives in `panels.json`, not in the registry.** Panel key ->
+   scene, plus the band-111 modules a panel needs before it is offered at all.
+   `tools/verify-ui/check-ui.mjs` greps `insimul_ui_registry.gd` for every panel
+   key and every module id in the activation table and fails on a hit — the same
+   discipline as `check-mechanics.mjs`'s seventh check, and for the same reason.
+   It strips comments first, unlike that one: there is no comment here LISTING
+   the panels, and a doc comment showing one call is the rule being documented.
+2. **Nothing under `ui/` may name `InsimulCore`.** The default UI has to load in
+   a project with no native build — otherwise a missing GDExtension takes the
+   menus down with it, and the headless gate could not stage the UI alone.
+   `bind_activation()` is duck-typed (`module_ids()` + `genre()`) for exactly
+   this reason.
+3. **A `godot -s` gate that skipped the import pass ran NOTHING and said so with
+   an exit code of 0.** Godot registers the addon's global `class_name`s only
+   after the project has been scanned, so a throwaway project that goes straight
+   to `-s` fails to parse every script — and `godot -s` still exits 0.
+   `run_ui_registry_headless.sh` and `run_quest_trade_headless.sh` therefore run
+   `--import` first, check that `.godot/global_script_class_cache.cfg` appeared,
+   and grep the log for parse errors afterwards. Both were green and empty —
+   the registry gate for three stories, the quest/trade gate for its whole life
+   (it pointed at `../core/conformance/ui`, a path outside this repo, and was in
+   no npm script). The first real execution failed 18 of 172 checks, all of them
+   the harness's own comparison: `JSON.parse()` hands back every number as a
+   FLOAT, so a corpus `4` never equalled a model's `int` 4.
+4. **A panel added to the tree during `_initialize()` never gets `_ready()`.** The
+   SceneTree's `root` is not itself in the tree yet, so `add_child` defers. A
+   "does this panel build itself?" check written there passes vacuously; the
+   node-level legs run from `_process()` instead. That is what catches a panel
+   reaching for a theme token that does not exist (`FONT_SIZE["subtitle"]` was one
+   until US-2 — it resolved, instantiated, and errored only when shown).
+5. **`panels.json` has two TIERS and the gate holds them apart.** An entry with a
+   `pending_corpus` string is a panel shipped before the shared corpus documents
+   the key; everything else must equal `registry-cases.json -> panel_keys`
+   exactly, both ways. The tier is a waiting room: check-ui fails a
+   `pending_corpus` key the corpus already has, so a re-vendor forces the entry to
+   move. An ahead-of-corpus panel gating on nothing needs a `gate_note` saying
+   which module would back it and why it is the wrong answer. Same idiom as
+   `NOT_ADOPTED` in `check-mechanics.mjs`.
+6. **A composite panel (`children` in the manifest) is a SECOND resolver**, so it
+   lives under the same "spells no panel key" rule as the registry — check-ui
+   finds its script through the scene and greps it. `InsimulHud.mount()` takes the
+   key it was resolved under rather than spelling `hud`. check-ui's check 9
+   widens that to ANY ui/ file calling `children()` / `tab_panel()` /
+   `tab_panels()`, which is how the rule reached `pause_menu.gd` without the gate
+   being told about it.
+7. **The ESC menu has TWO gates and they are different vocabularies.** A tab is
+   offered when the pause-menu module bundle enables it (`proficiency`,
+   `assessment`, … — `pause-menu-cases.json`); its BODY is a shipped panel, so it
+   also meets the band-111 gate (`skill`, `map`, …). The tab -> panel map is
+   manifest data (`pauseMenuTabs`), and **every shipped tab must be in exactly one
+   of `pauseMenuTabs` and `pauseMenuTabNotes`** — a tab in neither renders a blank
+   pane, which is the failure the registry's diagnostics exist to prevent. Same
+   accounting idiom as the ahead-of-corpus tier.
+8. **A `SceneTree` test script has no `get_tree()`.** It IS the tree: write
+   `paused`, not `get_tree().paused`. The parse error only surfaces when something
+   LOADS the script — which is exactly what the wrapper's `SCRIPT ERROR` grep is
+   for, and it caught this one.
 
 ## The Talos bridge is a THIRD artifact, and stays one
 
