@@ -64,6 +64,90 @@ Three things worth knowing:
   default UI has to load in a project with no native build, or a missing
   GDExtension takes the menus down with it.
 
+### Two panel tiers, and the accounting between them
+
+`panels.json` holds two kinds of entry, distinguished by one field:
+
+| Tier | Marker | Rule |
+| ---- | ------ | ---- |
+| **pinned** | no `pending_corpus` | the key set must equal `conformance/ui/registry-cases.json → panel_keys` **exactly, both ways**. This is the cross-engine registry contract; a pinned key only Godot has is a divergence, and divergence is a bug. |
+| **ahead-of-corpus** | `pending_corpus: "<what has to happen>"` | a panel this port ships before the shared corpus has a key for it. |
+
+US-2 ships seven panels in the second tier — `skill_tree`, `minimap`, `fullmap`,
+`quickbar`, `radial_menu`, `notice_board`, `documents`. The tier is a **waiting
+room, not a parking lot**, and the gate enforces that in both directions: an entry
+must say what it is waiting for, and a `pending_corpus` key that the corpus
+*already* documents fails — so when core adds the key and the corpus is
+re-vendored, the entry has to move rather than quietly stay.
+
+An ahead-of-corpus panel that gates on **nothing** carries a `gate_note` naming
+the module that would back it and why that module is the wrong answer. `documents`
+and `notice_board` are both there: the nearest band-111 modules (`equipment`,
+`routine`) are activated only by the rpg-ish bundles, and reading is exactly what
+the educational / language-learning bundles — which activate no modules at all —
+are for. An ungated panel is an answer, not an omission.
+
+### Composite panels
+
+A panel entry may declare `children: [<panel key>]`. `InsimulHud` is the one that
+does: it mounts each child **through the registry**, so every child meets the
+module gate on the way in — a world with no `map` module simply gets a HUD without
+a minimap, and nothing anywhere had to ask whether the world has a map.
+
+```gdscript
+var hud := ui.instantiate(key) as InsimulHud
+add_child(hud)
+hud.mount(ui, key)      # children from the manifest, each gated
+```
+
+`hud.gd` spells no panel key, including its own — the layout is manifest data like
+everything else, and `check-ui.mjs` greps the composite's script for every key the
+same way it greps the registry.
+
+## The panels
+
+| Key | Script | View-model | Gate |
+| --- | ------ | ---------- | ---- |
+| `quest_journal` / `quest_tracker` / `quest_offer` | `quest_*_panel.gd` | `InsimulQuestJournalModel` | — |
+| `inventory` | `inventory_panel.gd` | `InsimulTradeModel` | — |
+| `container` / `merchant` | `container_panel.gd`, `merchant_panel.gd` | `InsimulTradeModel` | `equipment` |
+| `skill_tree` | `skill_tree_panel.gd` | `InsimulSkillTreeModel` | `skill` |
+| `minimap` / `fullmap` | `minimap_panel.gd`, `full_map_panel.gd` | `InsimulMapModel` | `map` |
+| `quickbar` / `radial_menu` | `quickbar_panel.gd`, `radial_menu_panel.gd` | — | `agentAi` |
+| `notice_board` / `documents` | `notice_board_panel.gd`, `documents_panel.gd` | — | none (see `gate_note`) |
+| `hud` | `hud.gd` (composite) | — | — |
+
+### Backed EXCLUSIVELY by `save.currentState`
+
+`InsimulTradeModel` binds the **live** `currentState` Dictionary and mutates it in
+place. It keeps no private item store, which is what makes a snapshot at any
+moment the whole truth: reads hand back the save's own arrays (identity, not a
+copy), and every op conserves the item census and the gold total. The shared
+matrices in `conformance/ui/trade-cases.json` pin the arithmetic; the
+state-location invariant itself is asserted in code, in `quest_trade_test.gd`.
+
+The inventory, container and merchant panels **share one model** (`set_model`),
+because they share the state it is bound to. Two models over one `currentState`
+would still agree — there is no private store to diverge — but nothing would tell
+the second one to look, so the model emits `state_changed` and the panels redraw
+off it.
+
+### Driven by the real quest system
+
+`InsimulQuestJournalModel.bind_quest_system(system)` connects the live
+`InsimulQuestSystem` signals — `quest_offered(quest_id, tick)`,
+`quest_accepted(quest_id)`, `quest_completed(quest_id)` — and hydrates from the
+system's own projections. A **radiant arrival** therefore lands in the journal
+under the Available tab with no polling, and an accept or completion made anywhere
+in the game shows up in the journal, the tracker HUD and the offer dialog at once
+(they share the model, and it emits `changed`).
+
+The binding is **duck-typed**, on signal names and `get_projection()`. It has to
+be: the quest system reaches into the GDExtension and nothing under
+`addons/insimul/ui/` may, or the default UI stops loading in a project with no
+native build. `quest_trade_test.gd`'s `StubQuestSystem` carries the exact
+signatures, so the stub *is* the interface under test.
+
 ## Theme tokens — `InsimulUiTokens`
 
 `addons/insimul/ui/insimul_ui_tokens.gd` mirrors
@@ -113,7 +197,7 @@ without a scene tree:
 
 ## Tests
 
-Two gates, because one of them cannot run everywhere:
+Three gates, because one of them cannot run everywhere:
 
 - **`addons/insimul/tests/ui_registry_test.gd`** (`npm run test:ui`, via
   `run_ui_registry_headless.sh`) runs the shared corpus against the view-models on
@@ -126,10 +210,25 @@ Two gates, because one of them cannot run everywhere:
   pass Godot registers no global `class_name` and every script fails to parse
   while `godot -s` still exits 0 — and then fails on any script error in the log.
   With no `godot` binary it SKIPS.
+
+  Two of its legs — every shipped panel instantiating and reaching `_ready()`, and
+  the composite HUD mounting its gated children — run from `_process()` rather
+  than `_initialize()`. The tree's `root` **is not in the tree** during
+  `_initialize()`, so a panel added there never gets its `_ready()` and every
+  "does this panel build itself?" check would pass vacuously.
+- **`addons/insimul/tests/quest_trade_test.gd`** (`npm run test:ui-quest-trade`,
+  via `run_quest_trade_headless.sh`) runs the shared quest + trade matrices
+  (`conformance/ui/{quest-journal-cases,trade-cases}.json`) against
+  `InsimulQuestJournalModel` and `InsimulTradeModel`, plus the state-location
+  invariant, the real-quest-system binding, and the view-models behind the
+  ahead-of-corpus panels. Same staging discipline as the registry gate.
 - **`tools/verify-ui/check-ui.mjs`** (`npm run check`) needs nothing but Node, so
   the parity claims still have a gate on a box with no Godot: the manifest and the
-  corpus document the same panels (both ways), every scene and every scene
-  dependency is a real file, every gated module is in the activation table and is
-  activated by some bundle, the registry names neither a panel nor a module, the
-  token set matches the corpus (both ways), and nothing in the UI calls into
-  `InsimulCore`. Every check has a negative control under `--self-test`.
+  corpus document the same **pinned** panels (both ways), the ahead-of-corpus tier
+  accounts for itself (a reason, no overlap with the corpus, a `gate_note` when
+  ungated), a composite mounts panels that exist and never itself, every scene and
+  every scene dependency is a real file, every gated module is in the activation
+  table and is activated by some bundle, neither the registry nor a composite's
+  script names a panel or a module, the token set matches the corpus (both ways),
+  and nothing in the UI calls into `InsimulCore`. Every check has a negative
+  control under `--self-test`.

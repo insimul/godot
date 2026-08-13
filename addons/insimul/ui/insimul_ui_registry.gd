@@ -56,6 +56,7 @@ const MANIFEST_PATH := "res://addons/insimul/ui/panels.json"
 
 var _defaults: Dictionary = {}
 var _requires: Dictionary = {}
+var _children: Dictionary = {}
 var _overrides: Dictionary = {}
 var _diagnostics: Array = []
 var _active_modules: PackedStringArray = PackedStringArray()
@@ -100,6 +101,7 @@ func load_manifest(path: String) -> bool:
 			continue
 		_defaults[String(key)] = String((entry as Dictionary).get("scene", ""))
 		_requires[String(key)] = _strings((entry as Dictionary).get("requires", []))
+		_children[String(key)] = _strings((entry as Dictionary).get("children", []))
 	return true
 
 
@@ -166,6 +168,14 @@ func is_gated() -> bool:
 ## The module ids `key` needs before it is offered. Empty for an ungated panel.
 func requirements(key: String) -> PackedStringArray:
 	return _strings(_requires.get(key, []))
+
+
+## The panel keys a COMPOSITE panel mounts inside itself, in manifest order. Empty
+## for a leaf panel. This is how a composite (the HUD) stays free of the keys it
+## contains: its layout is manifest data like everything else, and each child still
+## goes through [method instantiate], so each still meets the module gate.
+func children(key: String) -> PackedStringArray:
+	return _strings(_children.get(key, []))
 
 
 ## The required modules this world does NOT activate — why the panel is hidden.

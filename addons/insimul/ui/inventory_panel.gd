@@ -26,7 +26,7 @@ func _build_ui() -> void:
 	add_child(box)
 
 	_gold_label = Label.new()
-	_gold_label.add_theme_font_size_override("font_size", int(InsimulUiTokens.FONT_SIZE["subtitle"]))
+	_gold_label.add_theme_font_size_override("font_size", int(InsimulUiTokens.FONT_SIZE["title"]))
 	box.add_child(_gold_label)
 
 	_list = VBoxContainer.new()
@@ -36,6 +36,17 @@ func _build_ui() -> void:
 ## Bind the live save.currentState slice (player / containers / npcs).
 func attach(current_state: Dictionary) -> void:
 	_model.attach(current_state)
+	_refresh()
+
+
+## Share one trade model with the container / merchant panels, so a take or a buy
+## made in either of them redraws this one. See InsimulTradeModel's class doc.
+func set_model(model: InsimulTradeModel) -> void:
+	if _model != null and _model.state_changed.is_connected(_refresh):
+		_model.state_changed.disconnect(_refresh)
+	_model = model
+	if _model != null and not _model.state_changed.is_connected(_refresh):
+		_model.state_changed.connect(_refresh)
 	_refresh()
 
 

@@ -9,10 +9,26 @@
 //
 //   1. THE MANIFEST IS TOTAL, BOTH WAYS. Every panel key the shared corpus
 //      documents (conformance/ui/registry-cases.json → panel_keys) has an entry
-//      in addons/insimul/ui/panels.json, and every entry is a documented key. A
-//      key in the corpus and not the manifest is a panel the other ports have and
-//      this one does not; a key here and not there is a divergence the shared
-//      cases will never see.
+//      in addons/insimul/ui/panels.json, and every PINNED entry is a documented
+//      key. A key in the corpus and not the manifest is a panel the other ports
+//      have and this one does not; a pinned key here and not there is a
+//      divergence the shared cases will never see.
+//
+//   1b. THE AHEAD-OF-CORPUS TIER IS A WAITING ROOM, NOT A PARKING LOT. US-2 ships
+//      panels the shared corpus has no key for yet (skill tree, minimap, fullmap,
+//      quickbar, radial menu, notice board, documents). Each carries a
+//      `pending_corpus` string saying what has to happen — core adds the key,
+//      then `npm run vendor:conformance` — and the gate refuses one whose key the
+//      corpus ALREADY documents, so the entry cannot outlive its reason. An
+//      ahead-of-corpus panel that gates on nothing must carry a `gate_note`
+//      saying which module WOULD back it and why none does: an ungated panel is
+//      an answer, not an omission. Same accounting idiom as NOT_ADOPTED in
+//      check-mechanics.mjs and NOT_MIRRORED in vendor-conformance.mjs.
+//
+//   1c. A COMPOSITE'S CHILDREN ARE PANELS. A `children` list (the HUD) names
+//      panel keys the manifest itself declares, and never itself — a composite
+//      that mounts a key nothing resolves is a HUD with a hole in it, and one
+//      that mounts itself does not terminate.
 //
 //   2. EVERY PANEL REALLY HAS A SCENE. A default pointing at a scene that does
 //      not exist resolves fine and instantiates to null — the registry answers a
@@ -139,6 +155,18 @@ export function parseGdConst(source, name) {
   return out;
 }
 
+/**
+ * The repo-relative script a scene attaches, or null. Used to find the file behind
+ * a panel key without the manifest having to name it twice.
+ */
+function scriptOfScene(input, sceneRef) {
+  const rel = sceneRef.startsWith(RES_PREFIX) ? sceneRef.slice(RES_PREFIX.length) : null;
+  const text = rel ? input.sceneTexts[rel] : null;
+  if (!text) return null;
+  const match = text.match(/\[ext_resource type="Script" path="res:\/\/([^"]+)"/);
+  return match ? match[1] : null;
+}
+
 /** A whole-word occurrence of `name`, the way check-mechanics.mjs looks for one. */
 function namesWord(source, name) {
   return new RegExp(`(^|[^A-Za-z0-9_-])${name}([^A-Za-z0-9_-]|$)`).test(source);
@@ -151,15 +179,63 @@ export function runChecks(input) {
   const panels = manifest.panels ?? {};
   const keys = Object.keys(panels);
 
-  // 1. The manifest and the shared corpus document the same panel set.
+  // 1. The manifest and the shared corpus document the same PINNED panel set.
+  const pending = keys.filter((key) => String(panels[key].pending_corpus ?? '').trim() !== '');
+  const pinned = keys.filter((key) => !pending.includes(key));
   console.log('\n1. the manifest is total, both ways');
   for (const key of panelKeys) {
     check(keys.includes(key), `corpus panel "${key}" is in the shipped manifest`,
       'add it to addons/insimul/ui/panels.json, or the other ports have a panel this one does not');
   }
-  for (const key of keys) {
-    check(panelKeys.includes(key), `manifest panel "${key}" is documented by the corpus`,
-      'conformance/ui/registry-cases.json → panel_keys is the shared list; a key only here diverges');
+  for (const key of pinned) {
+    check(panelKeys.includes(key), `pinned panel "${key}" is documented by the corpus`,
+      'conformance/ui/registry-cases.json → panel_keys is the shared list; a pinned key only here diverges');
+  }
+  check(pinned.length === panelKeys.length, 'the pinned tier is exactly the shared panel set',
+    `${pinned.length} pinned vs ${panelKeys.length} documented`);
+
+  // 1b. The ahead-of-corpus tier accounts for itself.
+  console.log('\n1b. the ahead-of-corpus tier is a waiting room');
+  for (const key of pending) {
+    check(!panelKeys.includes(key), `ahead-of-corpus panel "${key}" is not in the corpus yet`,
+      'the corpus documents this key now — drop pending_corpus and let check 1 pin it');
+    check(String(panels[key].pending_corpus).trim().length >= 20,
+      `ahead-of-corpus panel "${key}" says what it is waiting for`,
+      'pending_corpus is the reason, not a flag');
+    if ((panels[key].requires ?? []).length === 0) {
+      check(String(panels[key].gate_note ?? '').trim().length >= 20,
+        `ungated panel "${key}" records why nothing gates it`,
+        'name the module that WOULD back it and why it is the wrong answer');
+    }
+  }
+
+  // 1c. A composite mounts panels the manifest has, and never itself.
+  console.log('\n1c. a composite mounts real panels');
+  let composites = 0;
+  for (const [key, entry] of Object.entries(panels)) {
+    const children = entry.children ?? [];
+    if (children.length === 0) continue;
+    composites += 1;
+    for (const child of children) {
+      check(keys.includes(child), `composite "${key}" mounts panel "${child}", which the manifest has`,
+        'a composite child nothing resolves is a hole in the HUD');
+      check(child !== key, `composite "${key}" does not mount itself`, 'that does not terminate');
+    }
+  }
+  check(composites > 0, 'at least one panel is a composite',
+    'the HUD mounts its children through the registry — that is how they meet the module gate');
+  // A composite is a SECOND resolver, so it lives under check 4's rule too: its
+  // layout is manifest data, and a script that spells a child key stops answering
+  // the moment a creator re-lays-out the HUD.
+  for (const [key, entry] of Object.entries(panels)) {
+    if ((entry.children ?? []).length === 0) continue;
+    const script = scriptOfScene(input, entry.scene ?? '');
+    if (!check(script !== null, `composite "${key}" has a script to mount with`, 'no script on the scene')) continue;
+    const source = stripComments(uiSources[script] ?? '');
+    for (const panelKey of keys) {
+      check(!namesWord(source, panelKey), `${script} does not name panel "${panelKey}"`,
+        'a composite reads its children from the manifest like everything else');
+    }
   }
 
   // 2. Every default really resolves to a scene, and the scene to a script.
@@ -272,6 +348,16 @@ function readInput() {
   };
 }
 
+/** The first ahead-of-corpus panel key — the controls break the tier through it. */
+function firstPending(i) {
+  return Object.keys(i.manifest.panels).find((k) => i.manifest.panels[k].pending_corpus);
+}
+
+/** The first panel that mounts children (the HUD). */
+function firstComposite(i) {
+  return Object.keys(i.manifest.panels).find((k) => (i.manifest.panels[k].children ?? []).length > 0);
+}
+
 const input = readInput();
 console.log('check-ui: the default-UI panel registry');
 runChecks(input);
@@ -288,6 +374,49 @@ if (process.argv.includes('--self-test')) {
       ...i,
       manifest: { ...i.manifest, panels: { ...i.manifest.panels, invented: { scene: 'res://x.tscn' } } },
     })],
+    ['the waiting-room check fails when an ahead-of-corpus key is already in the corpus', (i) => {
+      const key = firstPending(i);
+      return { ...i, panelKeys: [...i.panelKeys, key] };
+    }],
+    ['the waiting-room check fails when pending_corpus is a bare flag', (i) => {
+      const key = firstPending(i);
+      const panels = { ...i.manifest.panels, [key]: { ...i.manifest.panels[key], pending_corpus: 'soon' } };
+      return { ...i, manifest: { ...i.manifest, panels } };
+    }],
+    ['the waiting-room check fails when an ungated new panel says nothing about why', (i) => {
+      const key = Object.keys(i.manifest.panels).find(
+        (k) => i.manifest.panels[k].pending_corpus && (i.manifest.panels[k].requires ?? []).length === 0,
+      );
+      const { gate_note: _dropped, ...rest } = i.manifest.panels[key];
+      return { ...i, manifest: { ...i.manifest, panels: { ...i.manifest.panels, [key]: rest } } };
+    }],
+    ['the composite check fails when the HUD mounts a panel nobody has', (i) => {
+      const key = firstComposite(i);
+      const entry = { ...i.manifest.panels[key], children: ['not_a_panel'] };
+      return { ...i, manifest: { ...i.manifest, panels: { ...i.manifest.panels, [key]: entry } } };
+    }],
+    ['the composite check fails when the HUD mounts itself', (i) => {
+      const key = firstComposite(i);
+      const entry = { ...i.manifest.panels[key], children: [key] };
+      return { ...i, manifest: { ...i.manifest, panels: { ...i.manifest.panels, [key]: entry } } };
+    }],
+    ['the composite check fails when its script spells a child key', (i) => {
+      const key = firstComposite(i);
+      const script = scriptOfScene(i, i.manifest.panels[key].scene);
+      const child = i.manifest.panels[key].children[0];
+      return {
+        ...i,
+        uiSources: { ...i.uiSources, [script]: `${i.uiSources[script]}\nfunc _shortcut() -> String:\n\treturn "${child}"\n` },
+      };
+    }],
+    ['the composite check fails when nothing is a composite at all', (i) => {
+      const panels = {};
+      for (const [key, entry] of Object.entries(i.manifest.panels)) {
+        const { children: _dropped, ...rest } = entry;
+        panels[key] = rest;
+      }
+      return { ...i, manifest: { ...i.manifest, panels } };
+    }],
     ['the scene check fails when a default points nowhere', (i) => {
       const key = Object.keys(i.manifest.panels)[0];
       const panels = { ...i.manifest.panels, [key]: { ...i.manifest.panels[key], scene: 'res://gone.tscn' } };

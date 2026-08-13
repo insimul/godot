@@ -7,6 +7,10 @@
 # instantiates, and every panel gates on the modules its world activates
 # (conformance/modules/genre-activation.json — the band-111 table).
 #
+# It also covers the two PANEL TIERS (panels.json -> panelTiers): the pinned set,
+# which must equal the corpus's panel_keys exactly, and the ahead-of-corpus set,
+# which must not overlap it and must say what it is waiting for.
+#
 #   godot --headless -s addons/insimul/tests/ui_registry_test.gd -- --conformance /abs/conformance
 #
 # No GDExtension is needed (all pure GDScript), so this runs on any godot binary.
@@ -28,14 +32,26 @@ func _initialize() -> void:
 	_test_loading_phase_cases(ui_dir)
 	_test_registry_diagnostics_and_defaults()
 	_test_shipped_manifest(ui_dir)
+	_test_panel_tiers(ui_dir)
 	_test_creator_override_without_engine_change()
 	_test_module_gate(root)
 	_test_notifications()
 	_test_theme_tokens(ui_dir)
+	# The node-level legs run on the first frame — see _process().
+
+
+## The tree's ROOT IS NOT IN THE TREE during _initialize(), so a panel added there
+## never gets its _ready() and every "does this panel build itself?" check would
+## pass vacuously. The node-level legs therefore run on the first real frame, and
+## the summary + exit code move with them.
+func _process(_delta: float) -> bool:
+	_test_every_panel_instantiates()
+	_test_hud_composite()
 
 	print("-----------------------------------------------------------")
 	print("[insimul-ui] %d passed, %d failed" % [_pass, _fail])
 	quit(0 if _fail == 0 else 1)
+	return true
 
 
 # ── AC: registry shared cases (default lookup, override precedence, missing) ──
@@ -111,10 +127,20 @@ func _test_shipped_manifest(ui_dir: String) -> void:
 		_report("shipped panel '%s' resolves" % panel_key, reg.scene_ref(panel_key) != "", "empty scene ref")
 		var scene := reg.scene_ref(panel_key)
 		_report("shipped panel '%s' scene exists" % panel_key, ResourceLoader.exists(scene), "no such scene: %s" % scene)
-	# The registry declares nothing the corpus does not document.
+	# The registry declares nothing the corpus does not document — EXCEPT the
+	# ahead-of-corpus tier, which _test_panel_tiers holds to its own accounting.
+	var pending := _pending_corpus_keys()
 	for key in reg.keys():
+		if pending.has(String(key)):
+			continue
 		_report("shipped key '%s' is documented" % key, documented.has(String(key)),
 			"not in registry-cases.json -> panel_keys")
+	# Every ahead-of-corpus panel resolves to a real scene too — it is shipped, not
+	# staged.
+	for key in _pending_corpus_keys():
+		_report("ahead-of-corpus panel '%s' resolves" % key, reg.scene_ref(key) != "", "empty scene ref")
+		_report("ahead-of-corpus panel '%s' scene exists" % key,
+			ResourceLoader.exists(reg.scene_ref(key)), "no such scene: %s" % reg.scene_ref(key))
 	# Ungated by default: a registry nobody told about the world shows everything.
 	_report("no gate until an activation is bound", not reg.is_gated(), "gated on construction")
 	_report("every panel available ungated", reg.available_keys().size() == reg.keys().size(), "some panel gated off")
@@ -297,6 +323,137 @@ func _test_theme_tokens(ui_dir: String) -> void:
 ## A token matches whether the corpus spells it as a number (JSON gives Godot a
 ## float) or as a string — 12 and 12.0 are the same spacing token, "#12141c" is
 ## not the same colour as "#12141d".
+# ── AC: the two panel tiers, and the accounting between them ─────────────────
+#
+# `pending_corpus` marks a panel this port ships before the shared corpus
+# documents the key (skill tree, minimap, quickbar, ... — see panels.json ->
+# panelTiers). The tier is a WAITING ROOM: an entry must say what has to happen,
+# and a key the corpus already documents may not sit in it. tools/verify-ui/
+# check-ui.mjs runs the same accounting from Node; this leg proves the REGISTRY
+# still resolves both tiers identically, which is the part data alone cannot show.
+func _test_panel_tiers(ui_dir: String) -> void:
+	var manifest := _shipped_manifest()
+	var panels: Dictionary = manifest.get("panels", {})
+	_report("the shipped manifest is readable", panels.size() > 0, "no panels")
+	var documented: Array = _load_json(ui_dir.path_join("registry-cases.json")).get("panel_keys", [])
+	var reg := InsimulUiRegistry.shipped()
+
+	var pinned := 0
+	var pending := 0
+	for key in panels.keys():
+		var entry: Dictionary = panels[key]
+		var panel_key := String(key)
+		if String(entry.get("pending_corpus", "")).is_empty():
+			pinned += 1
+			_report("pinned panel '%s' is in the corpus" % panel_key, documented.has(panel_key),
+				"a pinned key the shared corpus does not document is a divergence")
+			continue
+		pending += 1
+		_report("ahead-of-corpus panel '%s' is NOT in the corpus" % panel_key,
+			not documented.has(panel_key),
+			"the corpus documents it now — move the entry to the pinned tier and drop pending_corpus")
+		# An ungated ahead-of-corpus panel has to SAY that gating it was considered.
+		if reg.requirements(panel_key).is_empty():
+			_report("ungated panel '%s' records why" % panel_key,
+				not String(entry.get("gate_note", "")).is_empty(),
+				"an ungated panel is an answer, not an omission")
+	_report("the pinned tier covers the whole corpus", pinned == documented.size(),
+		"%d pinned vs %d documented" % [pinned, documented.size()])
+	_report("the ahead-of-corpus tier is non-empty", pending > 0,
+		"US-2 ships skill tree / map / quickbar / radial / notice board / documents")
+
+	# Both tiers resolve through the SAME registry — there is no second lookup path.
+	for key in panels.keys():
+		_report("panel '%s' resolves through the one registry" % String(key), reg.has(String(key)),
+			"the manifest declares it and the registry does not")
+
+
+# ── AC: every shipped panel really instantiates and enters a tree ────────────
+#
+# check-ui.mjs proves the scene FILE is there; only a running Godot proves the
+# scene loads, the script parses and _ready() survives. A panel that reaches for a
+# theme token that does not exist resolves, instantiates and then errors the first
+# time it is shown — and the wrapper greps the log for exactly that.
+func _test_every_panel_instantiates() -> void:
+	var reg := InsimulUiRegistry.shipped()
+	for key in reg.keys():
+		var panel_key := String(key)
+		var node := reg.instantiate(panel_key)
+		if not _report("panel '%s' instantiates" % panel_key, node is Control, _first_diagnostic(reg)):
+			continue
+		# _ready() only runs inside a tree, and _ready() is where a panel builds
+		# itself out of the theme tokens.
+		root.add_child(node)
+		_report("panel '%s' is ready in a tree" % panel_key, node.is_node_ready(), "never became ready")
+		root.remove_child(node)
+		node.free()
+
+
+# ── AC: the HUD is a composite, and its children meet the module gate ────────
+func _test_hud_composite() -> void:
+	var manifest := _shipped_manifest()
+	var panels: Dictionary = manifest.get("panels", {})
+	var composite_key := ""
+	for key in panels.keys():
+		if not (panels[key] as Dictionary).get("children", []).is_empty():
+			composite_key = String(key)
+			break
+	if not _report("the manifest declares a composite panel", composite_key != "",
+			"no panel declares children — the HUD mounts nothing"):
+		return
+
+	var reg := InsimulUiRegistry.shipped()
+	var declared := reg.children(composite_key)
+	_report("the registry answers the composite's children", declared.size() > 0, "no children")
+	for child_key in declared:
+		_report("composite child '%s' is a registered panel" % child_key, reg.has(String(child_key)),
+			"a composite child nothing can resolve")
+
+	# Ungated: every child mounts.
+	var hud := reg.instantiate(composite_key) as InsimulHud
+	if not _report("the composite instantiates", hud != null, _first_diagnostic(reg)):
+		return
+	root.add_child(hud)
+	var mounted := hud.mount(reg, composite_key)
+	_report("ungated, the composite mounts every child", mounted.size() == declared.size(),
+		"mounted %s of %s" % [str(mounted), str(declared)])
+	root.remove_child(hud)
+	hud.free()
+
+	# Gated on a world that activates NOTHING: only the ungated children mount,
+	# and the registry says which module took the others away.
+	var gated := InsimulUiRegistry.shipped()
+	gated.set_active_modules([])
+	var expected := 0
+	for child_key in declared:
+		if gated.requirements(String(child_key)).is_empty():
+			expected += 1
+	var bare_hud := gated.instantiate(composite_key) as InsimulHud
+	root.add_child(bare_hud)
+	var bare_mounted := bare_hud.mount(gated, composite_key)
+	_report("gated, the composite mounts only what the world activates",
+		bare_mounted.size() == expected, "mounted %s, expected %d" % [str(bare_mounted), expected])
+	_report("a child the gate blocked is diagnosed", gated.has_diagnostics(),
+		"no diagnostic for a blocked child")
+	root.remove_child(bare_hud)
+	bare_hud.free()
+
+
+## The shipped panel manifest, as raw JSON — the tiers live in fields the registry
+## deliberately does not expose (it resolves panels; it does not curate them).
+func _shipped_manifest() -> Dictionary:
+	return _load_json(InsimulUiRegistry.MANIFEST_PATH)
+
+
+func _pending_corpus_keys() -> Array:
+	var out: Array = []
+	var panels: Dictionary = _shipped_manifest().get("panels", {})
+	for key in panels.keys():
+		if not String((panels[key] as Dictionary).get("pending_corpus", "")).is_empty():
+			out.append(String(key))
+	return out
+
+
 func _same_token(mine: Variant, shared: Variant) -> bool:
 	var numeric := [TYPE_INT, TYPE_FLOAT]
 	if numeric.has(typeof(mine)) and numeric.has(typeof(shared)):
@@ -319,12 +476,15 @@ func _first_diagnostic(reg: InsimulUiRegistry) -> String:
 	return "" if notes.is_empty() else String(notes[0].get("message", ""))
 
 
-func _report(label: String, ok: bool, detail: String) -> void:
+## Records the check and answers `ok`, so a caller can skip the checks that only
+## make sense once this one held.
+func _report(label: String, ok: bool, detail: String) -> bool:
 	if ok:
 		_pass += 1
 	else:
 		_fail += 1
 		push_error("[insimul-ui] FAIL: %s (%s)" % [label, detail])
+	return ok
 
 
 func _resolve_conformance_dir() -> String:

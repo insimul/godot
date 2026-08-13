@@ -1132,3 +1132,88 @@ The half no host gate reaches: whether the Bridge actually FINDS the adapter.
 | `vendor-supported-versions --check` | ✅ 3 engine rows, 42 why-not tokens, 21 reference cases |
 | `vendor-replay-fixtures --check` | ✅ 12 trace / 7 outcome / 6 comparison / 4 run cases, 133 action ids |
 | the human end-to-end checklist | ⬜ needs a `godot` binary, a built extension and Talos |
+
+---
+
+# Default UI in this repo (tasklist 192)
+
+The standalone Godot repo's own default-UI legs. The `US-GU*` sections above are
+the pre-standalone record and describe a `packages/` layout this repo no longer
+has; what follows is what runs here.
+
+## Runs on any box — no Godot binary, no libinsimul
+
+```sh
+npm run check               # includes tools/verify-ui/check-ui.mjs --self-test
+```
+
+`check-ui.mjs` is the whole data side of the panel registry, and every one of its
+checks has a negative control:
+
+| check | claim |
+| --- | --- |
+| 1 | the PINNED panel set equals `conformance/ui/registry-cases.json -> panel_keys`, both ways |
+| 1b | every ahead-of-corpus entry (`pending_corpus`) says what it waits for, is not already in the corpus, and — when it gates on nothing — carries a `gate_note` |
+| 1c | a composite's `children` are panels the manifest has and never itself; its script names no panel key |
+| 2 | every panel's scene, and every resource that scene loads, is a real file |
+| 3 | every `requires` id is in the band-111 activation table AND some genre bundle activates it |
+| 4 | `insimul_ui_registry.gd` names no panel key and no module id |
+| 5 | `insimul_ui_tokens.gd` mirrors `conformance/ui/theme-tokens.json`, both ways |
+| 6 | nothing under `addons/insimul/ui/` names `InsimulCore` |
+
+## Needs a `godot` binary (this box has one)
+
+```sh
+npm run test:ui              # addons/insimul/tests/run_ui_registry_headless.sh
+npm run test:ui-quest-trade  # addons/insimul/tests/run_quest_trade_headless.sh
+```
+
+Both stage **only** `addons/insimul/ui/` plus the one test into a throwaway
+project, run `--import` first (without it Godot registers no global `class_name`,
+every script fails to parse, and `godot -s` still exits 0), and then fail on any
+`SCRIPT ERROR` in the log as well as on a non-clean pass line. Both SKIP with exit
+0 when no `godot` binary is on PATH.
+
+`test:ui` covers the shared registry + loading-phase + theme cases, the shipped
+manifest, the creator override through a project setting, the module gate across
+every genre bundle, **every shipped panel instantiating and reaching `_ready()`
+inside a real tree**, and the composite HUD mounting exactly the children the
+world's modules allow.
+
+`test:ui-quest-trade` runs the shared quest + trade matrices
+(`conformance/ui/{quest-journal-cases,trade-cases}.json`) against
+`InsimulQuestJournalModel` / `InsimulTradeModel`, the state-location invariant,
+the real-quest-system binding (a `quest_offered` radiant arrival reaching the
+journal as available), and the view-models behind the ahead-of-corpus panels
+(map projection, skill-tree unlock rules, document pagination, radial selection,
+quickbar slots, notice board).
+
+## Needs a `godot` binary + a game — human end-to-end checklist
+
+- [ ] **Quest journal + tracker** — open `quest_journal`, switch tabs and confirm
+      the list partitions by status; track up to `max_tracked` active quests and
+      confirm `quest_tracker` mirrors them **without a manual refresh**; complete a
+      quest and confirm it drops off the tracker and lands under Completed.
+- [ ] **Radiant offer** — run a radiant tick and confirm the arrival appears under
+      Available with the quest system's own title, and that `quest_offer` Accept
+      moves it to Active while Decline removes it.
+- [ ] **Trade against a live save** — loot a container into the inventory with both
+      panels open and confirm the inventory redraws itself; buy and sell at a
+      merchant and confirm gold + stock update on BOTH sides; reload the save and
+      confirm the same numbers come back (there is no store but `currentState`).
+- [ ] **The module gate, visibly** — run an `educational` world and confirm the HUD
+      comes up with no minimap and no quickbar and the menus offer no skill tree,
+      no merchant and no container, while the notice board and the document reader
+      are still there; run an `rpg` world and confirm all of them appear.
+- [ ] **A creator override** — point `insimul/ui/panel_overrides` at a replacement
+      `quest_journal` scene and confirm it is what opens, with no engine code
+      changed.
+
+## Status on this machine (default UI)
+
+| gate | result |
+| --- | --- |
+| `npm run check` | ✅ 198 `.gd` files; check-ui **281 checks, 0 failures** (17 negative controls) |
+| `npm run test:ui` | ✅ **637 checks, 0 failures** (godot 4.6) |
+| `npm run test:ui-quest-trade` | ✅ **172 checks, 0 failures** (godot 4.6) |
+| the human checklist above | ⬜ needs a game project — reviewed at merge |

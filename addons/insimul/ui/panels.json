@@ -1,6 +1,11 @@
 {
-  "description": "The shipped default-UI panel manifest: panel key -> the scene that serves it, plus the Insimul modules (band 111, conformance/modules/genre-activation.json) a panel needs before it is offered at all. This file is DATA on purpose — insimul_ui_registry.gd resolves through it and spells no panel key and no module id, so adding or gating a panel is a data change, not an engine change. Keys mirror conformance/ui/registry-cases.json -> panel_keys; tools/verify-ui/check-ui.mjs holds the two to each other and checks every scene and every module id.",
-  "version": 1,
+  "description": "The shipped default-UI panel manifest: panel key -> the scene that serves it, plus the Insimul modules (band 111, conformance/modules/genre-activation.json) a panel needs before it is offered at all. This file is DATA on purpose — insimul_ui_registry.gd resolves through it and spells no panel key and no module id, so adding or gating a panel is a data change, not an engine change. tools/verify-ui/check-ui.mjs holds it to conformance/ui/registry-cases.json -> panel_keys and checks every scene and every module id.",
+  "version": 2,
+  "panelTiers": {
+    "pinned": "No `pending_corpus` field: the key is in the shared corpus's panel_keys and the two lists must match EXACTLY, both ways. This is the cross-engine registry contract.",
+    "ahead_of_corpus": "A `pending_corpus` field: a panel this port ships before the shared corpus documents the key. The field says what has to happen for it to become pinned (core adds the key, then `npm run vendor:conformance`), and the gate refuses a `pending_corpus` entry whose key the corpus ALREADY documents — so the tier is a waiting room, not a parking lot. Same accounting idiom as NOT_ADOPTED in check-mechanics.mjs.",
+    "gate_note": "Required on an ahead-of-corpus panel that declares no `requires`: say which module WOULD back it and why none does. An ungated panel is an answer, not an omission."
+  },
   "panels": {
     "loading_screen": {
       "scene": "res://addons/insimul/ui/scenes/loading_screen.tscn"
@@ -10,7 +15,8 @@
     },
     "hud": {
       "scene": "res://addons/insimul/ui/scenes/hud.tscn",
-      "note": "placeholder Control — the minimap/quickbar/radial content lands with US-2"
+      "children": ["quest_tracker", "minimap", "quickbar"],
+      "note": "a COMPOSITE — it mounts its children through the registry, so each one still meets the module gate on the way in"
     },
     "main_menu": {
       "scene": "res://addons/insimul/ui/scenes/main_menu.tscn"
@@ -47,6 +53,43 @@
     },
     "save_load": {
       "scene": "res://addons/insimul/ui/scenes/save_load.tscn"
+    },
+    "skill_tree": {
+      "scene": "res://addons/insimul/ui/scenes/skill_tree.tscn",
+      "requires": ["skill"],
+      "pending_corpus": "conformance/ui/registry-cases.json -> panel_keys does not document skill_tree yet; move this entry to the pinned tier when core adds the key and the corpus is re-vendored"
+    },
+    "minimap": {
+      "scene": "res://addons/insimul/ui/scenes/minimap.tscn",
+      "requires": ["map"],
+      "pending_corpus": "core has no minimap key yet; re-vendor and pin when it does"
+    },
+    "fullmap": {
+      "scene": "res://addons/insimul/ui/scenes/fullmap.tscn",
+      "requires": ["map"],
+      "pending_corpus": "core has no fullmap key yet; re-vendor and pin when it does"
+    },
+    "quickbar": {
+      "scene": "res://addons/insimul/ui/scenes/quickbar.tscn",
+      "requires": ["agentAi"],
+      "pending_corpus": "core has no quickbar key yet; re-vendor and pin when it does"
+    },
+    "radial_menu": {
+      "scene": "res://addons/insimul/ui/scenes/radial_menu.tscn",
+      "requires": ["agentAi"],
+      "pending_corpus": "core has no radial_menu key yet; re-vendor and pin when it does"
+    },
+    "notice_board": {
+      "scene": "res://addons/insimul/ui/scenes/notice_board.tscn",
+      "requires": [],
+      "gate_note": "no band-111 module backs a notice board: notices are core world content, and quests are not a module. Gating it on the nearest module (routine) would hide the board in the educational / language-learning bundles, which activate no modules at all and are exactly the worlds this repo's own templates post notices in. The narrative-placement module of tasklist 195 is the one that would back it.",
+      "pending_corpus": "core has no notice_board key yet; re-vendor and pin when it does"
+    },
+    "documents": {
+      "scene": "res://addons/insimul/ui/scenes/documents.tscn",
+      "requires": [],
+      "gate_note": "no band-111 module backs a reader: readable content is core world content. `equipment` is the nearest (a book is an item) and is the wrong answer — it would take the reader away from every genre bundle that activates nothing, which is where reading practice actually lives.",
+      "pending_corpus": "core has no documents key yet; re-vendor and pin when it does"
     }
   }
 }

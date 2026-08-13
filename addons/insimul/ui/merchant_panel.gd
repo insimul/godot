@@ -52,6 +52,17 @@ func open(current_state: Dictionary, merchant_id: String) -> void:
 	_refresh()
 
 
+## Share one trade model with the other trade panels, so a transfer made anywhere
+## redraws this one. See InsimulTradeModel's class doc.
+func set_model(model: InsimulTradeModel) -> void:
+	if _model != null and _model.state_changed.is_connected(_refresh):
+		_model.state_changed.disconnect(_refresh)
+	_model = model
+	if _model != null and not _model.state_changed.is_connected(_refresh):
+		_model.state_changed.connect(_refresh)
+	_refresh()
+
+
 func model() -> InsimulTradeModel:
 	return _model
 

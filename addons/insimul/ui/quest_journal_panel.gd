@@ -4,9 +4,10 @@ extends Control
 ##
 ## Renders the tab-filtered quest list; the model owns all filtering / lifecycle /
 ## tracking logic (shared cases: quest-journal-cases.json). Drive it from the real
-## InsimulQuestSystem: connect quest_offered -> offer(), quest_accepted /
-## quest_completed -> refresh after accept()/complete(). All styling comes from the
-## shared token Theme.
+## quest system with [method bind_quest_system]: a radiant arrival (quest_offered)
+## lands under the Available tab, and an accept or completion made anywhere shows up
+## here and in every panel sharing the model. All styling comes from the shared
+## token Theme.
 
 signal quest_tracked(quest_id: String)
 signal quest_untracked(quest_id: String)
@@ -20,6 +21,8 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = InsimulUiTokens.build_theme()
 	_build_ui()
+	if not _model.changed.is_connected(_refresh):
+		_model.changed.connect(_refresh)
 	_refresh()
 
 
@@ -81,6 +84,26 @@ func untrack(id: String) -> bool:
 		quest_untracked.emit(id)
 		_refresh()
 	return ok
+
+
+## Share one journal model with the tracker and the offer panels, so a quest
+## accepted in an offer dialog is already active here.
+func set_model(model: InsimulQuestJournalModel) -> void:
+	if _model != null and _model.changed.is_connected(_refresh):
+		_model.changed.disconnect(_refresh)
+	_model = model
+	if _model != null and not _model.changed.is_connected(_refresh):
+		_model.changed.connect(_refresh)
+	_refresh()
+
+
+## Drive the shared model from the live quest system (radiant arrivals, accepts,
+## completions). Duck-typed on the signal names — see
+## [method InsimulQuestJournalModel.bind_quest_system].
+func bind_quest_system(system: Variant) -> PackedStringArray:
+	var connected := _model.bind_quest_system(system)
+	_refresh()
+	return connected
 
 
 func model() -> InsimulQuestJournalModel:
