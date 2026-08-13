@@ -1,6 +1,6 @@
 {
-  "description": "The shipped default-UI panel manifest: panel key -> the scene that serves it, plus the Insimul modules (band 111, conformance/modules/genre-activation.json) a panel needs before it is offered at all. This file is DATA on purpose — insimul_ui_registry.gd resolves through it and spells no panel key and no module id, so adding or gating a panel is a data change, not an engine change. tools/verify-ui/check-ui.mjs holds it to conformance/ui/registry-cases.json -> panel_keys and checks every scene and every module id.",
-  "version": 2,
+  "description": "The shipped default-UI panel manifest: panel key -> the scene that serves it, plus the Insimul modules (band 111, conformance/modules/genre-activation.json) a panel needs before it is offered at all. This file is DATA on purpose — insimul_ui_registry.gd resolves through it and spells no panel key and no module id, so adding or gating a panel is a data change, not an engine change. tools/verify-ui/check-ui.mjs holds it to conformance/ui/registry-cases.json -> panel_keys and checks every scene and every module id. v3 adds the PAUSE-MENU TAB MAP: which shipped panel serves each ESC-menu tab, so the menu resolves its bodies through the registry and spells no panel key either.",
+  "version": 3,
   "panelTiers": {
     "pinned": "No `pending_corpus` field: the key is in the shared corpus's panel_keys and the two lists must match EXACTLY, both ways. This is the cross-engine registry contract.",
     "ahead_of_corpus": "A `pending_corpus` field: a panel this port ships before the shared corpus documents the key. The field says what has to happen for it to become pinned (core adds the key, then `npm run vendor:conformance`), and the gate refuses a `pending_corpus` entry whose key the corpus ALREADY documents — so the tier is a waiting room, not a parking lot. Same accounting idiom as NOT_ADOPTED in check-mechanics.mjs.",
@@ -15,7 +15,11 @@
     },
     "hud": {
       "scene": "res://addons/insimul/ui/scenes/hud.tscn",
-      "children": ["quest_tracker", "minimap", "quickbar"],
+      "children": [
+        "quest_tracker",
+        "minimap",
+        "quickbar"
+      ],
       "note": "a COMPOSITE — it mounts its children through the registry, so each one still meets the module gate on the way in"
     },
     "main_menu": {
@@ -23,7 +27,11 @@
     },
     "game_menu": {
       "scene": "res://addons/insimul/ui/scenes/game_menu.tscn",
-      "note": "placeholder Control — the in-game menu shell lands with US-3"
+      "children": [
+        "pause_menu",
+        "notifications"
+      ],
+      "note": "a COMPOSITE — the in-game menu SHELL. It mounts the tabbed pause menu and the notification centre through the registry, so each meets the module gate on the way in, and forwards open/close to whichever child is a menu."
     },
     "quest_journal": {
       "scene": "res://addons/insimul/ui/scenes/quest_journal.tscn"
@@ -39,11 +47,15 @@
     },
     "container": {
       "scene": "res://addons/insimul/ui/scenes/container.tscn",
-      "requires": ["equipment"]
+      "requires": [
+        "equipment"
+      ]
     },
     "merchant": {
       "scene": "res://addons/insimul/ui/scenes/merchant.tscn",
-      "requires": ["equipment"]
+      "requires": [
+        "equipment"
+      ]
     },
     "dialogue": {
       "scene": "res://addons/insimul/ui/scenes/dialogue.tscn"
@@ -56,27 +68,37 @@
     },
     "skill_tree": {
       "scene": "res://addons/insimul/ui/scenes/skill_tree.tscn",
-      "requires": ["skill"],
+      "requires": [
+        "skill"
+      ],
       "pending_corpus": "conformance/ui/registry-cases.json -> panel_keys does not document skill_tree yet; move this entry to the pinned tier when core adds the key and the corpus is re-vendored"
     },
     "minimap": {
       "scene": "res://addons/insimul/ui/scenes/minimap.tscn",
-      "requires": ["map"],
+      "requires": [
+        "map"
+      ],
       "pending_corpus": "core has no minimap key yet; re-vendor and pin when it does"
     },
     "fullmap": {
       "scene": "res://addons/insimul/ui/scenes/fullmap.tscn",
-      "requires": ["map"],
+      "requires": [
+        "map"
+      ],
       "pending_corpus": "core has no fullmap key yet; re-vendor and pin when it does"
     },
     "quickbar": {
       "scene": "res://addons/insimul/ui/scenes/quickbar.tscn",
-      "requires": ["agentAi"],
+      "requires": [
+        "agentAi"
+      ],
       "pending_corpus": "core has no quickbar key yet; re-vendor and pin when it does"
     },
     "radial_menu": {
       "scene": "res://addons/insimul/ui/scenes/radial_menu.tscn",
-      "requires": ["agentAi"],
+      "requires": [
+        "agentAi"
+      ],
       "pending_corpus": "core has no radial_menu key yet; re-vendor and pin when it does"
     },
     "notice_board": {
@@ -91,5 +113,22 @@
       "gate_note": "no band-111 module backs a reader: readable content is core world content. `equipment` is the nearest (a book is an item) and is the wrong answer — it would take the reader away from every genre bundle that activates nothing, which is where reading practice actually lives.",
       "pending_corpus": "core has no documents key yet; re-vendor and pin when it does"
     }
-  }
+  },
+  "pauseMenuTabs_doc": "The ESC menu's tab bodies, as data. A tab key (InsimulPauseMenuModel.DEFAULT_TABS, mirrored from conformance/ui/pause-menu-cases.json) -> the panel key that serves it. insimul_ui_registry.gd answers it (tab_panel/tab_panels) and pause_menu.gd mounts the answer through instantiate(), so a tab body meets the band-111 module gate on the way in exactly like a HUD child does — and the two gates stack: the tab shows when the pause-menu MODULE BUNDLE enables it, and its body appears when the world activates the panel's module. `pauseMenuTabNotes` accounts for every tab no panel serves; check-ui.mjs holds the two together against the shipped tab set, totally and both ways, so a tab can never be silently empty. `pauseMenuCloseTab` is the one tab that dismisses the menu instead of showing a body.",
+  "pauseMenuTabs": {
+    "journal": "quest_journal",
+    "inventory": "inventory",
+    "map": "fullmap",
+    "skills": "skill_tree",
+    "save": "save_load"
+  },
+  "pauseMenuTabNotes": {
+    "resume": "the close affordance, not a body — see pauseMenuCloseTab",
+    "character": "no shipped panel: the character sheet is the `proficiency` module's own surface and the shared corpus documents no panel key for it. The host mounts its own body here until core adds one.",
+    "vocabulary": "no shipped panel: vocabulary review is the language-learning bundle's surface (SRS state lives in currentState.languageProgress) and the shared corpus documents no panel key for it.",
+    "analytics": "no shipped panel: conversation analytics render a report over save.conversations, and the shared corpus documents no panel key for it.",
+    "assessment": "no shipped panel: assessments are the `assessment` module's own surface and the shared corpus documents no panel key for it.",
+    "settings": "no shipped panel: engine settings (resolution, audio, input) are the GAME's, not Insimul's — a default-UI settings screen would be the addon dictating a project's options."
+  },
+  "pauseMenuCloseTab": "resume"
 }

@@ -100,9 +100,17 @@ add_child(hud)
 hud.mount(ui, key)      # children from the manifest, each gated
 ```
 
-`hud.gd` spells no panel key, including its own — the layout is manifest data like
-everything else, and `check-ui.mjs` greps the composite's script for every key the
-same way it greps the registry.
+`InsimulGameMenu` is the other one: the in-game menu **shell**, which mounts the
+tabbed pause menu and the notification centre and forwards open/close/toggle to
+whichever child behaves like a menu (duck-typed on `toggle` + `open_menu`, so a
+creator override keeps working).
+
+`hud.gd` and `game_menu.gd` spell no panel key, including their own — the layout is
+manifest data like everything else. `check-ui.mjs` greps a composite's script for
+every key the same way it greps the registry, and check 9 widens that to **anything
+that resolves panels**: a ui/ file calling `children()`, `tab_panel()` or
+`tab_panels()` is a resolver and lives under the same rule, which is how the rule
+reaches a file the gate was never told about.
 
 ## The panels
 
@@ -115,7 +123,10 @@ same way it greps the registry.
 | `minimap` / `fullmap` | `minimap_panel.gd`, `full_map_panel.gd` | `InsimulMapModel` | `map` |
 | `quickbar` / `radial_menu` | `quickbar_panel.gd`, `radial_menu_panel.gd` | — | `agentAi` |
 | `notice_board` / `documents` | `notice_board_panel.gd`, `documents_panel.gd` | — | none (see `gate_note`) |
-| `hud` | `hud.gd` (composite) | — | — |
+| `dialogue` | `dialogue_panel.gd` | `InsimulChatModel` | — |
+| `pause_menu` | `pause_menu.gd` | `InsimulPauseMenuModel` | — |
+| `main_menu` / `save_load` | `main_menu.gd`, `save_load_panel.gd` | `InsimulSaveSlotModel` | — |
+| `hud` / `game_menu` | `hud.gd`, `game_menu.gd` (composites) | — | — |
 
 ### Backed EXCLUSIVELY by `save.currentState`
 
@@ -147,6 +158,56 @@ be: the quest system reaches into the GDExtension and nothing under
 `addons/insimul/ui/` may, or the default UI stops loading in a project with no
 native build. `quest_trade_test.gd`'s `StubQuestSystem` carries the exact
 signatures, so the stub *is* the interface under test.
+
+### Streaming dialogue, and where the transcript lives
+
+`InsimulDialoguePanel.bind_conversation_service(service)` takes anything with the
+streaming SDK's three signals — `chunk_received(npc_id, text)`,
+`response_complete(npc_id, full_text)`, `response_error(npc_id, error)` — and a
+`send_message(character_id, text)`. That is the shape of the template's `AIService`
+autoload, which `_ready()` picks up on its own when a game has one. It is
+**duck-typed** for the same reason the quest binding is: nothing under `ui/` may
+name a class that reaches into the GDExtension, and a creator swapping the provider
+must keep working. `dialogue_menu_save_test.gd`'s `StubConversationService` carries
+the exact signatures, so the stub *is* the interface under test.
+
+The panel adds what a view-model cannot have: **TTS** and the **`insimul_lip_sync`**
+hook, both fed from the settled NPC line on completion (never from an errored one),
+and the **KB** sink that asserts each triggered action's Prolog fact exactly once.
+
+History follows the same data-first rule as the quest and trade panels, applied to
+the one piece of UI state that does not live in `currentState`: `bind_save(save)`
+points the panel at the live save Dictionary, and `close_chat()` projects the
+transcript into `save.conversations` as this character's `ConversationSummary` —
+**updating** the existing row rather than appending a second one. In-flight and
+errored bubbles never reach it.
+
+### The ESC menu: two gates, different vocabularies
+
+`InsimulPauseMenuModel` gates a TAB on the feature modules the active genre bundle
+enabled (`knowledge-acquisition`, `proficiency`, `assessment`, …). That vocabulary
+is **not** the band-111 module vocabulary the panel registry gates on (`skill`,
+`map`, `equipment`, …), and conflating the two is the mistake to avoid here.
+
+Both reach the same menu, because a tab's BODY is a shipped panel:
+
+```json
+"pauseMenuTabs":     { "journal": "quest_journal", "map": "fullmap", … },
+"pauseMenuTabNotes": { "settings": "no shipped panel: engine settings are the GAME's …" },
+"pauseMenuCloseTab": "resume"
+```
+
+`pause_menu.gd` reads that map through `InsimulUiRegistry.tab_panel()` and mounts
+the answer with `instantiate()`, so the body meets the band-111 gate on the way in.
+A tab whose panel this world gates off is **still offered** (its own gate said yes)
+and renders the reason the registry recorded, rather than a blank pane. So does a
+tab no shipped panel serves — and `pauseMenuTabNotes` accounts for every one of
+those, in prose, with `check-ui.mjs` holding the two halves to the shipped tab set
+in both directions. A tab in neither is a gate failure.
+
+`pauseMenuCloseTab` is the one tab that dismisses the menu instead of showing a
+body. It is data because a shell that spelled `resume` would stop answering the
+moment a creator relabelled the tab set.
 
 ## Theme tokens — `InsimulUiTokens`
 
@@ -222,6 +283,20 @@ Three gates, because one of them cannot run everywhere:
   `InsimulQuestJournalModel` and `InsimulTradeModel`, plus the state-location
   invariant, the real-quest-system binding, and the view-models behind the
   ahead-of-corpus panels. Same staging discipline as the registry gate.
+- **`addons/insimul/tests/dialogue_menu_save_test.gd`**
+  (`npm run test:ui-dialogue-menu-save`, via `run_dialogue_menu_save_headless.sh`)
+  runs the shared dialogue + pause-menu + save-slot matrices
+  (`conformance/ui/{chat-cases,pause-menu-cases,save-slot-cases}.json`) against
+  `InsimulChatModel`, `InsimulPauseMenuModel` and `InsimulSaveSlotModel`, and then
+  the Controls themselves in a real tree: the dialogue panel driven by a stub
+  streaming service (chunks accumulating, the input locking for the length of a
+  turn, TTS + lip-sync firing once on the settled line and never on an errored one,
+  a KB fact asserted exactly once, the transcript landing in `save.conversations`
+  and updating in place), the ESC menu regating its tab bar and resolving its tab
+  bodies through the registry — including a body the band-111 gate takes away, with
+  the diagnostic that says which module did it — the menu shell, the save/load rows
+  (the corrupted-envelope messaging as RENDERED text, Load disabled, Save not) and
+  the main-menu Continue gate. Same staging discipline as the other two.
 - **`tools/verify-ui/check-ui.mjs`** (`npm run check`) needs nothing but Node, so
   the parity claims still have a gate on a box with no Godot: the manifest and the
   corpus document the same **pinned** panels (both ways), the ahead-of-corpus tier
@@ -230,5 +305,7 @@ Three gates, because one of them cannot run everywhere:
   every scene dependency is a real file, every gated module is in the activation
   table and is activated by some bundle, neither the registry nor a composite's
   script names a panel or a module, the token set matches the corpus (both ways),
-  and nothing in the UI calls into `InsimulCore`. Every check has a negative
-  control under `--self-test`.
+  nothing in the UI calls into `InsimulCore`, every shipped ESC-menu tab has a body
+  or a written reason it has none (never both, never neither), the shipped tab set
+  is exactly the one the shared cases gate — in declaration order — and no resolver
+  spells a panel key. Every check has a negative control under `--self-test`.

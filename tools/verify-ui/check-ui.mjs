@@ -55,6 +55,28 @@
 //      Godot half of a shared token set; a value that drifts is a parity bug that
 //      no test with a hand-written expectation would ever catch.
 //
+//   7. THE PAUSE-MENU TAB MAP IS TOTAL, AND EVERY TAB IS ACCOUNTED FOR. The ESC
+//      menu's tab BODIES are manifest data (`pauseMenuTabs`: tab key -> panel
+//      key), so the menu resolves them through the registry and each meets the
+//      band-111 gate on the way in. Every shipped tab is in exactly one of
+//      `pauseMenuTabs` and `pauseMenuTabNotes`, never both and never neither: a
+//      tab with no body and no note is a pane that comes up blank, which is the
+//      exact failure the registry's diagnostics exist to prevent. Same accounting
+//      idiom as the ahead-of-corpus tier.
+//
+//   8. THE SHIPPED TAB SET IS THE SHARED TAB SET. InsimulPauseMenuModel's
+//      DEFAULT_TABS is a mirror of the tab vocabulary the shared cases gate
+//      (conformance/ui/pause-menu-cases.json). Every key a case expects to see is
+//      shipped, every shipped key is one some case expects, and every case's
+//      expectation is in DECLARATION ORDER — the cases pin visibility, and only
+//      this holds the order the ports render in.
+//
+//   9. A RESOLVER SPELLS NO PANEL KEY. Check 4's rule is about the registry, but
+//      the registry is not the only file that resolves panels through it: a
+//      composite mounts `children`, and the menu shell mounts `tab_panel`s. Any
+//      file under ui/ that calls one of those resolvers is held to the same rule,
+//      which is how the rule reaches a file this gate was never told about.
+//
 //   6. THE UI LAYER NEEDS NO GDEXTENSION. Nothing under addons/insimul/ui/ may
 //      name InsimulCore. The default UI must load in a project with no native
 //      build — that is what lets the headless gate stage the UI alone and treat
@@ -80,6 +102,8 @@ const REGISTRY_GD = path.join(UI_DIR, 'insimul_ui_registry.gd');
 const TOKENS_GD = path.join(UI_DIR, 'insimul_ui_tokens.gd');
 const REGISTRY_CASES = path.join(REPO, 'conformance', 'ui', 'registry-cases.json');
 const THEME_TOKENS = path.join(REPO, 'conformance', 'ui', 'theme-tokens.json');
+const MENU_MODEL_GD = path.join(UI_DIR, 'pause_menu_model.gd');
+const MENU_CASES = path.join(REPO, 'conformance', 'ui', 'pause-menu-cases.json');
 const ACTIVATION_TABLE = path.join(REPO, 'conformance', 'modules', 'genre-activation.json');
 
 /** A res:// path, resolved against this repo. */
@@ -167,6 +191,38 @@ function scriptOfScene(input, sceneRef) {
   return match ? match[1] : null;
 }
 
+/**
+ * The `key` of every entry in a `const NAME: Array = [ {"key": ...}, ... ]` block,
+ * in declaration order. The shipped tab set is a code-level table because it
+ * mirrors core's; check 8 is what holds it to the shared cases.
+ */
+export function parseGdTabKeys(source, name) {
+  const start = source.indexOf(`const ${name}`);
+  if (start < 0) return null;
+  const open = source.indexOf('[', start);
+  if (open < 0) return null;
+  let depth = 0;
+  let end = -1;
+  for (let i = open; i < source.length; i += 1) {
+    if (source[i] === '[') depth += 1;
+    else if (source[i] === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end < 0) return null;
+  return [...source.slice(open, end).matchAll(/"key"\s*:\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+
+/**
+ * The registry methods that hand a file OTHER panels to mount. A ui/ file that
+ * calls one is a resolver, and lives under check 4's rule.
+ */
+const RESOLVER_CALLS = ['.children(', '.tab_panel(', '.tab_panels('];
+
 /** A whole-word occurrence of `name`, the way check-mechanics.mjs looks for one. */
 function namesWord(source, name) {
   return new RegExp(`(^|[^A-Za-z0-9_-])${name}([^A-Za-z0-9_-]|$)`).test(source);
@@ -176,6 +232,7 @@ function namesWord(source, name) {
 
 export function runChecks(input) {
   const { manifest, panelKeys, table, registryText, tokensText, tokens, files, uiSources } = input;
+  const { menuModelText, menuCases } = input;
   const panels = manifest.panels ?? {};
   const keys = Object.keys(panels);
 
@@ -308,6 +365,83 @@ export function runChecks(input) {
       'the default UI must load in a project with no native build');
   }
 
+  // 7. Every shipped tab has a body or a reason it has none — never both, never
+  //    neither.
+  console.log('\n7. the pause-menu tab map is total');
+  const tabPanels = manifest.pauseMenuTabs ?? {};
+  const tabNotes = manifest.pauseMenuTabNotes ?? {};
+  const shippedTabs = parseGdTabKeys(menuModelText, 'DEFAULT_TABS');
+  if (check(shippedTabs !== null && shippedTabs.length > 0,
+    'pause_menu_model.gd declares a DEFAULT_TABS table', 'nothing to hold the map against')) {
+    for (const tab of shippedTabs) {
+      const mapped = tab in tabPanels;
+      const noted = tab in tabNotes;
+      check(mapped || noted, `tab "${tab}" has a body or a note saying why not`,
+        'a tab in neither pauseMenuTabs nor pauseMenuTabNotes comes up blank with nothing to read');
+      check(!(mapped && noted), `tab "${tab}" is not in both the map and the notes`,
+        'a tab that ships a body does not also get to explain that it has none');
+    }
+    for (const tab of [...Object.keys(tabPanels), ...Object.keys(tabNotes)]) {
+      check(shippedTabs.includes(tab), `the map accounts for tab "${tab}", which the menu ships`,
+        'an entry for a tab nobody renders is dead data');
+    }
+    const closeTab = String(manifest.pauseMenuCloseTab ?? '');
+    check(shippedTabs.includes(closeTab), `the close tab "${closeTab}" is a shipped tab`,
+      'the menu shell reads this rather than spelling it — a stale value dismisses nothing');
+    check(!(closeTab in tabPanels), `the close tab "${closeTab}" mounts no body`,
+      'it dismisses the menu; a body behind it would never be seen');
+  }
+  for (const [tab, key] of Object.entries(tabPanels)) {
+    check(keys.includes(key), `tab "${tab}" mounts panel "${key}", which the manifest has`,
+      'a tab body nothing resolves is a blank pane');
+  }
+  for (const [tab, note] of Object.entries(tabNotes)) {
+    check(String(note).trim().length >= 20, `tab "${tab}" says why no panel serves it`,
+      'the note is the reason, not a flag');
+  }
+  check(Object.keys(tabPanels).length > 0, 'the ESC menu mounts at least one panel through the registry',
+    'a menu that resolves nothing is not resolving through the module registry at all');
+
+  // 8. The shipped tab vocabulary IS the one the shared cases gate.
+  console.log('\n8. the shipped tab set mirrors the shared cases');
+  if (shippedTabs !== null) {
+    const defaultCases = (menuCases.cases ?? []).filter((c) => !c.tabs);
+    check(defaultCases.length > 0, 'the shared cases gate the DEFAULT tab set',
+      'every case overrides the tabs — nothing pins what ships');
+    const expected = new Set();
+    for (const c of defaultCases) for (const key of c.expected_visible_keys ?? []) expected.add(key);
+    for (const key of expected) {
+      check(shippedTabs.includes(key), `the menu ships tab "${key}", which a shared case expects to see`,
+        'a tab the other ports show and this one does not is a divergence the cases cannot catch');
+    }
+    for (const key of shippedTabs) {
+      check(expected.has(key), `shipped tab "${key}" is one a shared case expects`,
+        'a tab only Godot has renders in one port and not the others');
+    }
+    for (const c of defaultCases) {
+      const want = (c.expected_visible_keys ?? []).filter((k) => shippedTabs.includes(k));
+      const got = shippedTabs.filter((k) => (c.expected_visible_keys ?? []).includes(k));
+      check(want.join(',') === got.join(','), `case "${c.name}" expects the tabs in declaration order`,
+        `corpus [${want}] vs shipped order [${got}]`);
+    }
+  }
+
+  // 9. Anything that mounts other panels lives under check 4's rule.
+  console.log('\n9. a resolver spells no panel key');
+  let resolvers = 0;
+  for (const [file, source] of Object.entries(uiSources)) {
+    if (file === path.relative(REPO, REGISTRY_GD).split(path.sep).join('/')) continue;
+    const code = stripComments(source);
+    if (!RESOLVER_CALLS.some((call) => code.includes(call))) continue;
+    resolvers += 1;
+    for (const key of keys) {
+      check(!namesWord(code, key), `${file} resolves panels and names none of them ("${key}")`,
+        'a file that mounts panels reads which ones from the manifest, like the registry does');
+    }
+  }
+  check(resolvers > 0, 'something resolves panels through the registry',
+    'no ui/ file mounts another panel — the composite and the menu shell both should');
+
   return failures;
 }
 
@@ -342,6 +476,8 @@ function readInput() {
     tokens: readJson(THEME_TOKENS),
     registryText: read(REGISTRY_GD),
     tokensText: read(TOKENS_GD),
+    menuModelText: read(MENU_MODEL_GD),
+    menuCases: readJson(MENU_CASES),
     files,
     sceneTexts,
     uiSources,
@@ -363,7 +499,7 @@ console.log('check-ui: the default-UI panel registry');
 runChecks(input);
 
 if (process.argv.includes('--self-test')) {
-  console.log('\n7. negative controls');
+  console.log('\n10. negative controls');
   const controls = [
     ['the manifest check fails when a documented panel is dropped', (i) => {
       const panels = { ...i.manifest.panels };
@@ -461,6 +597,66 @@ if (process.argv.includes('--self-test')) {
       ...i,
       tokensText: i.tokensText.replace('const RADIUS := {', 'const RADIUS := {"xxl": 99, '),
     })],
+    ['the tab-map check fails when a tab mounts a panel nobody has', (i) => {
+      const tab = Object.keys(i.manifest.pauseMenuTabs)[0];
+      const pauseMenuTabs = { ...i.manifest.pauseMenuTabs, [tab]: 'not_a_panel' };
+      return { ...i, manifest: { ...i.manifest, pauseMenuTabs } };
+    }],
+    ['the tab-map check fails when a tab has neither a body nor a note', (i) => {
+      const tab = Object.keys(i.manifest.pauseMenuTabNotes).find((t) => t !== i.manifest.pauseMenuCloseTab);
+      const { [tab]: _dropped, ...pauseMenuTabNotes } = i.manifest.pauseMenuTabNotes;
+      return { ...i, manifest: { ...i.manifest, pauseMenuTabNotes } };
+    }],
+    ['the tab-map check fails when a tab has both a body and a note', (i) => {
+      const tab = Object.keys(i.manifest.pauseMenuTabs)[0];
+      const pauseMenuTabNotes = { ...i.manifest.pauseMenuTabNotes, [tab]: 'a reason long enough to pass' };
+      return { ...i, manifest: { ...i.manifest, pauseMenuTabNotes } };
+    }],
+    ['the tab-map check fails on an entry for a tab the menu does not ship', (i) => ({
+      ...i,
+      manifest: { ...i.manifest, pauseMenuTabs: { ...i.manifest.pauseMenuTabs, ghost: 'inventory' } },
+    })],
+    ['the tab-map check fails when the close tab is not a shipped tab', (i) => ({
+      ...i, manifest: { ...i.manifest, pauseMenuCloseTab: 'not_a_tab' },
+    })],
+    ['the tab-map check fails when a note is a bare flag', (i) => {
+      const tab = Object.keys(i.manifest.pauseMenuTabNotes)[0];
+      const pauseMenuTabNotes = { ...i.manifest.pauseMenuTabNotes, [tab]: 'later' };
+      return { ...i, manifest: { ...i.manifest, pauseMenuTabNotes } };
+    }],
+    ['the tab-set check fails when the menu drops a tab the shared cases expect', (i) => ({
+      ...i,
+      menuModelText: i.menuModelText.replace(/\{"key": "inventory".*\n/, ''),
+    })],
+    ['the tab-set check fails on a tab only this port ships', (i) => ({
+      ...i,
+      menuModelText: i.menuModelText.replace('const DEFAULT_TABS: Array = [',
+        'const DEFAULT_TABS: Array = [\n\t{"key": "cheats", "label": "Cheats"},'),
+    })],
+    ['the tab-set check fails when the shipped order contradicts a case', (i) => ({
+      ...i,
+      menuModelText: i.menuModelText
+        .replace('{"key": "journal", "label": "Journal"},', '')
+        .replace('{"key": "settings", "label": "Settings"},',
+          '{"key": "settings", "label": "Settings"},\n\t{"key": "journal", "label": "Journal"},'),
+    })],
+    ['the resolver check fails when a menu shell spells a panel key', (i) => {
+      const file = Object.keys(i.uiSources).find(
+        (f) => f !== 'addons/insimul/ui/insimul_ui_registry.gd'
+          && RESOLVER_CALLS.some((call) => stripComments(i.uiSources[f]).includes(call)),
+      );
+      return {
+        ...i,
+        uiSources: { ...i.uiSources, [file]: `${i.uiSources[file]}\nfunc _shortcut() -> String:\n\treturn "${i.panelKeys[0]}"\n` },
+      };
+    }],
+    ['the resolver check fails when nothing resolves panels at all', (i) => {
+      const uiSources = {};
+      for (const [file, source] of Object.entries(i.uiSources)) {
+        uiSources[file] = RESOLVER_CALLS.reduce((acc, call) => acc.split(call).join('.gone('), source);
+      }
+      return { ...i, uiSources };
+    }],
     ['the no-GDExtension check fails when the UI calls into the native core', (i) => {
       const file = Object.keys(i.uiSources)[0];
       return { ...i, uiSources: { ...i.uiSources, [file]: `${i.uiSources[file]}\nvar core := InsimulCore.new()\n` } };

@@ -18,6 +18,7 @@ npm run test:talos-bridge # the insimul-talos-bridge decision half, 73 checks
 npm run test:replay      # the bridge's replay leg vs core's own answers, 20 checks
 npm run test:ui          # the default-UI registry/theme/panel gate (needs godot), 637 checks
 npm run test:ui-quest-trade  # the shared quest + trade matrices + state-location, 172 checks
+npm run test:ui-dialogue-menu-save # the dialogue/menu/save matrices + the Controls, 179 checks
 ```
 
 Everything under `gdextension/test/run_*.sh` builds with a **plain C/C++
@@ -188,7 +189,22 @@ that will bite:
 6. **A composite panel (`children` in the manifest) is a SECOND resolver**, so it
    lives under the same "spells no panel key" rule as the registry — check-ui
    finds its script through the scene and greps it. `InsimulHud.mount()` takes the
-   key it was resolved under rather than spelling `hud`.
+   key it was resolved under rather than spelling `hud`. check-ui's check 9
+   widens that to ANY ui/ file calling `children()` / `tab_panel()` /
+   `tab_panels()`, which is how the rule reached `pause_menu.gd` without the gate
+   being told about it.
+7. **The ESC menu has TWO gates and they are different vocabularies.** A tab is
+   offered when the pause-menu module bundle enables it (`proficiency`,
+   `assessment`, … — `pause-menu-cases.json`); its BODY is a shipped panel, so it
+   also meets the band-111 gate (`skill`, `map`, …). The tab -> panel map is
+   manifest data (`pauseMenuTabs`), and **every shipped tab must be in exactly one
+   of `pauseMenuTabs` and `pauseMenuTabNotes`** — a tab in neither renders a blank
+   pane, which is the failure the registry's diagnostics exist to prevent. Same
+   accounting idiom as the ahead-of-corpus tier.
+8. **A `SceneTree` test script has no `get_tree()`.** It IS the tree: write
+   `paused`, not `get_tree().paused`. The parse error only surfaces when something
+   LOADS the script — which is exactly what the wrapper's `SCRIPT ERROR` grep is
+   for, and it caught this one.
 
 ## The Talos bridge is a THIRD artifact, and stays one
 

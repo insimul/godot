@@ -18,6 +18,7 @@
     "test:replay": "bash gdextension/test/run_talos_replay_tests.sh",
     "vendor:replay": "node tools/vendor-replay-fixtures.mjs",
     "test:ui": "bash addons/insimul/tests/run_ui_registry_headless.sh",
-    "test:ui-quest-trade": "bash addons/insimul/tests/run_quest_trade_headless.sh"
+    "test:ui-quest-trade": "bash addons/insimul/tests/run_quest_trade_headless.sh",
+    "test:ui-dialogue-menu-save": "bash addons/insimul/tests/run_dialogue_menu_save_headless.sh"
   }
 }

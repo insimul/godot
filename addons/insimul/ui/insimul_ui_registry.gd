@@ -57,6 +57,8 @@ const MANIFEST_PATH := "res://addons/insimul/ui/panels.json"
 var _defaults: Dictionary = {}
 var _requires: Dictionary = {}
 var _children: Dictionary = {}
+var _tab_panels: Dictionary = {}
+var _close_tab := ""
 var _overrides: Dictionary = {}
 var _diagnostics: Array = []
 var _active_modules: PackedStringArray = PackedStringArray()
@@ -102,6 +104,11 @@ func load_manifest(path: String) -> bool:
 		_defaults[String(key)] = String((entry as Dictionary).get("scene", ""))
 		_requires[String(key)] = _strings((entry as Dictionary).get("requires", []))
 		_children[String(key)] = _strings((entry as Dictionary).get("children", []))
+	var tabs: Variant = (parsed as Dictionary).get("pauseMenuTabs", {})
+	if tabs is Dictionary:
+		for tab in (tabs as Dictionary).keys():
+			_tab_panels[String(tab)] = String((tabs as Dictionary)[tab])
+	_close_tab = String((parsed as Dictionary).get("pauseMenuCloseTab", ""))
 	return true
 
 
@@ -176,6 +183,28 @@ func requirements(key: String) -> PackedStringArray:
 ## goes through [method instantiate], so each still meets the module gate.
 func children(key: String) -> PackedStringArray:
 	return _strings(_children.get(key, []))
+
+
+## The tab key -> panel key map the shipped menu shell mounts its bodies from, as
+## declared in the manifest. A tab absent from this map has no shipped body — the
+## manifest accounts for every one of those in `pauseMenuTabNotes`, and the gate
+## holds the two together, so an empty tab is a decision rather than an oversight.
+func tab_panels() -> Dictionary:
+	return _tab_panels.duplicate(true)
+
+
+## The panel key serving `tab_key`, or "" when no shipped panel does. Says nothing
+## about the module gate: ask [method is_available] (or just [method instantiate],
+## which answers null and records why).
+func tab_panel(tab_key: String) -> String:
+	return String(_tab_panels.get(tab_key, ""))
+
+
+## The one tab that DISMISSES the menu instead of showing a body ("resume"). Data
+## for the same reason the map is: a menu shell that spelled it would stop
+## answering the moment a creator relabelled the tab set.
+func close_tab() -> String:
+	return _close_tab
 
 
 ## The required modules this world does NOT activate — why the panel is hidden.
