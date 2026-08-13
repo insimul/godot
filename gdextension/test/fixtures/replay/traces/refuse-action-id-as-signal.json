@@ -1,0 +1,34 @@
+{
+  "case": "refuse-action-id-as-signal",
+  "why": "Signals are device-first (`button.interact`) so the input and action vocabularies cannot collide by convention — and an Insimul action id spelled as a signal is refused even so.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "attack",
+          "edge": "down"
+        }
+      ]
+    },
+    "provenance": {
+      "recorder": "core@replay-fixtures",
+      "note": "minted by tools/vendor-replay-fixtures.mjs"
+    }
+  },
+  "expect": {
+    "ok": false,
+    "code": "id_mismatch",
+    "message": "Input trace content address does not match its contents: expected sha256-fe95088bd09ad054fecf9528a52f25cbc12b313e2d4ec261c94b4cdc32f2492a, got sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b"
+  }
+}

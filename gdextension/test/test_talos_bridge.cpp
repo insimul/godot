@@ -359,6 +359,88 @@ int main(int argc, char **argv) {
 			"the same verb is admitted once the world is live",
 			bridge.verb("query_state", warm));
 
+	// US-2's sharper claim, and the reason §7.5 exists at all: a Conductor must be
+	// able to tell "the world has no such fact" from "there is no world yet". A
+	// bridge that answered the early query with an empty solution set would make
+	// those two the same document, and the Conductor would record a fact.
+	{
+		const JsonValuePtr refused = parse_or_null(early);
+		const std::string empty = bridge.query_digest("[]");
+		const JsonValuePtr answered = parse_or_null(empty);
+		check(refused != nullptr && !refused->get_bool("ok", false) &&
+						refused->find("solutions") == nullptr && refused->find("count") == nullptr,
+				"the early refusal carries NO solution set — not an empty one", early);
+		check(answered != nullptr && answered->get_bool("ok", false) &&
+						answered->get_int("count", -1) == 0 && !answered->get_bool("overflow", true),
+				"while a genuinely empty result IS an admitted success with zero solutions", empty);
+		check(field(early, "verdict") != field(empty, "ok"),
+				"so 'no facts' and 'no world yet' are different documents, which is the whole rule");
+	}
+
+	// ── 3b. §7.8: a half-present install names its failure MODE ─────────────
+	std::printf("\na half-present install (§7.8)\n");
+	{
+		insimul::talos::InstallReadings whole;
+		whole.extension_registered = true;
+		whole.contract_json = contract_json;
+		whole.matrix_json = matrix_json;
+		whole.vocabulary_json = read_file(addon / "input-vocabulary.json");
+		const std::string admitted = Bridge::diagnose_install(whole);
+		check(field(admitted, "verdict") == "admit",
+				"a whole install is diagnosed as one — otherwise every install would be broken",
+				admitted);
+
+		// Each mode, one missing or corrupt piece at a time. The token is what a
+		// Conductor keys on and the failure_mode is what a human reads; a diagnosis
+		// with only one of the two is half a diagnosis.
+		std::vector<std::pair<std::string, insimul::talos::InstallReadings> > broken;
+		insimul::talos::InstallReadings no_extension = whole;
+		no_extension.extension_registered = false;
+		broken.push_back({ "insimul_bridge_extension_absent", no_extension });
+		insimul::talos::InstallReadings no_contract = whole;
+		no_contract.contract_json.clear();
+		broken.push_back({ "insimul_bridge_contract_absent", no_contract });
+		insimul::talos::InstallReadings no_matrix = whole;
+		no_matrix.matrix_json.clear();
+		broken.push_back({ "insimul_bridge_matrix_absent", no_matrix });
+		insimul::talos::InstallReadings no_vocabulary = whole;
+		no_vocabulary.vocabulary_json.clear();
+		broken.push_back({ "insimul_bridge_vocabulary_absent", no_vocabulary });
+		insimul::talos::InstallReadings bad_contract = whole;
+		bad_contract.contract_json = "{\"format\":\"something-else\"}";
+		broken.push_back({ "insimul_bridge_contract_malformed", bad_contract });
+		insimul::talos::InstallReadings bad_matrix = whole;
+		bad_matrix.matrix_json = "{\"engines\":[]}";
+		broken.push_back({ "insimul_bridge_matrix_malformed", bad_matrix });
+		insimul::talos::InstallReadings bad_vocabulary = whole;
+		bad_vocabulary.vocabulary_json = "{\"format\":\"not-the-vocabulary\"}";
+		broken.push_back({ "insimul_bridge_vocabulary_malformed", bad_vocabulary });
+
+		std::vector<std::string> wrong;
+		for (std::size_t i = 0; i < broken.size(); ++i) {
+			const std::string decided = Bridge::diagnose_install(broken[i].second);
+			const JsonValuePtr root = parse_or_null(decided);
+			if (root == nullptr || root->get_bool("ok", true)) {
+				wrong.push_back(broken[i].first + ": a broken install was diagnosed as whole");
+			} else if (root->get_string("token") != broken[i].first) {
+				wrong.push_back(broken[i].first + ": named " + root->get_string("token") + " instead");
+			} else if (root->get_string("failure_mode").empty() || root->get_string("message").empty() ||
+					!has_unblock(decided)) {
+				wrong.push_back(broken[i].first + ": named the mode without saying what installs it");
+			}
+		}
+		check(broken.size() == Bridge::install_tokens().size() && wrong.empty(),
+				"every way this artifact can be half-installed is NAMED, with what installs it",
+				wrong.empty() ? std::string("the mode table and the cases disagree in number")
+							  : wrong[0]);
+		// The order is contract, not taste: two adapters looking at the same broken
+		// install must name the same piece, or a Conductor aggregating install
+		// failures across engines is counting two names for one fault.
+		insimul::talos::InstallReadings nothing;
+		check(field(Bridge::diagnose_install(nothing), "token") == "insimul_bridge_extension_absent",
+				"and an install missing everything names the FIRST piece in decision order");
+	}
+
 	// ── 4. The mapping, as data ─────────────────────────────────────────────
 	std::printf("\nthe KB<->TBP mapping\n");
 	const std::vector<std::string> groups = bridge.groups();

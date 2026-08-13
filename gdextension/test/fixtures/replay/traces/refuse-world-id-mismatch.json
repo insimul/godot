@@ -1,0 +1,66 @@
+{
+  "case": "refuse-world-id-mismatch",
+  "why": "A trace recorded against another world is refused before a single input is applied.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-775074d3e874022074b56d80763a12191888088aeebc30fe7cbfa12152a5accd",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-elsewhere",
+        "contentDigest": "sha256-36570b9c5ab84b3eaad77f6bb2e0d3146d323ebf3231feefec037d54145ce8d9"
+      },
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "down"
+        },
+        {
+          "tick": 0,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": 0.5
+        },
+        {
+          "tick": 3,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "up"
+        },
+        {
+          "tick": 7,
+          "channel": "pointer",
+          "signal": "pointer.aim",
+          "x": 0.25,
+          "y": -0.75
+        },
+        {
+          "tick": 11,
+          "channel": "text",
+          "signal": "text.entry",
+          "text": "yes"
+        },
+        {
+          "tick": 11,
+          "channel": "button",
+          "signal": "button.jump",
+          "edge": "down"
+        },
+        {
+          "tick": 18,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": -1
+        }
+      ]
+    }
+  },
+  "expect": {
+    "ok": false,
+    "code": "world_id_mismatch",
+    "message": "Input trace sha256-775074d3e874022074b56d80763a12191888088aeebc30fe7cbfa12152a5accd was recorded against world w-elsewhere, but this host has w-riverwatch — refusing to replay"
+  }
+}

@@ -47,6 +47,9 @@ extends Node
 ## declared surface. Nothing about either is compiled in.
 const CONTRACT_PATH := "res://addons/insimul_talos/bridge-contract.json"
 const MATRIX_PATH := "res://addons/insimul_talos/supported-versions.json"
+## The engine-input vocabulary the replay leg refuses an action-layer trace with
+## (§8.6). Mirrored from core by tools/vendor-replay-fixtures.mjs.
+const VOCABULARY_PATH := "res://addons/insimul_talos/input-vocabulary.json"
 
 ## The GDExtension class carrying the decision half. Absent means the Insimul
 ## plugin is not installed or not built — which is a broken install, not a
@@ -77,6 +80,13 @@ signal talos_event(event: String, data: Dictionary)
 
 var _bridge: Object = null
 var _configure_error := ""
+
+## The install diagnosis, as the JSON envelope the bridge produced: an admission
+## when this artifact is installed whole, and otherwise a refusal NAMING which of
+## the four pieces is missing and what installs it (§7.8). Never empty after
+## `_ready`, so a manifest can watch it and a half-install is visible at install
+## time rather than at the first verb.
+var install_diagnosis := ""
 
 ## The live KB (an InsimulProlog), and what the game said about the world it
 ## belongs to. Null and empty until `attach_world()` — see the §7.5 note above.
@@ -116,24 +126,77 @@ func _ready() -> void:
 
 
 func _configure() -> void:
+	## §7.8, made loud. A bridge that is HALF present is the failure this design
+	## exists to remove: without a diagnosis, a Talos session against an Insimul
+	## game degrades to generic scene queries and reports nothing, because absence
+	## and silence are indistinguishable to a Bridge that never found a working
+	## adapter. So the mode is NAMED — by the decision half, from a table it
+	## compiles in, because `bridge-contract.json` is one of the things that can be
+	## the missing piece.
+	##
+	## Reading three files is not reading a knowledge base. Nothing here touches
+	## `_kb`, which is still null and stays null until `attach_world()`.
+	var readings := {
+		"extension_registered": bridge_available(),
+		"contract_json": _read_text(CONTRACT_PATH),
+		"matrix_json": _read_text(MATRIX_PATH),
+		"vocabulary_json": _read_text(VOCABULARY_PATH),
+	}
 	if not bridge_available():
-		_configure_error = (
-			"the %s GDExtension class is not registered — insimul-talos-bridge needs the "
-			+ "Insimul plugin installed and its extension built"
-		) % BRIDGE_CLASS
+		# Diagnosed WITHOUT the decision half, because the decision half is what is
+		# missing. This is the one mode the bridge cannot name for itself.
+		install_diagnosis = JSON.stringify({
+			"ok": false,
+			"verdict": "refuse",
+			"stage": "install",
+			"token": "insimul_bridge_extension_absent",
+			"failure_mode": "the decision half is not loaded",
+			"message": (
+				"insimul: the %s GDExtension class is not registered, so this adapter can "
+				+ "gather readings and decide nothing with them"
+			) % BRIDGE_CLASS,
+		})
+		_fail_install()
 		return
-	var contract := _read_text(CONTRACT_PATH)
-	var matrix := _read_text(MATRIX_PATH)
-	if contract.is_empty() or matrix.is_empty():
-		_configure_error = (
-			"a half-present install: %s and %s both ship with this addon and one of them "
-			+ "did not load"
-		) % [CONTRACT_PATH, MATRIX_PATH]
+	var probe: Object = ClassDB.instantiate(BRIDGE_CLASS)
+	install_diagnosis = str(probe.diagnose_install(readings))
+	var diagnosed: Variant = JSON.parse_string(install_diagnosis)
+	if not (diagnosed is Dictionary) or not (diagnosed as Dictionary).get("ok", false):
+		_fail_install()
 		return
-	_bridge = ClassDB.instantiate(BRIDGE_CLASS)
-	if not _bridge.configure(contract, matrix):
-		_configure_error = str(_bridge.last_error())
-		_bridge = null
+	if not probe.configure(readings["contract_json"], readings["matrix_json"],
+			readings["vocabulary_json"]):
+		# A file that satisfied the diagnosis and still would not configure is a
+		# case the diagnosis does not cover; report the bridge's own words rather
+		# than inventing a mode for it.
+		install_diagnosis = JSON.stringify({
+			"ok": false,
+			"verdict": "refuse",
+			"stage": "install",
+			"token": "insimul_bridge_not_configured",
+			"failure_mode": "an installed file the bridge would not accept",
+			"message": "insimul: %s" % str(probe.last_error()),
+		})
+		_fail_install()
+		return
+	_bridge = probe
+
+
+func _fail_install() -> void:
+	## Loud, and in that order: an editor/CI error, a warning for a headless run,
+	## and the events channel — which is the one channel tbp/1.x already has for
+	## "this run should not be trusted". A refusal nobody can see is an outage.
+	var parsed: Variant = JSON.parse_string(install_diagnosis)
+	var report: Dictionary = parsed if parsed is Dictionary else {}
+	_configure_error = "%s: %s" % [str(report.get("failure_mode", "install")),
+			str(report.get("message", ""))]
+	push_error("insimul-talos-bridge: %s" % _configure_error)
+	last_refusal = install_diagnosis
+	talos_event.emit("assert_failed", {
+		"message": "insimul-talos-bridge is not installed whole",
+		"sub_code": str(report.get("token", "")),
+		"envelope": install_diagnosis,
+	})
 
 
 func _read_text(path: String) -> String:
@@ -208,6 +271,13 @@ func kb_ready() -> bool:
 
 func configure_error() -> String:
 	return _configure_error
+
+
+func installed_whole() -> bool:
+	## True only when all four pieces of §7.8 are present AND valid. A false here
+	## is never a degraded mode: `install_diagnosis` names which piece and what
+	## installs it, and every verb refuses with a token rather than answering.
+	return _bridge != null
 
 
 # ─────────────────────────────────────────────
@@ -387,6 +457,116 @@ func hello_decision() -> String:
 	if parsed is Dictionary and not (parsed as Dictionary).get("ok", false):
 		_refuse(decision, "hello")
 	return decision
+
+
+# ─────────────────────────────────────────────
+# The replay leg: one recorded session, four engines (§8.6)
+# ─────────────────────────────────────────────
+
+## The world a trace is replayed against. Duck-typed exactly as Talos's own
+## contract is — `open(setup)`, `apply_inputs(step)`, `read_facts()` — because
+## the thing being replayed is the GAME, and a base class here would be this
+## artifact telling a game how to be one.
+var _replay_world: Object = null
+
+
+## Hand the adapter the world a trace will be driven through. Separate from
+## `attach_world()` on purpose: a conformance run replays a recorded session from
+## its seed rather than continuing the one a player is in, and conflating the two
+## would let a replay write into a live playthrough.
+func attach_replay_world(world: Object) -> void:
+	_replay_world = world
+
+
+## Replay tasklist 180's portable input-trace artifact and return the outcome
+## document a four-way comparison diffs — `insimul-replay-outcome-v1`, the KB as
+## it stood at the last tick, digested in KB order.
+##
+## §8.6 is why this is not `play_input_trace`: TBP refuses a foreign-session
+## `trace_ref` by design (RISK-60), so the artifact — not the verb — is how one
+## recorded session reaches four engines. The verb stays refused, which is the
+## same answer for a better reason.
+##
+## Every DECISION is the bridge's: whether the trace belongs to this world, which
+## tick carries which inputs, what entropy each tick draws from, and what the
+## outcome digests to. This method carries the plan out. KB facts, never pixels —
+## a frame buffer differs between two engines for a hundred reasons that are not
+## divergences, and agrees in the one case that matters least.
+func replay_input_trace(trace_json: String, world_content_json: String,
+		options: Dictionary = {}) -> String:
+	if _bridge == null:
+		_refuse(install_diagnosis, "replay")
+		return install_diagnosis
+	if _replay_world == null:
+		var absent := JSON.stringify({
+			"ok": false,
+			"verdict": "refuse",
+			"token": "insimul_replay_world_absent",
+			"message": (
+				"insimul: a trace was handed to the bridge before a replay world was — call "
+				+ "attach_replay_world() with the world this session should be driven through"
+			),
+		})
+		_refuse(absent, "replay")
+		return absent
+	var planned: String = str(_bridge.plan_replay(trace_json, world_content_json,
+			JSON.stringify(options)))
+	var parsed: Variant = JSON.parse_string(planned)
+	if not (parsed is Dictionary) or not (parsed as Dictionary).get("ok", false):
+		_refuse(planned, "replay")
+		return planned
+	var plan: Dictionary = parsed
+	_replay_world.open(plan["setup"])
+
+	var checkpoint_ticks: Array = plan.get("checkpointTicks", [])
+	var checkpoints: Array = []
+	for entry in plan.get("steps", []):
+		var step: Dictionary = entry
+		# EVERY tick, not every input. A routine, a radiant beat and a Prolog
+		# re-derivation all happen on ticks nobody touched a control, and those
+		# decisions are exactly the half an input-layer trace exists to test.
+		_replay_world.apply_inputs(step)
+		var tick: int = int(step["tick"])
+		if not checkpoint_ticks.has(tick):
+			continue
+		var seen: Array = _replay_world.read_facts()
+		checkpoints.append({
+			"tick": tick,
+			"factCount": seen.size(),
+			"digest": str(_bridge.kb_digest(JSON.stringify(seen))),
+		})
+
+	var args := {
+		"traceId": plan["traceId"],
+		"engine": "godot-%s" % _engine_version(),
+		"finalTick": int(plan["finalTick"]),
+		"inputTicks": int(plan["inputTicks"]),
+		"facts": _replay_world.read_facts(),
+	}
+	if not checkpoints.is_empty():
+		args["checkpoints"] = checkpoints
+	var outcome: String = str(_bridge.seal_outcome(JSON.stringify(args)))
+	talos_event.emit("replay_outcome", {
+		"traceId": str(plan["traceId"]),
+		"finalTick": int(plan["finalTick"]),
+		"outcome": outcome,
+	})
+	return outcome
+
+
+## Compare this engine's outcome with one another engine recorded. The recorded
+## document is untrusted — it arrived as JSON from another process — so it is
+## checked against its own digest and against the trace being replayed before it
+## is believed.
+func compare_replay(recorded_json: String, replayed_json: String, trace_id: String) -> String:
+	if _bridge == null:
+		return install_diagnosis
+	var checked: String = str(_bridge.verify_outcome(recorded_json, trace_id))
+	var parsed: Variant = JSON.parse_string(checked)
+	if not (parsed is Dictionary) or not (parsed as Dictionary).get("ok", false):
+		_refuse(checked, "replay")
+		return checked
+	return str(_bridge.compare_outcomes(recorded_json, replayed_json))
 
 
 func _readings() -> Dictionary:

@@ -14,7 +14,8 @@ npm run test:radiant     # the first adopted slice, 11 conformance vectors
 npm run test:quest-parity
 npm run test:conformance
 npm run test:activation  # 8 genre bundles, 88 KB witnesses, the sample scenario
-npm run test:talos-bridge # the insimul-talos-bridge decision half, 67 checks
+npm run test:talos-bridge # the insimul-talos-bridge decision half, 73 checks
+npm run test:replay      # the bridge's replay leg vs core's own answers, 20 checks
 ```
 
 Everything under `gdextension/test/run_*.sh` builds with a **plain C/C++
@@ -38,16 +39,26 @@ before believing it.
 ## Three vendored artifacts, one rule
 
 `gdextension/corebridge/vendor/core/` (the bundled core), `conformance/` (the
-shared corpus) and `addons/insimul_talos/supported-versions.json` + its mirrored
-cases (the workspace's published engine-version matrix) are **generated**. Never
+shared corpus), `addons/insimul_talos/supported-versions.json` + its mirrored
+cases (the workspace's published engine-version matrix) and
+`gdextension/test/fixtures/replay/` + `addons/insimul_talos/input-vocabulary.json`
+(core's own answers about the portable input-trace artifact) are **generated**. Never
 hand-edit any of them; regenerate:
 
 ```sh
 npm run vendor:core        -- --core <packages/core>
 npm run vendor:conformance -- --core <packages/core>
+npm run vendor:replay      -- --core <packages/core>
 npm run vendor:versions    -- --matrix <workspace docs/supported-versions.json>
 node tools/verify-mechanics/check-mechanics.mjs --core <packages/core> --write
 ```
+
+A FOURTH generated artifact joined them: `gdextension/test/fixtures/replay/` plus
+`addons/insimul_talos/input-vocabulary.json`, both minted by
+`tools/vendor-replay-fixtures.mjs` from core's `src/replay/` and
+`action-matrix.ts`. The vocabulary is not test data — it ships, because the
+replay leg refuses a trace whose `signal` names an Insimul action id and cannot
+do that without core's list.
 
 The matrix comes from the workspace parent, not from core, so it moves on its
 own schedule; `--check` verifies the mirror's own hashes and `--matrix` is the
@@ -133,7 +144,7 @@ that will bite:
 ## The Talos bridge is a THIRD artifact, and stays one
 
 `addons/insimul_talos/` implements `TALOS_INSIMUL_BRIDGE.md` §7.5: it depends on
-both projects and is depended on by neither. Four things that will bite:
+both projects and is depended on by neither. Seven things that will bite:
 
 1. **`addons/insimul/` may never mention it.** `check-bridge.mjs` greps for
    `insimul_talos` / `InsimulTalos` across the shipped plugin and fails on a hit.
@@ -155,3 +166,30 @@ both projects and is depended on by neither. Four things that will bite:
    testable under a plain compiler; the addon stays buildless GDScript plus data.
    It is registered in the existing extension rather than a second one, so the
    per-Godot-minor artifact matrix does not grow a third row.
+5. **The §7.5 rule is a CODE PATH, and the gate reads it as one.**
+   `check-bridge.mjs` builds the adapter's call graph and fails if anything
+   reachable from `_init`/`_ready` names `_kb`, `_world_id`, `_state_goals`,
+   `_progress` or `_replay_world` — and if any state answer touches the KB before
+   it reaches `_gate()`. It strips comments first, deliberately: this is the
+   opposite of `check-mechanics.mjs`'s seventh check, which greps comments ON
+   PURPOSE. A comment listing the active module set rots like code; a comment
+   describing a rule is the rule being documented, and forbidding the file to
+   explain itself would be perverse.
+6. **A half-present install must still be FOUND.** `_ready()` joins the groups
+   BEFORE it configures, and the gate enforces that order. An adapter that
+   refused to join because its install was broken would be invisible, and a Talos
+   Bridge that finds no adapter degrades to generic scene queries — §7.8's first
+   silent failure. The failure MODES live in a table compiled into
+   `talos_bridge.cpp` (not read from the contract, because the contract is one of
+   the things that can be missing) and the gate holds that table and the
+   contract's `stage: "install"` tokens to each other in both directions.
+7. **The replay leg is a PORT of core's `src/replay/`, and it must stay pinned.**
+   The bundle cannot help: `host-crypto.js` makes `createHash` throw on purpose,
+   and core's replay module hashes. `gdextension/src/talos_replay.cpp` therefore
+   computes the content address with this repo's own `sha256.cpp` +
+   `canonical_json.cpp` — the pair already byte-pinned to `save-envelope.ts` —
+   and `tools/vendor-replay-fixtures.mjs` mints the evidence by running core's
+   REAL module under Node. A change to core's replay module means re-vendoring,
+   not re-deriving. Note `entropy` hashes UTF-16 code units, not bytes: a leg
+   that counted bytes would agree for every ASCII seed and diverge only for the
+   worlds nobody tests.

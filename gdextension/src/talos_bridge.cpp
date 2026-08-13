@@ -224,6 +224,150 @@ std::string hello_field(const std::string &axis) {
 
 } // namespace
 
+namespace {
+
+// The install failure modes of §7.8, IN DECISION ORDER, each with what it means
+// and what installs it. Compiled in — unlike every other vocabulary this bridge
+// uses — because the file that publishes the others is one of the things that
+// can be absent, and a diagnosis that could not be given when the contract is
+// missing would be a diagnosis for exactly the case that never happens.
+struct InstallMode {
+	const char *token;
+	const char *failure_mode;
+	const char *message;
+	const char *unblock;
+};
+
+const InstallMode INSTALL_MODES[] = {
+	{ "insimul_bridge_extension_absent", "the decision half is not loaded",
+			"insimul: the InsimulTalosBridge GDExtension class is not registered, so this "
+			"adapter can gather readings and decide nothing with them",
+			"install the Insimul plugin and build its GDExtension — insimul-talos-bridge "
+			"depends on both projects and ships neither" },
+	{ "insimul_bridge_contract_absent", "a half-present install",
+			"insimul: bridge-contract.json did not load; it ships with this addon and names "
+			"every group, verb and why-not token the bridge can answer with",
+			"reinstall addons/insimul_talos in full — copying the .gd files alone leaves an "
+			"adapter that joins its groups and can answer nothing" },
+	{ "insimul_bridge_matrix_absent", "a half-present install",
+			"insimul: supported-versions.json did not load; the refuse-at-hello decision is "
+			"computed FROM the published matrix and is not baked into this build",
+			"reinstall addons/insimul_talos in full — supported-versions.json is a vendored "
+			"mirror of the workspace matrix and ships beside the contract" },
+	{ "insimul_bridge_vocabulary_absent", "a half-present install",
+			"insimul: input-vocabulary.json did not load; without core's action ids the "
+			"replay leg would admit an action-layer trace that core refuses",
+			"reinstall addons/insimul_talos in full, or re-run npm run vendor:replay to "
+			"regenerate the mirrored vocabulary" },
+	{ "insimul_bridge_contract_malformed", "an installed file that is not the file it claims to be",
+			"insimul: bridge-contract.json is present but is not an "
+			"insimul.talos-bridge.contract/1 document",
+			"re-copy bridge-contract.json from the addon; a bridge configured from something "
+			"else would decide from a default, which is the one failure §7.8 removes" },
+	{ "insimul_bridge_matrix_malformed", "an installed file that is not the file it claims to be",
+			"insimul: supported-versions.json is present but publishes no engines or no "
+			"refuse_at_hello.tokens vocabulary",
+			"re-run npm run vendor:versions against the workspace matrix" },
+	{ "insimul_bridge_vocabulary_malformed", "an installed file that is not the file it claims to be",
+			"insimul: input-vocabulary.json is present but is not an "
+			"insimul.talos-bridge.input-vocabulary/1 document",
+			"re-run npm run vendor:replay against a packages/core checkout" },
+};
+const std::size_t INSTALL_MODE_COUNT = sizeof(INSTALL_MODES) / sizeof(INSTALL_MODES[0]);
+
+const InstallMode *install_mode(const std::string &token) {
+	for (std::size_t i = 0; i < INSTALL_MODE_COUNT; ++i) {
+		if (token == INSTALL_MODES[i].token) {
+			return &INSTALL_MODES[i];
+		}
+	}
+	return nullptr;
+}
+
+} // namespace
+
+std::vector<std::string> Bridge::install_tokens() {
+	std::vector<std::string> out;
+	for (std::size_t i = 0; i < INSTALL_MODE_COUNT; ++i) {
+		out.push_back(INSTALL_MODES[i].token);
+	}
+	return out;
+}
+
+std::string Bridge::diagnose_install(const InstallReadings &readings) {
+	std::string token;
+	if (!readings.extension_registered) {
+		token = "insimul_bridge_extension_absent";
+	} else if (readings.contract_json.empty()) {
+		token = "insimul_bridge_contract_absent";
+	} else if (readings.matrix_json.empty()) {
+		token = "insimul_bridge_matrix_absent";
+	} else if (readings.vocabulary_json.empty()) {
+		token = "insimul_bridge_vocabulary_absent";
+	} else {
+		// Present is not the same as valid. A file that parses but is not the file
+		// it claims to be is the worse half of §7.8: it would configure a bridge
+		// that decides from a default.
+		const JsonParseResult contract = parse_json(readings.contract_json);
+		if (!contract.ok || contract.root == nullptr || !contract.root->is_object() ||
+				contract.root->get_string("format") != "insimul.talos-bridge.contract/1" ||
+				contract.root->find("groups") == nullptr || contract.root->find("verbs") == nullptr) {
+			token = "insimul_bridge_contract_malformed";
+		} else {
+			const JsonParseResult matrix = parse_json(readings.matrix_json);
+			const JsonValue *refused =
+					matrix.root == nullptr ? nullptr : matrix.root->find("refuse_at_hello");
+			if (!matrix.ok || matrix.root == nullptr || !matrix.root->is_object() ||
+					matrix.root->find("engines") == nullptr || refused == nullptr ||
+					refused->find("tokens") == nullptr) {
+				token = "insimul_bridge_matrix_malformed";
+			} else {
+				const JsonParseResult vocabulary = parse_json(readings.vocabulary_json);
+				if (!vocabulary.ok || vocabulary.root == nullptr || !vocabulary.root->is_object() ||
+						vocabulary.root->get_string("format") !=
+								"insimul.talos-bridge.input-vocabulary/1" ||
+						vocabulary.root->find("action_ids") == nullptr) {
+					token = "insimul_bridge_vocabulary_malformed";
+				}
+			}
+		}
+	}
+
+	if (token.empty()) {
+		auto root = jobj();
+		put(root, "ok", jbool(true));
+		put(root, "verdict", jstr("admit"));
+		put(root, "stage", jstr("install"));
+		put(root, "message", jstr("insimul: insimul-talos-bridge is installed whole"));
+		return serialize(root);
+	}
+
+	const InstallMode *mode = install_mode(token);
+	auto data = jobj();
+	put(data, "sub_code", jstr(token));
+	// Never retryable. Waiting does not install a file, and a Conductor that
+	// retried a half-install would spend a run discovering that.
+	put(data, "retryable", jbool(false));
+	put(data, "unblock", jstr(mode->unblock));
+	put(data, "failure_mode", jstr(mode->failure_mode));
+
+	auto error = jobj();
+	put(error, "code", jint(NOT_DECLARED));
+	put(error, "code_name", jstr("NOT_DECLARED"));
+	put(error, "message", jstr(mode->message));
+	put(error, "data", data);
+
+	auto root = jobj();
+	put(root, "ok", jbool(false));
+	put(root, "verdict", jstr("refuse"));
+	put(root, "stage", jstr("install"));
+	put(root, "token", jstr(token));
+	put(root, "failure_mode", jstr(mode->failure_mode));
+	put(root, "message", jstr(mode->message));
+	put(root, "error", error);
+	return serialize(root);
+}
+
 bool Bridge::configure(const std::string &contract_json, const std::string &matrix_json) {
 	configured_ = false;
 	contract_.reset();

@@ -1,0 +1,71 @@
+{
+  "case": "refuse-unknown-format",
+  "why": "A format tag this leg cannot interpret is refused rather than read optimistically.",
+  "world": "world.json",
+  "document": {
+    "format": "insimul-input-trace-v2",
+    "id": "sha256-42481577d16654e1a4feaac9b234c9f0d7b77a05ecc497590e0c09dae991a39b",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": [
+        {
+          "tick": 0,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "down"
+        },
+        {
+          "tick": 0,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": 0.5
+        },
+        {
+          "tick": 3,
+          "channel": "button",
+          "signal": "button.interact",
+          "edge": "up"
+        },
+        {
+          "tick": 7,
+          "channel": "pointer",
+          "signal": "pointer.aim",
+          "x": 0.25,
+          "y": -0.75
+        },
+        {
+          "tick": 11,
+          "channel": "text",
+          "signal": "text.entry",
+          "text": "yes"
+        },
+        {
+          "tick": 11,
+          "channel": "button",
+          "signal": "button.jump",
+          "edge": "down"
+        },
+        {
+          "tick": 18,
+          "channel": "axis",
+          "signal": "axis.move_x",
+          "value": -1
+        }
+      ]
+    },
+    "provenance": {
+      "recorder": "core@replay-fixtures",
+      "note": "minted by tools/vendor-replay-fixtures.mjs"
+    }
+  },
+  "expect": {
+    "ok": false,
+    "code": "invalid_format",
+    "message": "Unknown input-trace format: expected 'insimul-input-trace-v1', got 'insimul-input-trace-v2'"
+  }
+}

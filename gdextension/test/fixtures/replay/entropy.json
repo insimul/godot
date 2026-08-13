@@ -1,0 +1,209 @@
+{
+  "description": "replayEntropy(seed) and replayEntropy(seed, tick) as core derives them — FNV-1a over the same length-prefixed key derivedStream mixes. A world seeds its PRNG from these numbers, so a leg that derives a different one diverges in the KB for a reason that has nothing to do with its mechanics.",
+  "seeds": [
+    {
+      "seed": "riverwatch-0001",
+      "root": 3059411694,
+      "ticks": [
+        {
+          "tick": 0,
+          "entropy": 1369369279
+        },
+        {
+          "tick": 1,
+          "entropy": 1352591660
+        },
+        {
+          "tick": 2,
+          "entropy": 1402924517
+        },
+        {
+          "tick": 3,
+          "entropy": 1386146898
+        },
+        {
+          "tick": 4,
+          "entropy": 1302258803
+        },
+        {
+          "tick": 5,
+          "entropy": 1285481184
+        },
+        {
+          "tick": 6,
+          "entropy": 1335814041
+        },
+        {
+          "tick": 7,
+          "entropy": 1319036422
+        },
+        {
+          "tick": 8,
+          "entropy": 1503590231
+        },
+        {
+          "tick": 9,
+          "entropy": 1486812612
+        },
+        {
+          "tick": 10,
+          "entropy": 4075753891
+        },
+        {
+          "tick": 11,
+          "entropy": 4058976272
+        },
+        {
+          "tick": 12,
+          "entropy": 4109309129
+        },
+        {
+          "tick": 13,
+          "entropy": 4092531510
+        },
+        {
+          "tick": 14,
+          "entropy": 4142864367
+        },
+        {
+          "tick": 15,
+          "entropy": 4126086748
+        },
+        {
+          "tick": 16,
+          "entropy": 4176419605
+        },
+        {
+          "tick": 17,
+          "entropy": 4159641986
+        },
+        {
+          "tick": 18,
+          "entropy": 4209974843
+        },
+        {
+          "tick": 19,
+          "entropy": 4193197224
+        },
+        {
+          "tick": 20,
+          "entropy": 2162664040
+        },
+        {
+          "tick": 21,
+          "entropy": 2179441659
+        },
+        {
+          "tick": 22,
+          "entropy": 2196219278
+        },
+        {
+          "tick": 23,
+          "entropy": 2212996897
+        }
+      ]
+    },
+    {
+      "seed": "w-empty",
+      "root": 330778205,
+      "ticks": [
+        {
+          "tick": 0,
+          "entropy": 109509278
+        },
+        {
+          "tick": 1,
+          "entropy": 126286897
+        },
+        {
+          "tick": 2,
+          "entropy": 75954040
+        },
+        {
+          "tick": 3,
+          "entropy": 92731659
+        },
+        {
+          "tick": 4,
+          "entropy": 176619754
+        },
+        {
+          "tick": 5,
+          "entropy": 193397373
+        },
+        {
+          "tick": 6,
+          "entropy": 143064516
+        },
+        {
+          "tick": 7,
+          "entropy": 159842135
+        },
+        {
+          "tick": 8,
+          "entropy": 4270255622
+        },
+        {
+          "tick": 9,
+          "entropy": 4287033241
+        },
+        {
+          "tick": 10,
+          "entropy": 4200578820
+        },
+        {
+          "tick": 11,
+          "entropy": 4217356439
+        },
+        {
+          "tick": 12,
+          "entropy": 4234134058
+        },
+        {
+          "tick": 13,
+          "entropy": 4250911677
+        },
+        {
+          "tick": 14,
+          "entropy": 4133468344
+        },
+        {
+          "tick": 15,
+          "entropy": 4150245963
+        },
+        {
+          "tick": 16,
+          "entropy": 4167023582
+        },
+        {
+          "tick": 17,
+          "entropy": 4183801201
+        },
+        {
+          "tick": 18,
+          "entropy": 4066357868
+        },
+        {
+          "tick": 19,
+          "entropy": 4083135487
+        },
+        {
+          "tick": 20,
+          "entropy": 1818701375
+        },
+        {
+          "tick": 21,
+          "entropy": 1801923756
+        },
+        {
+          "tick": 22,
+          "entropy": 1852256613
+        },
+        {
+          "tick": 23,
+          "entropy": 1835478994
+        }
+      ]
+    }
+  ]
+}

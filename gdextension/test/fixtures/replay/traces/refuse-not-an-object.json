@@ -1,0 +1,15 @@
+{
+  "case": "refuse-not-an-object",
+  "why": "A trace arrives as parsed JSON from a file, a socket or the C ABI, and none of those is a type system.",
+  "world": "world.json",
+  "document": [
+    1,
+    2,
+    3
+  ],
+  "expect": {
+    "ok": false,
+    "code": "invalid_format",
+    "message": "Input trace must be a JSON object"
+  }
+}

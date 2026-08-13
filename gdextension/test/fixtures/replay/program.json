@@ -1,0 +1,61 @@
+{
+  "description": "The reference world both the JS minting side and gdextension/src/talos_replay.cpp interpret. Declared as data so that a divergence between the two is a DRIVER divergence — the tick loop, the input bucketing, the per-tick entropy, the KB digest — and never two hand-written toy worlds disagreeing about a toy.",
+  "on_open": [
+    {
+      "predicate": "world_open",
+      "args": [
+        "$seed"
+      ]
+    },
+    {
+      "predicate": "root_entropy",
+      "args": [
+        "$entropy"
+      ]
+    }
+  ],
+  "on_signal": {
+    "button.interact": {
+      "predicate": "interacted",
+      "args": [
+        "$tick",
+        "$edge"
+      ]
+    },
+    "button.jump": {
+      "predicate": "jumped",
+      "args": [
+        "$tick"
+      ]
+    },
+    "axis.move_x": {
+      "predicate": "moved",
+      "args": [
+        "$tick",
+        "$value"
+      ]
+    },
+    "pointer.aim": {
+      "predicate": "aimed",
+      "args": [
+        "$tick",
+        "$x",
+        "$y"
+      ]
+    },
+    "text.entry": {
+      "predicate": "typed",
+      "args": [
+        "$text"
+      ]
+    }
+  },
+  "on_idle": {
+    "modulo": 5,
+    "predicate": "beat",
+    "args": [
+      "$tick",
+      "$entropy"
+    ]
+  }
+}

@@ -5,6 +5,9 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 
+#include <cstdint>
+#include <string>
+
 using namespace godot;
 
 insimul::talos::Readings InsimulTalosBridge::to_readings(const Dictionary &readings) {
@@ -24,16 +27,27 @@ insimul::talos::Readings InsimulTalosBridge::to_readings(const Dictionary &readi
 	return out;
 }
 
-bool InsimulTalosBridge::configure(const String &contract_json, const String &matrix_json) {
-	return bridge_.configure(contract_json.utf8().get_data(), matrix_json.utf8().get_data());
+bool InsimulTalosBridge::configure(const String &contract_json, const String &matrix_json,
+		const String &vocabulary_json) {
+	const bool decided = bridge_.configure(contract_json.utf8().get_data(), matrix_json.utf8().get_data());
+	// The replay leg is configured in the same breath and reported in the same
+	// answer: an install that can decide but cannot read a trace is half-present,
+	// and §7.8's whole argument is that half-present must be loud.
+	const bool replayable = replay_.configure(vocabulary_json.utf8().get_data());
+	return decided && replayable;
 }
 
 bool InsimulTalosBridge::is_configured() const {
-	return bridge_.configured();
+	// Both halves, because an install that can decide but cannot read a trace is
+	// half-present and must say so at install time rather than at replay time.
+	return bridge_.configured() && replay_.configured();
 }
 
 String InsimulTalosBridge::last_error() const {
-	return String(bridge_.error().c_str());
+	if (!bridge_.error().empty()) {
+		return String(bridge_.error().c_str());
+	}
+	return String(replay_.error().c_str());
 }
 
 PackedStringArray InsimulTalosBridge::groups() const {
@@ -89,8 +103,62 @@ String InsimulTalosBridge::progress_var(const String &name, const String &value_
 						  .c_str());
 }
 
+String InsimulTalosBridge::diagnose_install(const Dictionary &readings) const {
+	insimul::talos::InstallReadings out;
+	out.extension_registered = bool(readings.get("extension_registered", true));
+	out.contract_json = String(readings.get("contract_json", "")).utf8().get_data();
+	out.matrix_json = String(readings.get("matrix_json", "")).utf8().get_data();
+	out.vocabulary_json = String(readings.get("vocabulary_json", "")).utf8().get_data();
+	return String(insimul::talos::Bridge::diagnose_install(out).c_str());
+}
+
+String InsimulTalosBridge::open_trace(const String &trace_json, const String &world_json) const {
+	return String(replay_.open_trace(trace_json.utf8().get_data(), world_json.utf8().get_data()).c_str());
+}
+
+String InsimulTalosBridge::plan_replay(const String &trace_json, const String &world_json,
+		const String &options_json) const {
+	return String(replay_.plan(trace_json.utf8().get_data(), world_json.utf8().get_data(),
+							 options_json.utf8().get_data())
+						  .c_str());
+}
+
+String InsimulTalosBridge::seal_outcome(const String &args_json) const {
+	return String(replay_.seal_outcome(args_json.utf8().get_data()).c_str());
+}
+
+String InsimulTalosBridge::read_outcome(const String &outcome_json) const {
+	return String(replay_.read_outcome(outcome_json.utf8().get_data()).c_str());
+}
+
+String InsimulTalosBridge::verify_outcome(const String &recorded_json, const String &trace_id) const {
+	return String(replay_.verify_outcome(recorded_json.utf8().get_data(), trace_id.utf8().get_data()).c_str());
+}
+
+String InsimulTalosBridge::compare_outcomes(const String &recorded_json, const String &replayed_json) const {
+	return String(replay_.compare(recorded_json.utf8().get_data(), replayed_json.utf8().get_data()).c_str());
+}
+
+String InsimulTalosBridge::world_content_digest(const String &world_json) const {
+	return String(insimul::talos::Replay::world_content_digest(world_json.utf8().get_data()).c_str());
+}
+
+String InsimulTalosBridge::kb_digest(const String &facts_json) const {
+	return String(insimul::talos::Replay::kb_digest(facts_json.utf8().get_data()).c_str());
+}
+
+int InsimulTalosBridge::replay_entropy(const String &seed, int tick) const {
+	const std::string key = seed.utf8().get_data();
+	// A `uint32` reaching GDScript as an int: Godot's is 64-bit, so the value
+	// survives whole and a world seeding its PRNG from it lands where core did.
+	const uint32_t drawn = tick < 0 ? insimul::talos::Replay::entropy(key)
+									: insimul::talos::Replay::entropy(key, tick);
+	return static_cast<int>(drawn);
+}
+
 void InsimulTalosBridge::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("configure", "contract_json", "matrix_json"), &InsimulTalosBridge::configure);
+	ClassDB::bind_method(D_METHOD("configure", "contract_json", "matrix_json", "vocabulary_json"),
+			&InsimulTalosBridge::configure, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("is_configured"), &InsimulTalosBridge::is_configured);
 	ClassDB::bind_method(D_METHOD("last_error"), &InsimulTalosBridge::last_error);
 	ClassDB::bind_method(D_METHOD("groups"), &InsimulTalosBridge::groups);
@@ -107,4 +175,19 @@ void InsimulTalosBridge::_bind_methods() {
 			&InsimulTalosBridge::query_digest, DEFVAL(0));
 	ClassDB::bind_method(D_METHOD("progress_var", "name", "value_json", "targets_template", "readings"),
 			&InsimulTalosBridge::progress_var);
+	ClassDB::bind_method(D_METHOD("diagnose_install", "readings"), &InsimulTalosBridge::diagnose_install);
+	ClassDB::bind_method(D_METHOD("open_trace", "trace_json", "world_json"), &InsimulTalosBridge::open_trace);
+	ClassDB::bind_method(D_METHOD("plan_replay", "trace_json", "world_json", "options_json"),
+			&InsimulTalosBridge::plan_replay, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("seal_outcome", "args_json"), &InsimulTalosBridge::seal_outcome);
+	ClassDB::bind_method(D_METHOD("read_outcome", "outcome_json"), &InsimulTalosBridge::read_outcome);
+	ClassDB::bind_method(D_METHOD("verify_outcome", "recorded_json", "trace_id"),
+			&InsimulTalosBridge::verify_outcome);
+	ClassDB::bind_method(D_METHOD("compare_outcomes", "recorded_json", "replayed_json"),
+			&InsimulTalosBridge::compare_outcomes);
+	ClassDB::bind_method(D_METHOD("world_content_digest", "world_json"),
+			&InsimulTalosBridge::world_content_digest);
+	ClassDB::bind_method(D_METHOD("kb_digest", "facts_json"), &InsimulTalosBridge::kb_digest);
+	ClassDB::bind_method(D_METHOD("replay_entropy", "seed", "tick"),
+			&InsimulTalosBridge::replay_entropy, DEFVAL(-1));
 }

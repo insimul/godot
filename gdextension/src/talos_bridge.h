@@ -71,11 +71,40 @@ struct Readings {
 	bool kb_ready = false;
 };
 
+/// What the addon could actually find: is the GDExtension class registered, and
+/// did each of the three files this artifact ships load. Every field is a
+/// READING — nothing here decides anything, which is why a half-present install
+/// can be described by a node that is itself half-installed.
+struct InstallReadings {
+	bool extension_registered = false;
+	std::string contract_json;   // empty means the file did not load at all
+	std::string matrix_json;
+	std::string vocabulary_json;
+};
+
 /// The decision surface. Every method returns a JSON document: an admission
 /// carrying what the caller needs, or the TBP refusal envelope of §2.11 with one
 /// why-not token in `data.sub_code`.
 class Bridge {
 public:
+	/// §7.8, made loud. A bridge that is HALF present is the failure mode this
+	/// design exists to remove: without it a Talos session against an Insimul game
+	/// "degrades to generic scene queries" and reports nothing, because absence and
+	/// silence are indistinguishable to a Bridge that never found an adapter.
+	///
+	/// So the mode is NAMED — which of the four pieces is missing, and what
+	/// installs it — and it is named from a table compiled in here rather than
+	/// read from `bridge-contract.json`, because the contract is one of the things
+	/// that can be missing. `check-bridge.mjs` holds that table and the contract's
+	/// published install-stage vocabulary to each other, in both directions.
+	///
+	/// Static: by definition this is answered when the bridge could not be
+	/// configured.
+	static std::string diagnose_install(const InstallReadings &readings);
+
+	/// Every install-stage token `diagnose_install` can emit, in decision order.
+	static std::vector<std::string> install_tokens();
+
 	/// Hand the bridge its two shipped data files. Returns false — and leaves
 	/// `error()` set — when either is missing or unreadable, because a
 	/// half-present install must answer nothing rather than default to something

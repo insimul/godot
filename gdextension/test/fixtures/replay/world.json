@@ -1,0 +1,50 @@
+{
+  "description": "The authored world every trace in this corpus was recorded against, and the digest core computed for it. The C++ leg must reproduce that digest from the same bytes, or it cannot refuse a mismatched world before replaying — which is the one refusal §8.6 wants decided by arithmetic.",
+  "world": {
+    "worldId": "w-riverwatch",
+    "facts": [
+      {
+        "predicate": "at",
+        "args": [
+          "hero",
+          "gate"
+        ]
+      },
+      {
+        "predicate": "at",
+        "args": [
+          "bandit",
+          "road"
+        ]
+      },
+      {
+        "predicate": "health",
+        "args": [
+          "bandit",
+          30,
+          30
+        ]
+      },
+      {
+        "predicate": "carries",
+        "args": [
+          "hero",
+          "lantern"
+        ]
+      }
+    ],
+    "rules": [
+      "blocked(X) :- at(X, gate), locked(gate)."
+    ],
+    "packs": [
+      "base",
+      "rpg"
+    ]
+  },
+  "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+  "descriptor": {
+    "worldId": "w-riverwatch",
+    "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+    "label": "Riverwatch"
+  }
+}

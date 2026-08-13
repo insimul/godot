@@ -1,7 +1,7 @@
 {
   "description": "Provenance + drift guard for the vendored conformance corpus. `files` is a byte-for-byte mirror of packages/core/conformance; `local` is this repo’s own and mirrors nothing. Regenerate with `npm run vendor:conformance -- --core <packages/core>`.",
   "source": "@insimul/core (packages/core/conformance)",
-  "coreCommit": "76782e5e4fe35a981ab55845753632b8a7f3e0cc",
+  "coreCommit": "f04a7abd7e7803552f16af02882b5733fef37e80",
   "prologCases": 255,
   "caseFloors": {
     "prolog": 255,
@@ -35,7 +35,7 @@
     "activations": 24
   },
   "files": {
-    "README.md": "8d00d538bccd2349bd6c14666c0ad710a475db9ffab7d2eee8a77e7479e94f0f",
+    "README.md": "1413470275cff0abc5efa3eab1ecd70ab051986207e11dd19666f04c85d28403",
     "combat/action-table.json": "e785f5ce3346acdb68c70f74776b85c1c28d4a9e18f3a262a1d780b0bf54ebe4",
     "combat/resolution.json": "48016740d140e1741bac68f8d044986847d77ba9170596e69bbfa4b95f5b0f31",
     "content-library/minimal.json": "a85cd17df6cb359fbe37fdd91d68c91d9a0d4ee82e3d1fbd819c73908b1c29e8",

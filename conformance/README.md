@@ -45,7 +45,22 @@ two against each other. **Write cases as data, never as code.**
   see "Editor fixture format" below). Pins the binding resolution chain, the
   scene-placement math and the five-way re-import diff — the three capabilities
   every engine editor plugin implemented and core did not, which is why they had
-  already drifted with nothing to catch it. Run by
+  already drifted with nothing to catch it. As of `163-shared-placeholder-kit`
+  US-2 it also carries `placeholder-kit.json`: the bundled CC0 kit as the four
+  legs must materialize it, plus the reconciliation of the tier they vendor today
+  against that definition. As of `164-asset-libraries-and-suggestion` US-1 it also
+  carries `suggestion.json`: the binding-editor's candidate ranking, whose first
+  three cases are the Unity, Unreal and Godot unit-test fixtures replayed verbatim
+  — the three implementations that each called themselves a mirror of another now
+  answer to one fixture, and it is their own committed numbers. As of US-2 of the
+  same band it carries `asset-libraries.json`: declared asset libraries — where a
+  creator's assets live, which nothing in core or the three plugins had any notion
+  of before — plus suggestion across them and what happens when one cannot be
+  reached. As of US-3 it carries `binding-intent.json`: the engine-neutral half of
+  a binding held beside the engine-specific handle, the five ordered rules that
+  resolve one for a target engine, and four round trips whose resolvable subset is
+  AUTHORED in the fixture — so a pack shared with a second engine reports what it
+  can and cannot bind instead of failing wholesale. Run by
   `src/conformance/__tests__/editor-corpus.test.ts`; regenerate the derived
   `expected*` values with `npm run editor-goldens`.
 - `ui/*.json` — the default-UI view-model corpus (US-GU1). `theme-tokens.json` is
@@ -1527,11 +1542,174 @@ authored shape becomes load-bearing for import.
 `editor/` breaks the `{ area, description, cases }` envelope in the same way
 `content-library/` does: each file is one capability's whole contract, because
 placement and re-import take a *document* as input rather than a list of small
-cases. All three carry `area` + `description` + `version`, and every derived
+cases. Every file carries `area` + `description` + `version`, and every derived
 `expected*` value is machine-generated (`npm run editor-goldens`,
 `scripts/emit-editor-goldens.ts`) while every INPUT and every hand-written
 per-class id list is authored — so the corpus can never degrade into proving that
 the code agrees with itself.
+
+### `asset-libraries.json`
+
+```jsonc
+{
+  "area": "editor-asset-libraries",
+  "libraries": {                                  // named declarations, AUTHORED
+    "kenney-city": { "id": "kenney-city", "scope": "user",          // project|user|shared
+                     "root": "~/Assets/kenney-city",                // OPAQUE — never opened
+                     "tags": ["low-poly"],
+                     "provenance": { "origin": "pack", "license": "CC0-1.0" },
+                     "assets": [ { "id": "bakery", "name": "Bakery", "tags": ["commercial"],
+                                   "handle": "Assets/kenney/bakery.prefab" } ] }  // handle OPTIONAL
+  },
+  "projectIndexes": { "project": [ { "path": "…", "name": "…", "tags": ["…"] } ] },
+  "documentCases": [ { "name": "…", "input": { … } } ],             // parse: accepted AND refused
+  "suggestCases":  [ { "name": "…", "archetype": "building.commercial.bakery",
+                       "project": "project", "libraries": ["kenney-city"],
+                       "unreachable": { "kenney-city": "why" }, "limit": 2 } ],   // all OPTIONAL
+  "documentLibraries": ["kenney-city"],           // which declarations the canonical doc holds
+  "exportCases": [ { "name": "…", "libraries": ["…"],
+                     "policy": "strip", "includeRoots": false } ],  // both OPTIONAL
+  "expectedDocuments":   [ { "name": "…", "ok": true, "libraries": [ … ] } ],   // or {ok:false,error}
+  "expectedSuggestions": [ { "name": "…", "suggestions": [ … ], "reports": [ … ] } ],
+  "expectedDocument":    "{\"format\":\"insimul-asset-libraries\",…}",
+  "expectedExports":     [ { "name": "…", "ok": true, "policy": "strip", "json": "…",
+                             "exported": [ … ], "restricted": [ … ], "stripped": [ … ], "error": "" } ]
+}
+```
+
+Semantics a conforming engine MUST reproduce
+(`packages/core/docs/asset-libraries.md`):
+
+- a library `root` is an **opaque string**: never opened, split, or joined to an
+  asset id. Indexing it is the engine's job, exactly as building the project
+  index already is;
+- an asset with no `handle` for this engine is still offered, by its portable
+  `libraryId::assetId` reference — `::`, because a single colon occurs inside
+  `res://` and `/Game/Path.Asset:Component`;
+- the pool is the project index first, then libraries in declared order,
+  **de-duplicated by path**; the ranking itself is `suggestion.json`'s, unchanged,
+  and `limit` truncates the merged list;
+- a result carries `libraryId` / `assetId` / `provenance` **only when it came
+  from a library** — an absent `libraryId` means the project's own index;
+- a library's own tags and provenance are merged onto each of its assets, the
+  asset's own values winning field-wise;
+- an `unreachable`, `empty`, `duplicate` or `unidentified` library produces a
+  report and contributes nothing. It is never a failure, and the suggestion over
+  the readable libraries is exactly what it would have been had the broken
+  declaration never been written;
+- exactly one report per declaration, in declared order;
+- an export withholds an asset whose provenance is `restricted` OR `unknown`
+  (162's default), and withholds every `root` unless `includeRoots` is set.
+
+### `binding-intent.json`
+
+```jsonc
+{
+  "area": "editor-binding-intent",
+  "libraries": { "kenney-godot": { "id": "kenney-city", … } },   // AUTHORED, per machine
+  "machines":  { "godot-full": { "engine": "godot",             // an IntentTarget
+                                 "libraries": ["kenney-godot"],
+                                 "unreachable": { "kenney-city": "why" } } },  // OPTIONAL
+  "sources":   { "unity-town": { "name": "town", "priority": 50, "engine": "unity",
+                                 "entries": [ { "key": "building.commercial.bakery",
+                                                "asset": "kenney-city::bakery",       // the INTENT
+                                                "handles": { "unity": "…", "godot": "…" } } ] } },
+  "resolveEntries": { "library-only": { "key": "…", "asset": "kenney-city::bakery" } },
+  "resolveCases":   [ { "name": "…", "entry": "library-only", "machine": "godot-full",
+                        "sourceEngine": "unity" } ],   // absent = no source; "" = unstated
+  "inspectCases":   [ { "name": "…", "source": "unity-town", "machine": "godot-full" } ],
+  "importCases":    [ { "name": "…", "source": "unity-town", "machine": "godot-full" } ],
+  "exportCases":    [ { "name": "…", "source": "unity-town",
+                        "policy": "strip", "engine": "unity" } ],   // both OPTIONAL
+  "roundTripCases": [ { "name": "…", "source": "unity-town", "policy": "allow-restricted",
+                        "machine": "godot-full", "reexport": true,
+                        "predictedResolvable":   ["…"],     // AUTHORED — never emitted
+                        "predictedUnresolvable": ["…"] } ],
+  "validateSources": { "malformed-table": { … } },
+  "validateCases":   [ { "name": "…", "source": "malformed-table" } ],
+  "expectedResolutions": [ { "name": "…", "resolved": true, "via": "library", "blocker": "",
+                             "handle": "res://…", "field": "scene",
+                             "libraryId": "kenney-city", "assetId": "bakery",
+                             "status": "redistributable" } ],
+  "expectedReports":    [ { "name": "…", "engine": "godot", "rows": [ … ],
+                            "resolvable": ["…"], "unresolvable": ["…"] } ],
+  "expectedImports":    [ { "name": "…", "report": { … }, "source": { … } } ],
+  "expectedExports":    [ { "name": "…", "ok": true, "policy": "strip", "engine": "unity",
+                            "json": "…", "exported": { … }, "restricted": [ … ],
+                            "stripped": [ … ], "unlabelled": ["…"], "withoutIntent": ["…"],
+                            "error": "" } ],
+  "expectedRoundTrips": [ { "name": "…", "ok": true, "json": "…", "reexported": "…",
+                            "withheld": ["…"], "report": { … }, "source": { … }, "error": "" } ],
+  "expectedIssues":     [ { "name": "…", "issues": [ … ] } ]
+}
+```
+
+Semantics a conforming engine MUST reproduce
+(`packages/core/docs/binding-intent.md`):
+
+- the five rules are tried **in order** and the first that answers wins:
+  `handles[engine]`, then the bare `scene`/`mesh` when the source's `engine`
+  equals the target's, then the intent through a declared library, then
+  `handles.default`, then the bare handle when the source states **no** engine;
+- a source with no `engine` is **unstated, not foreign** — that is every pack
+  written before this fixture existed, and rule 5 is why all four engines still
+  bind them unchanged;
+- when nothing answers, the blocker names the **intent's** failure before the
+  handle's: a `foreign-handle` is only reported when there was no intent to fail
+  first;
+- a report row is one **handle** — the entry's own, or one variant's — and an
+  entry with nothing declared gets no row at all while still counting as
+  unresolvable;
+- an entry resolves if its own handle does **or** any of its variants does;
+  `report.resolvable` is exactly the imported source's `entries`, in order;
+- the import claims the **target's** engine, fills the resolved handle into
+  `scene` (or `mesh`, if that is where the bare handle was), flattens provenance
+  onto the entry, and keeps only the variants that resolved;
+- provenance across the boundary is the pack's record with the **receiver's own
+  library declaration merged over it** — a local declaration is checkable, a
+  sender's claim is not — and it is reported on unresolved rows too;
+- an **unreachable** library contributes nothing, exactly as it contributes no
+  suggestion in `asset-libraries.json`; the resulting `unknown` still does not
+  export;
+- export applies 162's gate and then folds a bare handle into `handles[engine]`
+  **without overwriting one already there**; a handle with no engine to label it
+  is left where it was and reported in `unlabelled`;
+- stripping a withheld asset removes `scene`, `mesh`, `handles` **and** `asset`
+  together — every representation of one asset goes at once;
+- nothing on any path throws: a refused export comes back `ok: false` with its
+  reason, and every other outcome comes back with a row per handle.
+
+### `suggestion.json`
+
+```jsonc
+{
+  "area": "editor-suggestion",
+  "candidateSets": { "unity": [ { "path": "…", "name": "…", "tags": ["…"] } ] },  // `name`/`tags` OPTIONAL
+  "cases": [ { "name": "…", "archetype": "building.commercial.bakery",
+               "candidates": "unity", "limit": 2 } ],                            // `limit` OPTIONAL, 0 = all
+  "segmentCases": ["building.commercial.*"],   // query → the segments it is scored by
+  "haystackCases": ["unity"],                  // candidate set → the text each candidate is matched against
+  "expectedResults":  [ { "name": "…", "results": [ { "path": "…", "name": "…",
+                                                      "score": 3, "matched": ["…"] } ] } ],
+  "expectedSegments": [ { "archetype": "…", "segments": ["…"] } ],
+  "expectedHaystacks": [ { "set": "…", "haystacks": [ { "path": "…", "haystack": "…" } ] } ]
+}
+```
+
+Semantics a conforming engine MUST reproduce (`packages/core/docs/asset-suggestion.md`):
+
+- score = how many of the query's dot segments occur as a **case-insensitive
+  substring** of `name + " " + path + " " + tags…`, duplicates counted;
+- a `*` segment is DROPPED, so `building.commercial.*` scores as
+  `building.commercial` (Godot alone searched for a literal `*`);
+- only `score > 0` is returned, sorted **score descending, then path ascending by
+  code unit**, which is total — no per-engine fallback decides a tie;
+- a query with no usable segments (empty, `*`, `...`) returns nothing, never the
+  whole index;
+- `limit` truncates AFTER the sort, so a short list is the same prefix everywhere.
+
+Every path is ASCII on purpose: C# ordinal, JS code-unit and C++ byte order agree
+there and can disagree above the BMP.
 
 ### `binding-resolver.json`
 
@@ -1701,6 +1879,83 @@ encode and is **deliberately unchanged**. `expectedUpdatedNodes` is the half a
 half-adoption fails: a leg that passes the base but still applies the *fresh*
 node reports what it preserved and clobbers anyway. See
 `docs/reimport-field-ownership.md`.
+
+### `placeholder-kit.json`
+
+The bundled CC0 placeholder kit as a materialization contract (US-2 of
+`163-shared-placeholder-kit`; `packages/core/docs/placeholder-kit.md` §6–§7).
+Core defines *which primitive, what dimensions, what colour, which anchors* once;
+each engine builds the shape. This is what a leg checks itself against without
+running TypeScript.
+
+```jsonc
+{
+  "area": "editor-placeholder-kit",
+  "queries": ["building.civic.townhall", … ],       // AUTHORED — what to ask the tier
+  "engines": ["babylon", "godot", "unity", "unreal"],
+  "engineCases": ["*", "building.civic.*", … ],     // AUTHORED — which entries per engine
+  "markerCases": ["placeholder:building.civic", …, "Assets/Buildings/Cottage.glb"],  // AUTHORED
+  "packs": [ { "name": "vendored-engine-tier", "note": "…",
+               "source": { … the tier all three legs vendor today … } } ],   // AUTHORED
+
+  "expectedBuilds": [ { "key": "building.civic.*", "handle": "placeholder:building.civic",
+                        "primitive": "box", "size": {"x":12,"y":9,"z":12},
+                        "color": "#c9a227", "label": "…",
+                        "convention": {"up":"y","handedness":"left","unitsPerMetre":1},
+                        "anchors": [ { "name": "door", "kind": "door",
+                                       "position": {…}, "yaw": 0, "node": "" } ],
+                        "footprint": { "size": {…}, "pivot": {…} } | null,
+                        "version": 1 } ],
+  "expectedEngineBuilds": { "unreal": [ … the same entries in Z-up centimetres … ], … },
+  "expectedResolutions": [ { "query": "…", "key": "…", "handle": "…", "primitive": "…" } ],
+  "expectedMarker": { "suffix": " [placeholder]", "badge": "PLACEHOLDER",
+                      "visibility": "editor-only",
+                      "cases": [ { "handle": "…",
+                                   "marker": { "key": "…", "label": "…", "color": "#rrggbb",
+                                               "nodeSuffix": "…", "badge": "…",
+                                               "visibility": "editor-only" } | null,
+                                   "markedName": "Node [placeholder]" | "Node" } ] },
+  "expectedReconciliation": [ { "name": "…", "delta": {
+      "source": "insimul-placeholder", "priority": null | number,
+      "provenance": "stated" | "by-name" | "lost",
+      "missingKeys": ["…"], "extraKeys": ["…"],
+      "handleDeltas": [ { "key": "…", "kit": "…", "pack": "…" } ],
+      "geometryDeltas": [ { "key": "…", "missing": ["door-anchor", "footprint"] } ] } } ]
+}
+```
+
+Semantics a conforming engine MUST reproduce:
+
+- **build `size`, fit-check `footprint`.** They are not duplicates: `size` is the
+  shape's full extents, `footprint` is what a lot is compared against, and a
+  `quad` has the first and `null` for the second. A leg that took extents from
+  the footprint would build no terrain;
+- **ask for the build order in your own convention.** `expectedEngineBuilds` is
+  the same six entries re-expressed per engine, so a leg compares the numbers it
+  will actually spawn with. Unreal's civic hall is `1200 × 1200 × 900`
+  centimetres with its door on **+X**, because Z-up permutes the axes — a leg
+  that hand-wrote the mapping would get the door a quarter turn out;
+- **cache on `handle`**, and invalidate on `version`. A town of three hundred
+  buildings costs at most one mesh per kit entry;
+- **reinterpret nothing else** — dimensions, colours, which primitive answers
+  which archetype, the door's face, the tier's priority `0`
+  (`packages/core/docs/placeholder-kit.md` §6.3);
+- **mark a placeholder the same way in every editor.** `expectedMarker` pins the
+  node-name suffix, the badge text and the editor-only visibility (US-3;
+  `packages/core/docs/placeholder-kit.md` §8.3). A `marker` of `null` is the
+  distinction itself — that handle is a real asset and must NOT be marked — and
+  `markedName` pins both directions of the rule, since a rebind that left forty
+  nodes named `Bakery [placeholder]` would be a swap path that lies. A marker
+  with an empty `color`/`key` is still a marker: the handle is a placeholder the
+  shared kit has no entry for (§7's `extraKeys`), not a real asset.
+
+`expectedReconciliation` is the delta between the definition and a pack in the
+field, and it is deliberately **not empty**: the tier the three native legs
+vendor today lacks 17 keys, publishes no footprint on any of the 10 it has, gives
+no building a door anchor, and loses the CC0 mark by calling itself
+`insimul-placeholder` while declaring no provenance. Each line is band-165 work;
+core reports it and repairs nothing, because the repositories that hold those
+generators are ones core cannot reach.
 
 ## Purpose — the cross-engine parity gate
 

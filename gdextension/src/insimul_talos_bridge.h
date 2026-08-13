@@ -18,6 +18,7 @@
 #define INSIMUL_GODOT_INSIMUL_TALOS_BRIDGE_H
 
 #include "talos_bridge.h"
+#include "talos_replay.h"
 
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/variant/array.hpp>
@@ -31,9 +32,11 @@ class InsimulTalosBridge : public RefCounted {
 	GDCLASS(InsimulTalosBridge, RefCounted)
 
 public:
-	// Hand the bridge the two files that ship with the addon. False on a
-	// half-present install; last_error() then says which file and why.
-	bool configure(const String &contract_json, const String &matrix_json);
+	// Hand the bridge the three files that ship with the addon. False on a
+	// half-present install; last_error() then says which file and why, and
+	// diagnose_install() names the failure MODE.
+	bool configure(const String &contract_json, const String &matrix_json,
+			const String &vocabulary_json = String());
 	bool is_configured() const;
 	String last_error() const;
 
@@ -54,11 +57,35 @@ public:
 	String progress_var(const String &name, const String &value_json, bool targets_template,
 			const Dictionary &readings) const;
 
+	// §7.8: which piece of a half-present install is missing, and what installs
+	// it. Static on the C++ side and const here, because it is answered precisely
+	// when configure() failed. `readings` carries `extension_registered` plus the
+	// text of each file the addon managed to read.
+	String diagnose_install(const Dictionary &readings) const;
+
+	// ── the replay leg (§8.6, tasklist 180's artifact) ──
+	//
+	// Readings in, orders out: `plan_replay` hands back the whole tick sequence
+	// and the addon carries it out against the live knowledge base, because
+	// core's driver calls back into the world once per tick and the C ABI has no
+	// callbacks.
+	String open_trace(const String &trace_json, const String &world_json) const;
+	String plan_replay(const String &trace_json, const String &world_json,
+			const String &options_json) const;
+	String seal_outcome(const String &args_json) const;
+	String read_outcome(const String &outcome_json) const;
+	String verify_outcome(const String &recorded_json, const String &trace_id) const;
+	String compare_outcomes(const String &recorded_json, const String &replayed_json) const;
+	String world_content_digest(const String &world_json) const;
+	String kb_digest(const String &facts_json) const;
+	int replay_entropy(const String &seed, int tick) const;
+
 protected:
 	static void _bind_methods();
 
 private:
 	insimul::talos::Bridge bridge_;
+	insimul::talos::Replay replay_;
 
 	// The addon gathers readings into a Dictionary; this is the one place that
 	// shape is read. `kb_ready` false means no field below it came from a KB.

@@ -1,0 +1,175 @@
+{
+  "case": "empty-trace-idle-only",
+  "why": "A session with no inputs at all, driven to tick 15: every fact in the outcome came from an IDLE tick, which is exactly the half a driver that skipped empty ticks would lose.",
+  "trace": {
+    "format": "insimul-input-trace-v1",
+    "id": "sha256-48d4f5908df54455eabd73abdb1fdc75fcdd6248bc8ec2c4a6634f37b7934c27",
+    "body": {
+      "seed": "riverwatch-0001",
+      "world": {
+        "worldId": "w-riverwatch",
+        "contentDigest": "sha256-3fd53df0bc07ecc106fb1d9ad1362abb03dd283a9ce58cb3eaaa6062c5108e45",
+        "label": "Riverwatch"
+      },
+      "inputs": []
+    }
+  },
+  "options": {
+    "engine": "core-reference",
+    "throughTick": 15
+  },
+  "steps": [
+    {
+      "tick": 0,
+      "inputs": [],
+      "entropy": 1369369279
+    },
+    {
+      "tick": 1,
+      "inputs": [],
+      "entropy": 1352591660
+    },
+    {
+      "tick": 2,
+      "inputs": [],
+      "entropy": 1402924517
+    },
+    {
+      "tick": 3,
+      "inputs": [],
+      "entropy": 1386146898
+    },
+    {
+      "tick": 4,
+      "inputs": [],
+      "entropy": 1302258803
+    },
+    {
+      "tick": 5,
+      "inputs": [],
+      "entropy": 1285481184
+    },
+    {
+      "tick": 6,
+      "inputs": [],
+      "entropy": 1335814041
+    },
+    {
+      "tick": 7,
+      "inputs": [],
+      "entropy": 1319036422
+    },
+    {
+      "tick": 8,
+      "inputs": [],
+      "entropy": 1503590231
+    },
+    {
+      "tick": 9,
+      "inputs": [],
+      "entropy": 1486812612
+    },
+    {
+      "tick": 10,
+      "inputs": [],
+      "entropy": 4075753891
+    },
+    {
+      "tick": 11,
+      "inputs": [],
+      "entropy": 4058976272
+    },
+    {
+      "tick": 12,
+      "inputs": [],
+      "entropy": 4109309129
+    },
+    {
+      "tick": 13,
+      "inputs": [],
+      "entropy": 4092531510
+    },
+    {
+      "tick": 14,
+      "inputs": [],
+      "entropy": 4142864367
+    },
+    {
+      "tick": 15,
+      "inputs": [],
+      "entropy": 4126086748
+    }
+  ],
+  "expect": {
+    "traceId": "sha256-48d4f5908df54455eabd73abdb1fdc75fcdd6248bc8ec2c4a6634f37b7934c27",
+    "finalTick": 15,
+    "inputTicks": 0,
+    "ticks": 16,
+    "inputsApplied": 0,
+    "outcome": {
+      "traceId": "sha256-48d4f5908df54455eabd73abdb1fdc75fcdd6248bc8ec2c4a6634f37b7934c27",
+      "engine": "core-reference",
+      "finalTick": 15,
+      "inputTicks": 0,
+      "facts": [
+        {
+          "predicate": "at",
+          "args": [
+            "hero",
+            "gate"
+          ]
+        },
+        {
+          "predicate": "at",
+          "args": [
+            "bandit",
+            "road"
+          ]
+        },
+        {
+          "predicate": "health",
+          "args": [
+            "bandit",
+            30,
+            30
+          ]
+        },
+        {
+          "predicate": "carries",
+          "args": [
+            "hero",
+            "lantern"
+          ]
+        },
+        {
+          "predicate": "world_open",
+          "args": [
+            "riverwatch-0001"
+          ]
+        },
+        {
+          "predicate": "root_entropy",
+          "args": [
+            3059411694
+          ]
+        },
+        {
+          "predicate": "beat",
+          "args": [
+            1,
+            1352591660
+          ]
+        },
+        {
+          "predicate": "beat",
+          "args": [
+            13,
+            4092531510
+          ]
+        }
+      ],
+      "format": "insimul-replay-outcome-v1",
+      "digest": "sha256-31b45fb741b7a1b7510d39a83b4ac8e4fcae162a19f005b3ec85aca0a3fdaabe"
+    }
+  }
+}
