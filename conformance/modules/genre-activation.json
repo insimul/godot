@@ -1,0 +1,476 @@
+{
+  "description": "Genre bundle → active Insimul modules. Emitted from INSIMUL_MODULES by npm run module-activation; see packages/core/docs/module-contract.md §7.",
+  "alwaysActivePacks": [
+    "gameplayState",
+    "scaffold"
+  ],
+  "genres": {
+    "language-learning": {
+      "genre": "language-learning",
+      "known": true,
+      "modules": [],
+      "predicatePacks": [
+        "gameplayState",
+        "scaffold"
+      ],
+      "hostInterfaces": []
+    },
+    "rpg": {
+      "genre": "rpg",
+      "known": true,
+      "modules": [
+        {
+          "id": "combat",
+          "name": "Combat",
+          "predicatePack": "combat",
+          "irSection": "combat",
+          "decisionLayer": [
+            "CombatResolver"
+          ],
+          "hostInterface": [
+            "ICombatSystem",
+            "ITrajectoryProbe"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "perception",
+          "name": "Stealth and perception",
+          "predicatePack": "perception",
+          "irSection": "perception",
+          "decisionLayer": [
+            "DetectionTracker"
+          ],
+          "hostInterface": [
+            "IPerceptionProbe"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "skill",
+          "name": "Skills",
+          "predicatePack": "skill",
+          "irSection": "skills",
+          "decisionLayer": [
+            "SkillProgression"
+          ],
+          "hostInterface": [
+            "ISkillModifierSink"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "traversal",
+          "name": "Traversal",
+          "predicatePack": "traversal",
+          "irSection": "traversal",
+          "decisionLayer": [
+            "TraversalPlanner",
+            "VehicleRegistry",
+            "FastTravelDirector"
+          ],
+          "hostInterface": [
+            "ITraversalProbe",
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "equipment",
+          "name": "Equipment",
+          "predicatePack": "equipment",
+          "irSection": "items",
+          "decisionLayer": [
+            "EquipmentManager",
+            "ItemLedger",
+            "Market",
+            "ItemPlacer"
+          ],
+          "hostInterface": [
+            "ICombatStatSink"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "agentAi",
+          "name": "Agent AI",
+          "predicatePack": "agentAi",
+          "irSection": "systems.actions",
+          "decisionLayer": [
+            "AgentPlanner"
+          ],
+          "hostInterface": [
+            "IAgentActionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "routine",
+          "name": "NPC routines",
+          "predicatePack": "routine",
+          "irSection": "routines",
+          "decisionLayer": [
+            "RoutineDirector",
+            "LocomotionDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "map",
+          "name": "Map and geopolitics",
+          "predicatePack": "map",
+          "irSection": "geography",
+          "decisionLayer": [
+            "MapDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        }
+      ],
+      "predicatePacks": [
+        "combat",
+        "perception",
+        "skill",
+        "traversal",
+        "equipment",
+        "gameplayState",
+        "agentAi",
+        "routine",
+        "map",
+        "scaffold"
+      ],
+      "hostInterfaces": [
+        "ICombatSystem",
+        "ITrajectoryProbe",
+        "IPerceptionProbe",
+        "ISkillModifierSink",
+        "ITraversalProbe",
+        "ILocomotionHost",
+        "ICombatStatSink",
+        "IAgentActionHost"
+      ]
+    },
+    "survival": {
+      "genre": "survival",
+      "known": true,
+      "modules": [
+        {
+          "id": "combat",
+          "name": "Combat",
+          "predicatePack": "combat",
+          "irSection": "combat",
+          "decisionLayer": [
+            "CombatResolver"
+          ],
+          "hostInterface": [
+            "ICombatSystem",
+            "ITrajectoryProbe"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "skill",
+          "name": "Skills",
+          "predicatePack": "skill",
+          "irSection": "skills",
+          "decisionLayer": [
+            "SkillProgression"
+          ],
+          "hostInterface": [
+            "ISkillModifierSink"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "traversal",
+          "name": "Traversal",
+          "predicatePack": "traversal",
+          "irSection": "traversal",
+          "decisionLayer": [
+            "TraversalPlanner",
+            "VehicleRegistry",
+            "FastTravelDirector"
+          ],
+          "hostInterface": [
+            "ITraversalProbe",
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "equipment",
+          "name": "Equipment",
+          "predicatePack": "equipment",
+          "irSection": "items",
+          "decisionLayer": [
+            "EquipmentManager",
+            "ItemLedger",
+            "Market",
+            "ItemPlacer"
+          ],
+          "hostInterface": [
+            "ICombatStatSink"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "stamina",
+          "name": "Stamina",
+          "predicatePack": "stamina",
+          "irSection": "survival.staminaConfig",
+          "decisionLayer": [
+            "StaminaPool"
+          ],
+          "hostInterface": [
+            "ISurvivalSystem"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "agentAi",
+          "name": "Agent AI",
+          "predicatePack": "agentAi",
+          "irSection": "systems.actions",
+          "decisionLayer": [
+            "AgentPlanner"
+          ],
+          "hostInterface": [
+            "IAgentActionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "routine",
+          "name": "NPC routines",
+          "predicatePack": "routine",
+          "irSection": "routines",
+          "decisionLayer": [
+            "RoutineDirector",
+            "LocomotionDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "map",
+          "name": "Map and geopolitics",
+          "predicatePack": "map",
+          "irSection": "geography",
+          "decisionLayer": [
+            "MapDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        }
+      ],
+      "predicatePacks": [
+        "combat",
+        "skill",
+        "traversal",
+        "equipment",
+        "stamina",
+        "gameplayState",
+        "agentAi",
+        "routine",
+        "map",
+        "scaffold"
+      ],
+      "hostInterfaces": [
+        "ICombatSystem",
+        "ITrajectoryProbe",
+        "ISkillModifierSink",
+        "ITraversalProbe",
+        "ILocomotionHost",
+        "ICombatStatSink",
+        "ISurvivalSystem",
+        "IAgentActionHost"
+      ]
+    },
+    "strategy": {
+      "genre": "strategy",
+      "known": true,
+      "modules": [],
+      "predicatePacks": [
+        "gameplayState",
+        "scaffold"
+      ],
+      "hostInterfaces": []
+    },
+    "puzzle": {
+      "genre": "puzzle",
+      "known": true,
+      "modules": [],
+      "predicatePacks": [
+        "gameplayState",
+        "scaffold"
+      ],
+      "hostInterfaces": []
+    },
+    "adventure": {
+      "genre": "adventure",
+      "known": true,
+      "modules": [
+        {
+          "id": "perception",
+          "name": "Stealth and perception",
+          "predicatePack": "perception",
+          "irSection": "perception",
+          "decisionLayer": [
+            "DetectionTracker"
+          ],
+          "hostInterface": [
+            "IPerceptionProbe"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "traversal",
+          "name": "Traversal",
+          "predicatePack": "traversal",
+          "irSection": "traversal",
+          "decisionLayer": [
+            "TraversalPlanner",
+            "VehicleRegistry",
+            "FastTravelDirector"
+          ],
+          "hostInterface": [
+            "ITraversalProbe",
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "agentAi",
+          "name": "Agent AI",
+          "predicatePack": "agentAi",
+          "irSection": "systems.actions",
+          "decisionLayer": [
+            "AgentPlanner"
+          ],
+          "hostInterface": [
+            "IAgentActionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "routine",
+          "name": "NPC routines",
+          "predicatePack": "routine",
+          "irSection": "routines",
+          "decisionLayer": [
+            "RoutineDirector",
+            "LocomotionDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "map",
+          "name": "Map and geopolitics",
+          "predicatePack": "map",
+          "irSection": "geography",
+          "decisionLayer": [
+            "MapDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        }
+      ],
+      "predicatePacks": [
+        "perception",
+        "traversal",
+        "gameplayState",
+        "agentAi",
+        "routine",
+        "map",
+        "scaffold"
+      ],
+      "hostInterfaces": [
+        "IPerceptionProbe",
+        "ITraversalProbe",
+        "ILocomotionHost",
+        "IAgentActionHost"
+      ]
+    },
+    "simulation": {
+      "genre": "simulation",
+      "known": true,
+      "modules": [
+        {
+          "id": "agentAi",
+          "name": "Agent AI",
+          "predicatePack": "agentAi",
+          "irSection": "systems.actions",
+          "decisionLayer": [
+            "AgentPlanner"
+          ],
+          "hostInterface": [
+            "IAgentActionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "routine",
+          "name": "NPC routines",
+          "predicatePack": "routine",
+          "irSection": "routines",
+          "decisionLayer": [
+            "RoutineDirector",
+            "LocomotionDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        },
+        {
+          "id": "map",
+          "name": "Map and geopolitics",
+          "predicatePack": "map",
+          "irSection": "geography",
+          "decisionLayer": [
+            "MapDirector"
+          ],
+          "hostInterface": [
+            "ILocomotionHost"
+          ],
+          "conforms": true
+        }
+      ],
+      "predicatePacks": [
+        "gameplayState",
+        "agentAi",
+        "routine",
+        "map",
+        "scaffold"
+      ],
+      "hostInterfaces": [
+        "IAgentActionHost",
+        "ILocomotionHost"
+      ]
+    },
+    "educational": {
+      "genre": "educational",
+      "known": true,
+      "modules": [],
+      "predicatePacks": [
+        "gameplayState",
+        "scaffold"
+      ],
+      "hostInterfaces": []
+    }
+  }
+}

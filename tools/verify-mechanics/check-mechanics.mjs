@@ -11,7 +11,7 @@
 // bundle are, with the same discipline: a recorded core commit, recorded input
 // hashes, and a `--core` mode that re-derives and fails on drift.
 //
-// FIVE CHECKS, and each one exists because its absence has already cost somebody
+// SEVEN CHECKS, and each one exists because its absence has already cost somebody
 // something in this ecosystem:
 //
 //   1. MANIFEST — every band-120 module in MODULE_HOSTS.json names the same host
@@ -29,6 +29,13 @@
 //   5. ORDERS — every host member the ADAPTER can emit as an order has a
 //      dispatch entry in `insimul_mechanic_session.gd`. An order with no branch
 //      is a game that quietly stops applying damage.
+//   6. CORPUS — every module's vectors are vendored AND something runs them, in
+//      both directions, plus a total accounting of every conformance/ directory.
+//      A vendored corpus nothing executes is a checked-in file (tasklist 147 US-2).
+//   7. ACTIVATION — the vendored genre table agrees with the manifest, the rows
+//      that read it exist, and the GDScript that activates names no module, no
+//      pack area and no genre. "Adding a module to a bundle needs no engine code
+//      change" is a claim, and this is the only way to check it (US-3).
 //
 // WHAT IT DOES NOT PROVE, stated because a gate that overclaims is worse than
 // none: it executes no GDScript. Signatures, semantics and behaviour are
@@ -53,6 +60,11 @@ const SESSION_GD = path.join(REPO, 'addons/insimul/runtime/mechanics/insimul_mec
 const ENTRY_JS = path.join(REPO, 'gdextension/corebridge/js/entry.js');
 const HOST_MECHANICS_JS = path.join(REPO, 'gdextension/corebridge/js/host-mechanics.js');
 const HOST_CORPUS_JS = path.join(REPO, 'gdextension/corebridge/js/host-corpus.js');
+const ACTIVATION_GD = [
+  path.join(REPO, 'addons/insimul/runtime/mechanics/insimul_module_activation.gd'),
+  path.join(REPO, 'addons/insimul/runtime/mechanics/insimul_mechanic_activator.gd'),
+];
+const ACTIVATION_TABLE = path.join(REPO, 'conformance/modules/genre-activation.json');
 const CORPUS_DIR = path.join(REPO, 'conformance');
 
 /**
@@ -318,6 +330,56 @@ export function parseCorpusRunners(source) {
 }
 
 /**
+ * The rows tasklist 147 US-3 adopted, and what each one is for. Named here
+ * rather than in the check so the gate's subject is readable as data.
+ */
+/**
+ * Modules a genre bundle ACTIVATES that this repo does not adopt, and what a
+ * game of that genre actually gets for them. Total by construction: check 7
+ * fails on any activated module that is in neither {@link BAND_120} nor this
+ * list, so core adding a module to a bundle surfaces here as a decision to make
+ * rather than as a mechanic that quietly does nothing.
+ *
+ * The two halves of activation are why this list can exist at all without a
+ * hole: the PACK half needs only the pack text, which the bundle carries for
+ * every pack in the build, so an unadopted module's vocabulary IS in the KB and
+ * its authored gates evaluate. The SESSION half needs a decision layer behind a
+ * bridge row, which these two do not have.
+ */
+const NOT_ADOPTED = {
+  agentAi:
+    'the game-AI substrate. Its four packs are consulted (they are in the build, ' +
+    'and `AgentPlanner` reads what the other packs populate), but no bridge row ' +
+    'constructs the planner, so no session opens. InsimulMechanicActivator reports ' +
+    'it as ACTIVE BUT UNREACHABLE rather than skipping it silently.',
+  map:
+    'the region and jurisdiction layer. Same shape: its pack is consulted, its ' +
+    'decision layers are not bundled. It names ILocomotionHost, which IS ' +
+    'implemented here, so adopting it later is a row and not a host.',
+};
+
+const ACTIVATION_ROWS = {
+  'modules.activate': 'resolve one world (or one genre) to its active module set',
+  'modules.table': "the whole committed table, from core's own emitter",
+  'prolog.packs': 'the rule-pack TEXT the active set names but does not carry',
+};
+
+/** The vendored activation table, or null when it is not on disk. */
+export function readActivationTable(file = ACTIVATION_TABLE) {
+  if (!fs.existsSync(file)) return null;
+  return JSON.parse(read(file));
+}
+
+/** Every activation-reading GDScript file's text, keyed by repo-relative path. */
+export function readActivationSources(files = ACTIVATION_GD) {
+  const out = {};
+  for (const file of files) {
+    if (fs.existsSync(file)) out[path.relative(REPO, file)] = read(file);
+  }
+  return out;
+}
+
+/**
  * The band-120 DECISION corpora — the six directories US-2 taught this repo to
  * execute through `conformance.run`.
  */
@@ -332,6 +394,10 @@ const DECISION_DIRS = ['combat', 'items', 'routines', 'skills', 'stealth', 'trav
  * be SAID, with where the claim is written up.
  */
 const CORPUS_RUN_ELSEWHERE = {
+  modules:
+    'gdextension/test/run_activation_tests.sh — every genre bundle in ' +
+    'genre-activation.json is resolved through `modules.activate` and compared to ' +
+    'the committed set, and the packs it names are witnessed in a real KB',
   prolog:
     'gdextension/test/run_corpus_tests.sh runs every query on the native Trealla; ' +
     'run_conformance.sh marshals every pinned solution',
@@ -562,6 +628,82 @@ export function runChecks(manifest, repo) {
     );
   }
 
+  // 7. ACTIVATION — the active module set is DATA, and the engine reads it.
+  //    US-3's acceptance is "adding a module to a bundle requires no engine
+  //    code change", which is only checkable one way: the GDScript that
+  //    activates must name NO module, NO pack area and NO genre. A gate that
+  //    took the claim on trust would pass over a hardcoded list forever.
+  const table = repo.activationTable;
+  if (table === null || table === undefined) {
+    problem(
+      'activation',
+      'conformance/modules/genre-activation.json is not vendored — re-vendor with ' +
+        '`npm run vendor:conformance -- --core <packages/core>`',
+    );
+  } else {
+    for (const row of Object.keys(ACTIVATION_ROWS)) {
+      if (!repo.bridge.methods.includes(row)) {
+        problem('activation', `entry.js has no "${row}" row — ${ACTIVATION_ROWS[row]}`);
+      }
+    }
+    const genres = Object.entries(table.genres ?? {});
+    if (genres.length === 0) problem('activation', 'the activation table declares no genre bundles');
+
+    // 7a. The table and the manifest are two derivations of ONE core manifest,
+    //     vendored by two different tools. A table at one core sha beside a
+    //     MODULE_HOSTS.json at another is exactly the drift CLAUDE.md warns
+    //     about, and this is where it becomes visible without a core checkout.
+    for (const [genre, set] of genres) {
+      for (const module of set.modules ?? []) {
+        const declared = manifest.modules[module.id];
+        if (!declared) {
+          if (!(module.id in NOT_ADOPTED)) {
+            problem(
+              'activation',
+              `genre "${genre}" activates module "${module.id}", which this repo neither adopts ` +
+                '(BAND_120) nor declares unadopted (NOT_ADOPTED) — say which, with what a game ' +
+                'of that genre gets for it',
+            );
+          }
+          continue;
+        }
+        if (!same([...module.hostInterface].sort(), [...declared.hostInterface].sort())) {
+          problem(
+            'activation',
+            `module "${module.id}" names host interfaces [${module.hostInterface}] in the ` +
+              `activation table and [${declared.hostInterface}] in MODULE_HOSTS.json`,
+          );
+        }
+      }
+    }
+
+    // 7b. Nothing in the reader names a mechanic. Every module id, pack area
+    //     and genre id in the table is searched for as a whole word in the
+    //     GDScript that resolves and activates — comments included, because a
+    //     comment that lists the modules rots exactly like code does.
+    const forbidden = new Set();
+    for (const [genre, set] of genres) {
+      forbidden.add(genre);
+      for (const area of set.predicatePacks ?? []) forbidden.add(area);
+      for (const module of set.modules ?? []) forbidden.add(module.id);
+    }
+    for (const area of table.alwaysActivePacks ?? []) forbidden.add(area);
+    for (const [file, source] of Object.entries(repo.activationSources)) {
+      for (const name of forbidden) {
+        if (new RegExp(`(^|[^A-Za-z0-9_-])${name}([^A-Za-z0-9_-]|$)`).test(source)) {
+          problem(
+            'activation',
+            `${file} names "${name}" — the active set is data, and a reader that ` +
+              'spells a module, a pack or a genre stops answering when core adds one',
+          );
+        }
+      }
+    }
+    if (Object.keys(repo.activationSources).length === 0) {
+      problem('activation', 'no activation reader in addons/ — nothing reads the table');
+    }
+  }
+
   return problems.slice();
 }
 
@@ -581,6 +723,8 @@ function readRepo() {
     sessionOrders: parseSessionOrders(read(SESSION_GD)),
     corpusRunners: parseCorpusRunners(read(HOST_CORPUS_JS)),
     vendoredCorpus: readVendoredCorpus(),
+    activationTable: readActivationTable(),
+    activationSources: readActivationSources(),
   };
 }
 
@@ -639,6 +783,17 @@ function runSelfTest(manifest, repo) {
       () => {
         const copy = structuredClone(repo);
         copy.corpusRunners = { areas: [], byModule: {} };
+        return [manifest, copy];
+      },
+    ],
+    [
+      // The control for US-3's whole subject: a reader with a mechanic's name
+      // in it is a hardcoded list wearing a table's clothes.
+      'activation',
+      () => {
+        const copy = structuredClone(repo);
+        const first = Object.keys(copy.activationTable?.genres ?? {})[0] ?? 'rpg';
+        copy.activationSources = { 'invented.gd': `if module == "${first}":` };
         return [manifest, copy];
       },
     ],
@@ -702,6 +857,16 @@ function main() {
   console.log(
     `check-mechanics: ${BAND_120.length} module(s), ${interfaces} host interface(s) implemented, ` +
       `${rows} bridge row(s), core ${String(manifest.coreCommit).slice(0, 7)}`,
+  );
+  const activated = new Set(
+    Object.values(repo.activationTable?.genres ?? {}).flatMap((set) =>
+      (set.modules ?? []).map((m) => m.id),
+    ),
+  );
+  console.log(
+    `check-mechanics: ${Object.keys(repo.activationTable?.genres ?? {}).length} genre bundle(s) ` +
+      `activate ${activated.size} module(s); ${[...activated].filter((id) => id in NOT_ADOPTED).length} ` +
+      `of them are declared unadopted (${Object.keys(NOT_ADOPTED).join(', ')})`,
   );
   console.log(
     `check-mechanics: ${repo.vendoredCorpus.prolog.size} vendored Prolog corpus file(s), ` +

@@ -13,13 +13,14 @@ npm run test:corpus      # PARITY: 467 of core's golden cases, executed here
 npm run test:radiant     # the first adopted slice, 11 conformance vectors
 npm run test:quest-parity
 npm run test:conformance
+npm run test:activation  # 8 genre bundles, 88 KB witnesses, the sample scenario
 ```
 
 Everything under `gdextension/test/run_*.sh` builds with a **plain C/C++
-compiler** — no cmake, no scons, no godot-cpp, no Godot binary. Four of them
+compiler** — no cmake, no scons, no godot-cpp, no Godot binary. Five of them
 (`run_radiant_tests.sh`, `run_quest_parity_tests.sh`, `run_mechanic_tests.sh`,
-`run_corpus_tests.sh`) additionally **link libinsimul** and fail loudly when it
-is absent rather than skipping. Point them at a build:
+`run_corpus_tests.sh`, `run_activation_tests.sh`) additionally **link libinsimul**
+and fail loudly when it is absent rather than skipping. Point them at a build:
 
 ```sh
 INSIMUL_NATIVE_DIR=<insimul-native checkout>   bash gdextension/test/run_mechanic_tests.sh
@@ -89,6 +90,18 @@ that will bite:
    The corpus case crosses the ABI whole (`conformance.run` takes `{area, case}`
    and returns the entire `expected` shape), so the C++ harness compares rather
    than interprets and adding an area never touches it.
+5. **The active module set is DATA, and the two readers may not spell it.**
+   `insimul_module_activation.gd` and `insimul_mechanic_activator.gd` are grepped
+   by `check-mechanics.mjs`'s seventh check for every module id, pack area and
+   genre id in `conformance/modules/genre-activation.json` — **comments
+   included**. Writing `# e.g. the combat module` in either file fails the gate,
+   and that is deliberate: a comment listing the modules rots exactly like code.
+   Everything those two files know arrives from `modules.activate`.
+6. **A genre can activate a module this repo does not adopt** (`agentAi`, `map`
+   under `rpg`). Activation has two halves: the pack half works for every pack in
+   the build, the session half needs a bridge row. Say which in
+   `check-mechanics.mjs`'s `NOT_ADOPTED` — an activated module in neither that
+   list nor `BAND_120` fails the gate.
 
 ## GDScript in this repo
 

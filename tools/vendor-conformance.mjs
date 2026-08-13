@@ -99,15 +99,6 @@ const NOT_MIRRORED = [
       'runtime surface: it pins how a content pack is stamped, which is the ' +
       'platform repo\u2019s job, not the engine plugin\u2019s.',
   },
-  {
-    prefix: 'modules/',
-    why:
-      'genre-activation.json — genre bundle to active module set. This is US-3\u2019s ' +
-      'corpus, not US-2\u2019s: the plugin has no bundle reader yet, so vendoring it ' +
-      'now would check in the one file this repo has already shipped once before ' +
-      'with nothing running it. US-3 removes this entry and adds the runner in the ' +
-      'same commit.',
-  },
 ];
 
 // MINIMUM case counts per corpus area, hand-maintained. `prologCases` alone
@@ -140,6 +131,33 @@ const CASE_FLOORS = {
   'traversal/vehicles.json': 14,
 };
 
+/**
+ * The activation table is not a case corpus, so `CASE_FLOORS` cannot guard it:
+ * `conformance/modules/genre-activation.json` is one object keyed by genre with
+ * a module list per genre, and `caseCount` reads zero from it. Its floors are
+ * the two numbers that can shrink — how many genre bundles core declares, and
+ * how many module ACTIVATIONS there are across all of them
+ * (`sum(genres[*].modules.length)`). A bundle that quietly stopped selecting a
+ * module is a mechanic that silently left every game of that genre, and it is
+ * invisible both to a file count and to a hash that re-vendoring rewrites.
+ * Counts are core 76782e5's, minus nothing.
+ */
+const TABLE_FLOORS = {
+  'modules/genre-activation.json': { genres: 8, activations: 24 },
+};
+
+/** `{ genres, activations }` of the vendored activation table; zeroes if absent. */
+function tableCounts(rel) {
+  const p = path.join(CORPUS, rel);
+  if (!fs.existsSync(p)) return { genres: 0, activations: 0 };
+  const doc = JSON.parse(fs.readFileSync(p, 'utf8'));
+  const genres = Object.values(doc.genres ?? {});
+  return {
+    genres: genres.length,
+    activations: genres.reduce((n, g) => n + (Array.isArray(g.modules) ? g.modules.length : 0), 0),
+  };
+}
+
 /** `cases.length` of one vendored corpus file, or 0 when it is not there. */
 function caseCount(rel) {
   const p = path.join(CORPUS, rel);
@@ -158,6 +176,17 @@ function floorProblems() {
         `conformance/${key} holds ${actual} case(s), below the floor of ${floor} — ` +
           'a corpus that shrinks is a contract that quietly stopped being pinned',
       );
+    }
+  }
+  for (const [key, floors] of Object.entries(TABLE_FLOORS)) {
+    const counts = tableCounts(key);
+    for (const [field, floor] of Object.entries(floors)) {
+      if (counts[field] < floor) {
+        out.push(
+          `conformance/${key} holds ${counts[field]} ${field}, below the floor of ${floor} — ` +
+            'a bundle that stopped selecting a module is a mechanic that silently left the game',
+        );
+      }
     }
   }
   return out;
@@ -269,6 +298,8 @@ function writeManifest(coreDir, files) {
     coreCommit: coreDir ? gitCommit(path.resolve(coreDir)) : 'unknown',
     prologCases: prologCaseCount(),
     caseFloors: CASE_FLOORS,
+    tableFloors: TABLE_FLOORS,
+    activationTable: tableCounts('modules/genre-activation.json'),
     files: Object.fromEntries(
       files.map((rel) => [rel, sha256(fs.readFileSync(path.join(CORPUS, rel)))]),
     ),
@@ -322,6 +353,12 @@ function check(coreDir) {
   console.log(
     `vendor-conformance: ${Object.keys(CASE_FLOORS).length} case floor(s) met ` +
       `(${Object.values(CASE_FLOORS).reduce((a, b) => a + b, 0)} cases pinned as a minimum)`,
+  );
+  const activation = tableCounts('modules/genre-activation.json');
+  console.log(
+    `vendor-conformance: activation table: ${activation.genres} genre bundle(s), ` +
+      `${activation.activations} module activation(s) — executed by ` +
+      'gdextension/test/run_activation_tests.sh',
   );
 
   if (coreDir) {

@@ -67,6 +67,21 @@ Two guards were added with them:
   DECISION corpus needs the module's layer to be adopted, while a Prolog corpus
   does not (which is why `prolog/agent-ai.json` is mirrored and `ai/` is not).
 
+## Tasklist 147 US-3 — the activation table, and a floor a case count cannot hold
+
+The mirror is now **64 files**. `modules/genre-activation.json` — core's genre
+bundle to active-module-set table, emitted from `INSIMUL_MODULES` — left
+`NOT_MIRRORED` in the **same commit** that added the thing which runs it
+(`gdextension/test/run_activation_tests.sh`, via the `modules.table` and
+`modules.activate` rows). That is the rule this repo now works by, and its old
+NOT_MIRRORED entry said so in as many words.
+
+It needed a new kind of guard. `CASE_FLOORS` reads `cases.length`, and this file
+has no `cases`: it is one object keyed by genre. So `tools/vendor-conformance.mjs`
+grew **`TABLE_FLOORS`** — 8 genre bundles, 24 module activations — because the
+failure worth catching here is a bundle that quietly stopped selecting a module,
+and that is invisible to a file count and to a hash the re-vendor rewrites.
+
 ## Local, not mirrored
 
 `VENDORED.json`'s `local` list is the set of paths that are this repo's own and

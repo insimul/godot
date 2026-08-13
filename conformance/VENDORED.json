@@ -24,6 +24,16 @@
     "traversal/fast-travel.json": 10,
     "traversal/vehicles.json": 14
   },
+  "tableFloors": {
+    "modules/genre-activation.json": {
+      "genres": 8,
+      "activations": 24
+    }
+  },
+  "activationTable": {
+    "genres": 8,
+    "activations": 24
+  },
   "files": {
     "README.md": "8d00d538bccd2349bd6c14666c0ad710a475db9ffab7d2eee8a77e7479e94f0f",
     "combat/action-table.json": "e785f5ce3346acdb68c70f74776b85c1c28d4a9e18f3a262a1d780b0bf54ebe4",
@@ -34,6 +44,7 @@
     "items/placement.json": "ede6f1d79d0d782e85bc09c40b3b506380a5ab034def659432eeb693ecae896d",
     "items/pricing.json": "a2d9ece2d9e9e4a1b64dbe33704cb9920cc2acf7ae437084ef1e1ffc0c4e1465",
     "items/transactions.json": "5e3c356801ea4307413ac16e9efa584d28647d24dd2ab15c8ab85c844e57972e",
+    "modules/genre-activation.json": "b5ea39dfcca7f8deae8fe75cc2560865cd688a0b6fd611e1a3316f572954e432",
     "predicate-schema-hash.json": "845c4d7b66c654beb306e20e1d04f94b602b18b87b15cb8186bf01b1abe9374c",
     "prolog/agent-ai.json": "88e7444c4b943da2b4146a72974fdae7c14928a3bef921e0bf72d91834ab52c5",
     "prolog/arithmetic.json": "4e0aadde7f1ab8a48c7f41c6b8a6fcb4e867885ea87e21ba294b18126c7c77a6",

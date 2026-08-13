@@ -13,6 +13,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Modules are activated from the genre bundle, not from a list in the plugin.**
+  `InsimulModuleActivation` reads the genre out of the World IR's
+  `meta.genreConfig.id` and resolves it through core's own table; nothing in it
+  or in `InsimulMechanicActivator` spells a module, a rule pack or a genre, and
+  `check-mechanics.mjs`'s **seventh check** greps both files for every name in
+  `conformance/modules/genre-activation.json` and fails on a hit. Adding a module
+  to a bundle upstream changes what a game activates with no engine code change.
+  See `RUNTIME_CORE_ADOPTION.md` §13.
+- **`npm run test:activation`** (`gdextension/test/run_activation_tests.sh`) —
+  **30 checks**. `modules.table` is deep-compared to the vendored table; all
+  **8 genre bundles** are resolved through `modules.activate`, by genre id and
+  through a World IR, and compared to the committed set (24 module activations);
+  core's three answers are kept apart (known genre / unknown genre / nothing
+  declared); and for all **8 genres × 11 packs** the pack's signature predicate is
+  witnessed in a REAL Trealla KB — present exactly when its module is active.
+  That last one is the only check that can fail on a plugin which resolves
+  activation correctly and then consults everything anyway.
+- **`modules.activate`, `modules.table` and `prolog.packs`** — three bridge rows.
+  The first two return core's `ActiveModuleSet` and its committed table verbatim;
+  the third returns the rule-pack TEXT for a set of areas in core's consult order,
+  which closes the gap Unity had to vendor eleven `.pl` files to fill.
+- **`conformance/modules/genre-activation.json` is vendored and EXECUTED.** It
+  left `NOT_MIRRORED` in the same commit that added its runner, which is the rule
+  this repo now works by. `tools/vendor-conformance.mjs` grew `TABLE_FLOORS` (8
+  genre bundles, 24 activations) because a case-count floor cannot guard a table
+  with no `cases` array.
+- **A playable sample scene, whose steps are a file.**
+  `templates/scripts/mechanics/mechanic_courtyard_demo.gd` builds a dark
+  courtyard — a guard, a wanderer, a lantern, a crate — and runs perception and
+  combat end to end: the engine measures (raycast, light probe), core decides
+  (detection, suspicion, damage), the engine executes the orders. The steps are
+  `templates/project/insimul/scenarios/dark-courtyard.json`, so the activation
+  gate replays the same 6 steps through the same rows with no Godot binary.
+  `templates/scripts/mechanics/godot_mechanic_binder.gd` is the reusable half:
+  it activates on `_ready()` and asks the game for each module's create arguments
+  through a `creating_module` signal.
 - **The band-120 corpora are vendored AND executed — 467 cases, 0 divergences.**
   `npm run test:corpus` (`gdextension/test/run_corpus_tests.sh`) runs core's own
   golden vectors in this engine, on the natively linked Trealla, in two halves:

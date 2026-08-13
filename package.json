@@ -11,6 +11,7 @@
     "vendor:core": "node tools/vendor-core-bundle.mjs",
     "vendor:conformance": "node tools/vendor-conformance.mjs",
     "test:mechanics": "bash gdextension/test/run_mechanic_tests.sh",
-    "test:corpus": "bash gdextension/test/run_corpus_tests.sh"
+    "test:corpus": "bash gdextension/test/run_corpus_tests.sh",
+    "test:activation": "bash gdextension/test/run_activation_tests.sh"
   }
 }

@@ -8660,6 +8660,2919 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
     return clause.replace(/\.$/, "");
   }
 
+  // @insimul/core/src/feature-modules/genre-bundles.ts
+  var ALL_MODULES = [
+    "knowledge-acquisition",
+    "proficiency",
+    "pattern-recognition",
+    "assessment",
+    "npc-exams",
+    "performance-scoring",
+    "voice",
+    "gamification",
+    "skill-tree",
+    "adaptive-difficulty",
+    "world-lore",
+    "conversation-analytics",
+    "onboarding"
+  ];
+  function compatibleExcluding(defaults) {
+    return ALL_MODULES.filter((m) => !defaults.includes(m));
+  }
+  var LANGUAGE_LEARNING_BUNDLE = {
+    id: "language-learning",
+    name: "Language Learning",
+    description: "Educational game focused on vocabulary, grammar, and conversational fluency",
+    defaultModules: [
+      "knowledge-acquisition",
+      "proficiency",
+      "pattern-recognition",
+      "performance-scoring",
+      "voice",
+      "gamification",
+      "skill-tree",
+      "adaptive-difficulty",
+      "world-lore",
+      "conversation-analytics",
+      "assessment",
+      "npc-exams",
+      "onboarding"
+    ],
+    compatibleModules: [],
+    // already includes all relevant modules
+    moduleConfigs: {
+      "proficiency": {
+        tierLabels: ["A1", "A2", "B1", "B2"],
+        dimensions: ["vocabulary", "grammar", "pronunciation", "listening", "communication"]
+      },
+      "knowledge-acquisition": {
+        entryLabel: "Vocabulary Word",
+        entryLabelPlural: "Vocabulary Words",
+        masteryLabels: ["New", "Learning", "Familiar", "Mastered"]
+      },
+      "adaptive-difficulty": {
+        tierLabels: ["Beginner", "Elementary", "Intermediate", "Advanced", "Near-native"]
+      },
+      "gamification": {
+        tierLabels: ["Beginner", "Elementary", "Intermediate", "Advanced", "Near-native"]
+      }
+    }
+  };
+  var RPG_BUNDLE = {
+    id: "rpg",
+    name: "Role-Playing Game",
+    description: "Character progression, quests, and story-driven gameplay",
+    defaultModules: [
+      "knowledge-acquisition",
+      "proficiency",
+      "gamification",
+      "skill-tree",
+      "adaptive-difficulty",
+      "world-lore",
+      "conversation-analytics",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "knowledge-acquisition",
+      "proficiency",
+      "gamification",
+      "skill-tree",
+      "adaptive-difficulty",
+      "world-lore",
+      "conversation-analytics",
+      "onboarding"
+    ]),
+    moduleConfigs: {
+      "proficiency": {
+        tierLabels: ["Novice", "Apprentice", "Journeyman", "Expert", "Master"],
+        dimensions: ["melee", "ranged", "magic", "stealth", "diplomacy"]
+      },
+      "knowledge-acquisition": {
+        entryLabel: "Lore Entry",
+        entryLabelPlural: "Lore Entries",
+        masteryLabels: ["Unknown", "Discovered", "Studied", "Mastered"]
+      },
+      "adaptive-difficulty": {
+        tierLabels: ["Easy", "Normal", "Hard", "Veteran", "Legendary"]
+      }
+    }
+  };
+  var SURVIVAL_BUNDLE = {
+    id: "survival",
+    name: "Survival",
+    description: "Resource gathering, crafting, and surviving hostile environments",
+    defaultModules: [
+      "knowledge-acquisition",
+      "proficiency",
+      "gamification",
+      "adaptive-difficulty",
+      "world-lore",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "knowledge-acquisition",
+      "proficiency",
+      "gamification",
+      "adaptive-difficulty",
+      "world-lore",
+      "onboarding"
+    ]),
+    moduleConfigs: {
+      "proficiency": {
+        tierLabels: ["Greenhorn", "Survivor", "Woodsman", "Ranger", "Wilderness Master"],
+        dimensions: ["foraging", "crafting", "navigation", "combat", "shelter"]
+      },
+      "knowledge-acquisition": {
+        entryLabel: "Discovery",
+        entryLabelPlural: "Discoveries",
+        masteryLabels: ["Unknown", "Discovered", "Practiced", "Mastered"]
+      },
+      "adaptive-difficulty": {
+        tierLabels: ["Peaceful", "Normal", "Hard", "Brutal", "Nightmare"]
+      }
+    }
+  };
+  var STRATEGY_BUNDLE = {
+    id: "strategy",
+    name: "Strategy",
+    description: "Tactical decision-making, resource management, and empire building",
+    defaultModules: [
+      "proficiency",
+      "gamification",
+      "adaptive-difficulty",
+      "world-lore",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "proficiency",
+      "gamification",
+      "adaptive-difficulty",
+      "world-lore",
+      "onboarding"
+    ]),
+    moduleConfigs: {
+      "proficiency": {
+        tierLabels: ["Recruit", "Officer", "Commander", "General", "Overlord"],
+        dimensions: ["economics", "military", "diplomacy", "technology", "espionage"]
+      },
+      "adaptive-difficulty": {
+        tierLabels: ["Settler", "Chieftain", "Prince", "Emperor", "Deity"]
+      }
+    }
+  };
+  var PUZZLE_BUNDLE = {
+    id: "puzzle",
+    name: "Puzzle",
+    description: "Logic challenges and problem-solving",
+    defaultModules: [
+      "pattern-recognition",
+      "gamification",
+      "adaptive-difficulty",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "pattern-recognition",
+      "gamification",
+      "adaptive-difficulty",
+      "onboarding"
+    ]),
+    moduleConfigs: {
+      "adaptive-difficulty": {
+        tierLabels: ["Casual", "Thinker", "Puzzler", "Genius", "Mastermind"]
+      }
+    }
+  };
+  var ADVENTURE_BUNDLE = {
+    id: "adventure",
+    name: "Adventure",
+    description: "Exploration, narrative, and puzzle-solving",
+    defaultModules: [
+      "knowledge-acquisition",
+      "gamification",
+      "world-lore",
+      "conversation-analytics",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "knowledge-acquisition",
+      "gamification",
+      "world-lore",
+      "conversation-analytics",
+      "onboarding"
+    ]),
+    moduleConfigs: {
+      "knowledge-acquisition": {
+        entryLabel: "Clue",
+        entryLabelPlural: "Clues",
+        masteryLabels: ["Unknown", "Found", "Examined", "Understood"]
+      }
+    }
+  };
+  var SIMULATION_BUNDLE = {
+    id: "simulation",
+    name: "Simulation",
+    description: "Realistic systems and life simulation",
+    defaultModules: [
+      "proficiency",
+      "gamification",
+      "world-lore",
+      "conversation-analytics",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "proficiency",
+      "gamification",
+      "world-lore",
+      "conversation-analytics",
+      "onboarding"
+    ]),
+    moduleConfigs: {}
+  };
+  var EDUCATIONAL_BUNDLE = {
+    id: "educational",
+    name: "Educational",
+    description: "Learning experiences through gameplay",
+    defaultModules: [
+      "knowledge-acquisition",
+      "proficiency",
+      "pattern-recognition",
+      "assessment",
+      "gamification",
+      "skill-tree",
+      "adaptive-difficulty",
+      "onboarding"
+    ],
+    compatibleModules: compatibleExcluding([
+      "knowledge-acquisition",
+      "proficiency",
+      "pattern-recognition",
+      "assessment",
+      "gamification",
+      "skill-tree",
+      "adaptive-difficulty",
+      "onboarding"
+    ]),
+    moduleConfigs: {
+      "proficiency": {
+        tierLabels: ["Novice", "Beginner", "Intermediate", "Advanced", "Expert"]
+      },
+      "knowledge-acquisition": {
+        entryLabel: "Concept",
+        entryLabelPlural: "Concepts",
+        masteryLabels: ["New", "Learning", "Familiar", "Mastered"]
+      }
+    }
+  };
+  var GENRE_BUNDLES = {
+    "language-learning": LANGUAGE_LEARNING_BUNDLE,
+    "rpg": RPG_BUNDLE,
+    "survival": SURVIVAL_BUNDLE,
+    "strategy": STRATEGY_BUNDLE,
+    "puzzle": PUZZLE_BUNDLE,
+    "adventure": ADVENTURE_BUNDLE,
+    "simulation": SIMULATION_BUNDLE,
+    "educational": EDUCATIONAL_BUNDLE
+  };
+
+  // @insimul/core/src/ai/action-predicates.ts
+  var AI_ACTION_SELECTION_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Game-AI substrate \u2014 candidate actions and the legality gate
+% packages/core/docs/game-ai-substrate.md \xA74
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 The action block (AUTHORED \u2014 prolog/action-converter.ts) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% action(ActionId, Name, Type, EnergyCost) \u2014 the action itself.
+% action_requires_target(ActionId) \u2014 it must be aimed at something.
+% action_target_type(ActionId, Kind) \u2014 at something of this kind.
+% action_prerequisite(ActionId, Goal) \u2014 the feasibility goals the converter
+%   folds into can_perform/2 (targetless) or can_perform/3 (targeted). This pack
+%   never re-evaluates a stored Goal term: its variables are fresh on retrieval
+%   and there is no portable way to bind Actor/Target by name, which is exactly
+%   why the converter generates a RULE whose head does the binding.
+% action_appeal(ActionId, Motive, 0..100) \u2014 how strongly the action serves a
+%   motive. Authored: "brawling serves anger, not hunger" is world design.
+% forbids(RuleId, Agent, ActionId, Target) \u2014 the legality gate's ONLY input.
+%   Content defines facts or rules for it; US-3's IRuleEnforcer composes social
+%   mores, faction law and taboo into it. A creator changes what an NPC may do
+%   by changing content, never by changing core.
+:- dynamic(action/4).
+:- dynamic(action_requires_target/1).
+:- dynamic(action_target_type/2).
+:- dynamic(action_prerequisite/2).
+:- dynamic(can_perform/2).
+:- dynamic(can_perform/3).
+:- dynamic(action_appeal/3).
+:- dynamic(forbids/4).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% target_kind(Target, Kind) \u2014 what exists to aim at right now, and what it is.
+%   Runtime, not authored: a spawned NPC and a dropped sword are a playthrough's,
+%   not a template's.
+% agent_motive(Agent, Motive, 0..100) \u2014 how strongly the agent wants that thing
+%   at this tick. Drives move; that is the point of them.
+% target_appeal(Agent, Target, -100..100) \u2014 how much more, or less, this agent
+%   wants THAT target: a grudge, a debt, a bond, a mark it has been watching.
+%   Without it every target of an action scores alike and the layer cannot tell
+%   "hit the guard" from "hit the priest", which is most of what a decision is.
+% action_bias(Agent, ActionId, -100..100) \u2014 a nudge from outside the KB: the
+%   blackboard's commitment to last tick's plan, or a local SLM's proposal. An
+%   ADVISOR's slot \u2014 it moves a score and can never make a forbidden action
+%   permissible, because it is not read by the gate below at all.
+:- dynamic(target_kind/2).
+:- dynamic(agent_motive/3).
+:- dynamic(target_appeal/3).
+:- dynamic(action_bias/3).
+
+% \u2500\u2500 Candidate enumeration \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% What this agent could do: every action, aimed at every target it admits, that
+% the agent is capable of right now. The roster is the CALLER's \u2014 core hands the
+% agent in \u2014 so A is required to be bound; enumerating agents from the KB here
+% would make the answer depend on what the KB happens to hold.
+candidate_action(A, Act, T) :-
+  nonvar(A),
+  action(Act, _, _, _),
+  action_target_choice(Act, T),
+  feasible(A, Act, T).
+
+% A targetless action's target is the atom \`none\`, not an unbound variable: a
+% caller enumerating solutions must never receive a free variable, and \`none\`
+% is a value four engines spell the same way.
+action_target_choice(Act, T) :-
+  action_requires_target(Act),
+  action_target_type(Act, Kind),
+  target_kind(T, Kind).
+action_target_choice(Act, none) :-
+  \\+ action_requires_target(Act).
+
+% CAPABILITY, which is not permission. An action that declares no prerequisite
+% is unconstrained; one that does is exactly as feasible as the action block's
+% own can_perform rule says.
+feasible(_, Act, _) :-
+  \\+ action_prerequisite(Act, _).
+feasible(A, Act, T) :-
+  action_prerequisite(Act, _),
+  prerequisites_hold(A, Act, T).
+
+% The three clauses are mutually exclusive, so a candidate is never enumerated
+% twice: targetless goes to can_perform/2, targeted to can_perform/3, and a
+% targeted action whose content only wrote the targetless rule falls back to it.
+prerequisites_hold(A, Act, none) :-
+  can_perform(A, Act).
+prerequisites_hold(A, Act, T) :-
+  T \\== none,
+  can_perform(A, Act, T).
+prerequisites_hold(A, Act, T) :-
+  T \\== none,
+  \\+ can_perform(A, Act, T),
+  can_perform(A, Act).
+
+% \u2500\u2500 The legality gate \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% May the agent do it? A forbidden action is not a penalised one \u2014 it is not a
+% choice. The utility layer scores it and then cannot pick it.
+permissible(A, Act, T) :-
+  candidate_action(A, Act, T),
+  \\+ forbidden(A, Act, T).
+
+forbidden(A, Act, T) :-
+  forbids(_, A, Act, T).
+
+% Which rule forbade it \u2014 the reason the decision carries, so a refusal is
+% legible ("faction law", "hearth taboo") rather than a silent absence.
+forbidden_by(A, Act, T, Rule) :-
+  forbids(Rule, A, Act, T).
+
+% \u2500\u2500 Scoring inputs, projected as scalars \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% A query binding collapses a compound term to its functor (see
+% prolog/wasm-engine.ts), so every value the selection layer reads is projected
+% through a rule that yields an atom or a number. Never bind to action/4 itself.
+
+action_cost(Act, Cost) :-
+  action(Act, _, _, Cost).
+
+% One row of the utility sum: this agent's drive for a motive, and how far this
+% action serves it. Joined here rather than in TypeScript so the join is the
+% KB's answer, and so a native engine reads one predicate instead of two.
+motive_appeal(A, Act, Motive, Drive, Appeal) :-
+  agent_motive(A, Motive, Drive),
+  action_appeal(Act, Motive, Appeal).
+`;
+  var AI_ACTION_RUNTIME_PREDICATES = [
+    "target_kind/2",
+    "agent_motive/3",
+    "target_appeal/3",
+    "action_bias/3"
+  ];
+
+  // @insimul/core/src/ai/enforcement-predicates.ts
+  var AI_ENFORCEMENT_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Game-AI substrate \u2014 rule enforcement (COMPOSITION pack)
+% packages/core/docs/game-ai-substrate.md \xA76
+% Requires, in this order: identity/identity-predicates.ts (id_local/2),
+%   ai/perception-predicates.ts (witness/2), ai/action-predicates.ts (the
+%   :- dynamic(forbids/4) declaration this pack writes clauses for).
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 The rule block (AUTHORED \u2014 prolog/rule-converter.ts) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% rule_active(RuleId) \u2014 the rule is in force. A disabled more is not a deleted
+%   one: content keeps it and stops declaring it active.
+% rule_category(RuleId, Category) \u2014 social, faction, legal, taboo, \u2026 The atom
+%   is the WORLD's; core enumerates no list of moral categories, for the same
+%   reason it enumerates no list of damage types.
+% rule_applies(RuleId, Actor, Target) \u2014 the rule block's own conditions, as the
+%   converter generates them. An unconditional more is authored as the fact
+%   rule_applies(RuleId, _, _), which is how "murder is always wrong" is spelled.
+:- dynamic(rule_active/1).
+:- dynamic(rule_category/2).
+:- dynamic(rule_applies/3).
+
+% \u2500\u2500 The norm vocabulary this pack adds (AUTHORED) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% rule_forbids_action(RuleId, ActionId) \u2014 the link the rule block has no place
+%   for: which action of the action block this rule prohibits. This is the ONE
+%   predicate that turns an editor rule into a legality gate, and it is content.
+% faction_law(RuleId, FactionId) \u2014 the rule is that faction's law and binds its
+%   members only. Absent = a norm binding on everyone (a social more, a taboo).
+% faction_law_protects(RuleId, hostile|neutral|allied) \u2014 a law that protects a
+%   CLASS of target rather than naming conditions: "do not raise a hand against
+%   an ally" is a stance, not a when-clause, and authoring it as one would mean
+%   re-authoring the law every time the diplomatic map moves.
+% norm_truth(RuleId, Predicate, Object) \u2014 what a WITNESSED violation makes true
+%   of its actor. The consequence is a claim the rest of the simulation reads
+%   like any other truth, which is what "legible to the simulation" means.
+% norm_reputation(RuleId, FactionId, Delta) \u2014 the reputation with FactionId that
+%   a witnessed violation costs. A negative Delta is the usual authoring; a
+%   positive one is a world where the thieves' guild approves.
+:- dynamic(rule_forbids_action/2).
+:- dynamic(faction_law/2).
+:- dynamic(faction_law_protects/2).
+:- dynamic(norm_truth/3).
+:- dynamic(norm_reputation/3).
+
+% \u2500\u2500 The combat block's faction facts (AUTHORED, adopted not re-minted) \u2500\u2500\u2500\u2500
+% faction(EntityId, FactionId) and faction_stance(A, B, hostile|neutral|allied)
+% are docs/mechanic-predicates.md \xA74's, unchanged. Declared here so this pack
+% loads standalone-ish; never redefined.
+:- dynamic(faction/2).
+:- dynamic(faction_stance/3).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% act(EventId, Actor, ActionId, Target) \u2014 an act that HAPPENED this tick. The
+%   EventId is the PERCEPT id of the same event (ai/perception.ts), not a second
+%   identifier: witnessing is then perception's answer rather than a parallel
+%   ledger, and an act nobody published as a percept is an act nobody could have
+%   seen. Target is the atom \`none\` for a targetless action, matching
+%   action_target_choice/2 in the decision pack.
+% violation_record(EventId, RuleId, Actor, Witness) \u2014 the durable memory of a
+%   witnessed violation, written by enforceActs/2. A percept lasts a tick; the
+%   fact that the guard saw Renaud take the ledger has to outlive it, or a
+%   consequence could only ever be immediate.
+:- dynamic(act/4).
+:- dynamic(violation_record/4).
+
+% \u2500\u2500 Norms: the rule block, read as prohibitions \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% A NORM is an active rule that prohibits an action. Its KIND is the rule's own
+% category, so "which body of rule refused this" is answerable without core
+% holding an opinion about what bodies of rule exist.
+norm(Rule, Kind) :-
+  rule_active(Rule),
+  rule_forbids_action(Rule, _),
+  norm_kind(Rule, Kind).
+
+norm_kind(Rule, Kind) :- rule_category(Rule, Kind).
+norm_kind(Rule, unclassified) :- rule_active(Rule), \\+ rule_category(Rule, _).
+
+% A norm is binding on EVERYONE unless something scoped it. faction_law/2 is one
+% scope; geo/region-predicates.ts adds a second (jurisdiction_law/2 \u2014 a law of
+% the ground you stand on rather than of the house you belong to). So the
+% exclusion is a predicate instead of a lengthening list of \\+ goals in the
+% universal clause below, and it is declared :- dynamic so a pack consulted LATER
+% can add a clause for it \u2014 the same extension seam this pack itself reaches
+% forbids/4 through. A scope that forgot to register here would make its norm
+% bind the whole world, which is why this is one predicate and not a convention.
+:- dynamic(scoped_norm/1).
+scoped_norm(Rule) :- faction_law(Rule, _).
+
+% \u2500\u2500 The gate's input \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% forbids/4 is the ONLY thing US-2's permissible/3 reads. Everything above this
+% line exists to define these three clauses, and everything below reads them.
+
+% A norm binding on everyone, whose own conditions hold for this actor and
+% target. Most social mores and every taboo are this clause.
+forbids(Rule, A, Act, T) :-
+  norm(Rule, _),
+  \\+ scoped_norm(Rule),
+  rule_forbids_action(Rule, Act),
+  rule_applies(Rule, A, T).
+
+% Faction law, with its own conditions: binding on the faction's members, and
+% only on them. An outsider is not bound by a law they are not under \u2014 that is
+% the difference between a law and a more, and collapsing the two would make
+% every faction's code universal.
+forbids(Rule, A, Act, T) :-
+  norm(Rule, _),
+  faction_law(Rule, F),
+  faction(A, F),
+  rule_forbids_action(Rule, Act),
+  rule_applies(Rule, A, T).
+
+% Faction law by stance: forbidden because of who the TARGET is to the actor's
+% faction. Reads the diplomatic map at query time, so an alliance signed this
+% session changes what is permitted without re-authoring the law.
+forbids(Rule, A, Act, T) :-
+  norm(Rule, _),
+  faction_law(Rule, F),
+  faction(A, F),
+  rule_forbids_action(Rule, Act),
+  faction_law_protects(Rule, Stance),
+  faction(T, G),
+  faction_stance(F, G, Stance).
+
+% \u2500\u2500 Violations: a norm broken by an act that actually happened \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% The gate refuses an action BEFORE it is taken; a violation is what a broken
+% norm looks like AFTER one was. Both read the same forbids/4, so an NPC that
+% was gated and a player who was not are judged by one body of rule.
+violation(E, Rule, Actor, Act, T) :-
+  act(E, Actor, Act, T),
+  forbids(Rule, Actor, Act, T).
+
+% The same question with every column projected to an atom \u2014 the form a caller
+% binds, since a query binding collapses a compound to its functor. The actor is
+% the only column that can be one; Act and T are already atoms of the action
+% block.
+violation_of(E, Rule, Actor, Act, T) :-
+  violation(E, Rule, Subject, Act, T),
+  agent_atom(Subject, Actor).
+
+% \u2500\u2500 Witnessing: the gate on social consequence \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Who saw a violation. witness/2 already excludes the actor from witnessing
+% their own act, so a crime is never self-reported.
+witnessed_violation(E, Rule, W) :-
+  violation(E, Rule, _, _, _),
+  witness(Agent, E),
+  agent_atom(Agent, W).
+
+% Nobody saw it. A violation with no witness has NO social consequence, which is
+% what makes stealth worth anything \u2014 and note it is still a VIOLATION, so a
+% world that wants a private guilt or a divine observer has a predicate to hang
+% it on rather than needing core to relax the gate.
+secret_violation(E, Rule) :-
+  violation(E, Rule, _, _, _),
+  \\+ witness(_, E).
+
+% \u2500\u2500 Consequences: structured, never a boolean \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% What a witnessed violation makes TRUE of its actor. The enforcement layer's
+% output is a fact the rest of the simulation reads like any other, not a
+% refusal: a reaction can be authored against claim/4 with no knowledge that an
+% enforcer produced it.
+enforced_truth(E, Rule, Actor, P, O) :-
+  violation(E, Rule, Subject, _, _),
+  witness(_, E),
+  norm_truth(Rule, P, O),
+  agent_atom(Subject, Actor).
+
+% What it costs. reputation_change/3 (prolog/helper-predicates.ts) is the
+% existing standing mechanism and reputation/3 already sums it; enforcement
+% contributes a row rather than minting a second scale.
+enforced_reputation(E, Rule, Actor, Faction, Delta) :-
+  violation(E, Rule, Subject, _, _),
+  witness(_, E),
+  norm_reputation(Rule, Faction, Delta),
+  agent_atom(Subject, Actor).
+
+% \u2500\u2500 Scalar projection \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% A query binding collapses a compound term to its functor (prolog/wasm-engine.ts),
+% so every column this pack yields to a caller must be an atom. Content spells an
+% agent either way \u2014 a legacy id atom, or the KINP id/3 term ai/perception.ts
+% emits \u2014 and both are projected here, in the pack, so a native engine reads one
+% rule instead of re-deriving the mapping.
+%
+% An id/3 term projects to its CURIE, because the CURIE is what the rest of the
+% substrate keys an agent by: agentRefKey() in ai/action-selection.ts, the
+% blackboard's slot key, and a perception's agent column are all the same string.
+% curie/2 is a ground fact identity-facts.ts emits per identifier, so this is a
+% lookup and not string surgery. A KB carrying no identity bridge falls back to
+% the local id \u2014 a degraded answer rather than no answer, since a witness core
+% cannot name is a witness the world cannot react to.
+agent_atom(A, A) :- atom(A).
+agent_atom(Id, Curie) :- nonvar(Id), \\+ atom(Id), curie(Id, Curie).
+agent_atom(Id, Local) :- nonvar(Id), \\+ atom(Id), \\+ curie(Id, _), id_local(Id, Local).
+`;
+  var AI_ENFORCEMENT_RUNTIME_PREDICATES = [
+    "act/4",
+    "violation_record/4"
+  ];
+
+  // @insimul/core/src/ai/perception-predicates.ts
+  var AI_PERCEPTION_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Game-AI substrate \u2014 perception provenance
+% packages/core/docs/game-ai-substrate.md \xA72
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% agent_belief_world(Agent, World) \u2014 the world an agent's beliefs are claimed
+%   at. Emitted by beliefWorldFacts/2; one per agent that can believe anything.
+% percept(PerceptId, Subject, Predicate, Object) \u2014 an observable published this
+%   tick: the SPO triple an observer would learn from perceiving it.
+% percept_channel(PerceptId, sight|hearing|smell|touch) \u2014 the sense it presents
+%   on. percept_actor(PerceptId, Actor) \u2014 who is responsible, when the percept
+%   is an act; that is the hook a witnessing rule hangs on.
+% perceived(Agent, PerceptId, Channel, clear|partial) \u2014 core's decision that
+%   this agent perceived it, and how well. Written by perceive/1, never by hand.
+:- dynamic(agent_belief_world/2).
+:- dynamic(percept/4).
+:- dynamic(percept_channel/2).
+:- dynamic(percept_actor/2).
+:- dynamic(perceived/4).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% "Did this agent perceive it at all?" \u2014 the question most rules ask, written
+% over perceived/4 so a new fidelity band tightens nothing.
+perceived(A, E) :- perceived(A, E, _, _).
+
+perceived_clearly(A, E) :- perceived(A, E, _, clear).
+
+% Through which sense. Distinct from the fidelity so "the guard HEARD something"
+% and "the guard saw it clearly" are different answers.
+perceived_via(A, E, Channel) :- perceived(A, E, Channel, _).
+
+% A witness is someone OTHER than the actor who perceived the act. The actor
+% perceiving their own act is not a witness to it \u2014 otherwise every crime is
+% self-reported and nothing is ever secret.
+witness(A, E) :-
+  perceived(A, E, _, _),
+  percept_actor(E, Actor),
+  A \\== Actor.
+
+% Nobody saw it. This is the predicate that makes stealth mean something: an
+% enforcement rule that conjoins a violation with witness/2 has no consequence
+% to produce when this holds.
+unwitnessed(E) :- percept_actor(E, _), \\+ witness(_, E).
+
+% The triple an agent would have learned, restricted to what it actually
+% perceived. The BELIEF it produces is claimed at the agent's belief world \u2014
+% see the bridge pack \u2014 this is only the perceived content.
+perceived_content(A, S, P, O) :-
+  perceived(A, E, _, _),
+  percept(E, S, P, O).
+`;
+  var AI_PERCEPTION_RUNTIME_PREDICATES = [
+    "agent_belief_world/2",
+    "percept/4",
+    "percept_channel/2",
+    "percept_actor/2",
+    "perceived/4"
+  ];
+  var AI_BELIEF_BRIDGE_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Game-AI substrate \u2014 belief as a world (composition pack)
+% packages/core/docs/game-ai-substrate.md \xA71
+% Requires: identity/world-predicates.ts (holds/4) + ai/perception-predicates.ts
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% What the agent holds true, reasoning in its own world. A belief world is a
+% ROOT world, so this returns what the agent has been told or has perceived \u2014
+% never the world's truths by default.
+believes(A, S, P, O) :-
+  agent_belief_world(A, W),
+  holds(S, P, O, '@world'(W)).
+
+% The agent has no belief about (S, P) at all. Ignorance, as distinct from
+% believing something false. A must be bound.
+unaware_of(A, S, P) :-
+  agent_belief_world(A, _),
+  \\+ believes(A, S, P, _).
+
+% The agent believes something the world does not: the predicate stealth,
+% deception and every "he thinks the ledger is still in the drawer" plot depend
+% on. Truth is read at the world the caller names, so "mistaken about canon" and
+% "mistaken about this playthrough" are different questions.
+mistaken(A, TruthWorld, S, P, Believed, Actual) :-
+  believes(A, S, P, Believed),
+  holds(S, P, Actual, '@world'(TruthWorld)),
+  Believed \\== Actual.
+
+% True in the world, and this agent does not know it.
+ignorant_of(A, TruthWorld, S, P, O) :-
+  holds(S, P, O, '@world'(TruthWorld)),
+  agent_belief_world(A, _),
+  \\+ believes(A, S, P, O).
+`;
+
+  // @insimul/core/src/ai/planning-predicates.ts
+  var AI_PLANNING_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Game-AI substrate \u2014 goals, plan steps and the planning frontier
+% packages/core/docs/game-ai-substrate.md \xA77
+%
+% COMPOSITION PACK. Consult AFTER ai/action-predicates.ts: this pack reads
+% permissible/3, forbidden/3 and action_target_choice/2, which that pack owns.
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Goals (AUTHORED \u2014 world content) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% goal(GoalId, Name) \u2014 a goal this world knows about. Authored, because what an
+%   NPC may want is world design: "keep the shop stocked", "get home by dark".
+% goal_requires(GoalId, Condition) \u2014 the conditions that must hold for the goal
+%   to be met. A goal with no requirement is met the moment it is adopted, which
+%   is a legitimate way to author a goal that is only a label.
+% action_achieves(ActionId, Condition) \u2014 what taking the action makes true. The
+%   link from the action block to the condition vocabulary, and the reason a plan
+%   can be built at all.
+% action_needs(ActionId, Condition) \u2014 what must be true BEFORE the action can be
+%   taken, in the same vocabulary. Deliberately NOT action_prerequisite/2: a
+%   prerequisite is arbitrary world state a plan cannot bring about, while a
+%   condition is exactly the thing another step can achieve.
+:- dynamic(goal/2).
+:- dynamic(goal_requires/2).
+:- dynamic(action_achieves/2).
+:- dynamic(action_needs/2).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% agent_goal(Agent, GoalId, Priority 0..100) \u2014 what this agent is pursuing now.
+%   Runtime: an NPC adopts and drops goals as the world moves, and which goal it
+%   holds at a tick belongs in the save file, never on a world template.
+% condition_met(Agent, Condition) \u2014 what is already true for it. Agent-relative
+%   because most conditions are ("has the key", "is at the forge"); a world with
+%   a global condition authors the rule condition_met(_, door_open) :- ... over
+%   its own state, which is the intended escape hatch and the reason nothing here
+%   assumes this predicate is a plain fact.
+:- dynamic(agent_goal/3).
+:- dynamic(condition_met/2).
+
+% \u2500\u2500 Goals \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% The goals this agent holds. The roster is the CALLER's, exactly as in the
+% decision pack: an unbound agent enumerates nothing, so "who is planning" never
+% depends on which facts happened to load.
+pursuing(A, G, P) :-
+  nonvar(A),
+  agent_goal(A, G, P),
+  goal(G, _).
+
+% What the goal still wants \u2014 the planning frontier, one condition per solution.
+goal_unmet(A, G, C) :-
+  goal_requires(G, C),
+  \\+ condition_met(A, C).
+
+% A goal with nothing unmet. Checked against the goal block so a typo'd goal id
+% is unsatisfied rather than vacuously satisfied.
+goal_satisfied(A, G) :-
+  goal(G, _),
+  \\+ goal_unmet(A, G, _).
+
+% \u2500\u2500 Steps \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% A step the agent can take THIS TICK: it achieves the condition, the decision
+% layer's gate both enumerates it and permits it, and nothing the PLAN can see
+% blocks it. The only kind of step a plan may start with, because a plan whose
+% first step cannot be taken is a plan that never moves.
+%
+% step_ready/2 is not redundant with the gate. permissible/3 goes through
+% can_perform/2,3 \u2014 the action block's own feasibility \u2014 which knows nothing
+% about the condition vocabulary: an action with no action_prerequisite/2 is
+% feasible by default and would otherwise be reported takeable while the plan
+% still owed it a bucket.
+plan_step(A, C, Act, T) :-
+  action_achieves(Act, C),
+  permissible(A, Act, T),
+  step_ready(A, Act).
+
+% A step the plan may REACH: it achieves the condition and is not forbidden, but
+% its feasibility is left to the tick it actually runs on. Without this, chaining
+% is impossible \u2014 "open the door" is not feasible until "take the key" has run,
+% so a planner that only saw plan_step/4 could never plan past length one.
+%
+% The gate is applied here too, and that is the point: a forbidden action is not
+% a candidate at any depth of any plan.
+projected_step(A, C, Act, T) :-
+  action_achieves(Act, C),
+  action_target_choice(Act, T),
+  \\+ forbidden(A, Act, T).
+
+% What a step still needs before it can be taken. The planner's chaining edge:
+% every solution here is a sub-goal an earlier step has to achieve.
+step_blocked(A, Act, C) :-
+  action_needs(Act, C),
+  \\+ condition_met(A, C).
+
+% A step nothing blocks. Act is required to be bound: an unbound action would ask
+% "is there an action nothing blocks", which is a different question and one whose
+% answer depends on what the KB happens to hold.
+step_ready(A, Act) :-
+  nonvar(Act),
+  \\+ step_blocked(A, Act, _).
+
+% One row of the frontier, joined: an unmet condition of the goal and a step that
+% would achieve it. The planner reads this to seed its search and then bounds the
+% search itself \u2014 see ./planner, and \xA77 for why the SEARCH is TypeScript's while
+% the truth and the permission stay the KB's.
+goal_step(A, G, Act, T, C) :-
+  goal_unmet(A, G, C),
+  plan_step(A, C, Act, T).
+`;
+  var AI_PLANNING_RUNTIME_PREDICATES = [
+    "agent_goal/3",
+    "condition_met/2"
+  ];
+
+  // @insimul/core/src/ai/substrate-pack.ts
+  var AI_SUBSTRATE_AREA = "agentAi";
+  var AI_SUBSTRATE_PACK_TEXTS = [
+    AI_PERCEPTION_PREDICATES_PROLOG,
+    AI_BELIEF_BRIDGE_PROLOG,
+    AI_ACTION_SELECTION_PROLOG,
+    AI_ENFORCEMENT_PROLOG,
+    AI_PLANNING_PROLOG
+  ];
+  var AI_SUBSTRATE_PROLOG = AI_SUBSTRATE_PACK_TEXTS.join("\n");
+  var AI_SUBSTRATE_RUNTIME_PREDICATES = Array.from(
+    /* @__PURE__ */ new Set([
+      ...AI_PERCEPTION_RUNTIME_PREDICATES,
+      ...AI_ACTION_RUNTIME_PREDICATES,
+      ...AI_ENFORCEMENT_RUNTIME_PREDICATES,
+      ...AI_PLANNING_RUNTIME_PREDICATES
+    ])
+  );
+  var AI_SUBSTRATE_PACK = Object.freeze({
+    area: AI_SUBSTRATE_AREA,
+    prolog: AI_SUBSTRATE_PROLOG,
+    runtimePredicates: AI_SUBSTRATE_RUNTIME_PREDICATES
+  });
+  var AI_PREDICATE_PACKS = Object.freeze([
+    AI_SUBSTRATE_PACK
+  ]);
+
+  // @insimul/core/src/geo/region-predicates.ts
+  var GEO_REGION_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Regions and jurisdiction \u2014 where am I, and whose is it
+% packages/core/docs/geopolitical-layer.md \xA73
+%
+% COMPOSITION PACK. Consult AFTER ai/action-predicates.ts (which declares
+% :- dynamic(forbids/4)) and ai/enforcement-predicates.ts (whose norm/2 the
+% jurisdiction clause below calls).
+%
+% Every coordinate is an INTEGER on the geo grid (\xA74): world units multiplied
+% by GEO_GRID_SCALE and rounded once, at mint time, by geoUnit() in
+% geo/regions.ts. Nothing here rounds, and nothing here compares floats.
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Extents (AUTHORED \u2014 projected from the World IR by geo/regions.ts) \u2500\u2500\u2500\u2500
+% region(Id) \u2014 this world knows where Id is. Id is the DOCUMENT's atom: a
+%   country, a state, a settlement, a terrain feature, a water body. There is no
+%   region id space, which is why a region needs no name, no world and no
+%   identifier of its own.
+% region_kind(Id, country|state|settlement|terrain|water) \u2014 which axis the
+%   extent belongs to. political_kind/1 and geographic_kind/1 below classify
+%   them; core enumerates these five because they are the five the World IR
+%   exports geometry for, not because a world may not have districts.
+% region_bounds(Id, MinX, MinZ, MaxX, MaxZ) \u2014 an axis-aligned extent, inclusive
+%   on all four edges. The World IR's BoundsIR.
+% region_disc(Id, CenterX, CenterZ, Radius) \u2014 a settlement's footprint, which is
+%   what SettlementIR actually carries (a position and a radius).
+% region_biome(Id, Biome) \u2014 the biome of the land this extent covers.
+% region_watershed(Id, WaterId) \u2014 the water body this extent drains to. A
+%   watershed is a RELATION to a water region, not a third geometry: the water
+%   body already has an extent of its own.
+% region_feature(Id, FeatureType) \u2014 a terrain feature's own type (mountain,
+%   ridge, canyon). Read by region_terrain/2 beside the terrain the state and
+%   settlement blocks already carry.
+:- dynamic(region/1).
+:- dynamic(region_kind/2).
+:- dynamic(region_bounds/5).
+:- dynamic(region_disc/4).
+:- dynamic(region_biome/2).
+:- dynamic(region_watershed/2).
+:- dynamic(region_feature/2).
+
+% place_position(Place, X, Z) \u2014 where a location atom is on the map. The bridge
+%   between at_location/2 (which carries a place, not a coordinate) and every
+%   rule below (which takes a point). AUTHORED: a lot, a landmark and a camp all
+%   have positions in the World IR.
+:- dynamic(place_position/3).
+
+% jurisdiction_law(RuleId, JurisdictionId) \u2014 AUTHORED. The rule is that
+%   jurisdiction's law and binds an act committed inside it. The territorial
+%   twin of faction_law/2: one binds by WHO you are, this one by WHERE you
+%   stand, and a world needs both to say that smuggling is legal across the
+%   border and heresy is not, whoever you are.
+:- dynamic(jurisdiction_law/2).
+
+% \u2500\u2500 Adopted (declared so the pack loads alone; owned elsewhere) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% The political blocks are prolog/predicate-schema.ts's country/state/settlement
+% entries, unchanged and never re-minted. at_location/2 is the world-state
+% predicate traversal writes. entity_id/2 and entity_curie/2 are the KINP bridge
+% identity-facts.ts emits. The three rule-block predicates belong to
+% prolog/rule-converter.ts and ai/enforcement-predicates.ts.
+:- dynamic(country/1).
+:- dynamic(state/1).
+:- dynamic(settlement/1).
+:- dynamic(state_of_country/2).
+:- dynamic(settlement_of_state/2).
+:- dynamic(settlement_of_country/2).
+:- dynamic(state_terrain/2).
+:- dynamic(settlement_terrain/2).
+:- dynamic(lot_of_settlement/2).
+:- dynamic(residence_of_settlement/2).
+:- dynamic(business_of_settlement/2).
+:- dynamic(at_location/2).
+:- dynamic(entity_id/2).
+:- dynamic(entity_curie/2).
+:- dynamic(rule_forbids_action/2).
+:- dynamic(rule_applies/3).
+:- dynamic(scoped_norm/1).
+
+% \u2500\u2500 The two axes \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% Which extents answer "whose is it" and which answer "what is it". A terrain
+% feature is never a jurisdiction and a country is never a biome, and keeping
+% the two lists here is what lets one containment test serve both questions.
+
+political_kind(country).
+political_kind(state).
+political_kind(settlement).
+
+geographic_kind(terrain).
+geographic_kind(water).
+
+% \u2500\u2500 Containment \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% Integer comparison, on the grid the facts were minted on. A point on a border
+% is INSIDE \u2014 inclusive on all four edges \u2014 so a coastline shared by two states
+% resolves to both and jurisdiction_conflict/3 can say so, rather than to
+% neither.
+
+% A region's extent as ONE term, so the containment arithmetic can be stated
+% once and asked twice. geo/history-predicates.ts resolves an extent through the
+% world chain instead of reading these facts, and then calls the very same
+% region_extent_contains/3 and region_extent_area/2 \u2014 a border that moved and a
+% border that never did are compared by identical arithmetic, which is the whole
+% reason this indirection exists.
+region_extent(R, rect(MinX, MinZ, MaxX, MaxZ)) :- region_bounds(R, MinX, MinZ, MaxX, MaxZ).
+region_extent(R, disc(Cx, Cz, Rad)) :- region_disc(R, Cx, Cz, Rad).
+
+region_extent_contains(rect(MinX, MinZ, MaxX, MaxZ), X, Z) :-
+  X >= MinX,
+  X =< MaxX,
+  Z >= MinZ,
+  Z =< MaxZ.
+
+region_extent_contains(disc(Cx, Cz, Rad), X, Z) :-
+  DX is X - Cx,
+  DZ is Z - Cz,
+  DX * DX + DZ * DZ =< Rad * Rad.
+
+% The area of an extent's AXIS-ALIGNED BOUND, so a rectangle and a disc are
+% ordered in one commensurate unit. A disc's bound is its enclosing square,
+% which is why a settlement inside a state always ranks smaller even when its
+% radius is generous.
+region_extent_area(rect(MinX, MinZ, MaxX, MaxZ), S) :- S is (MaxX - MinX) * (MaxZ - MinZ).
+region_extent_area(disc(_, _, Rad), S) :- S is 4 * Rad * Rad.
+
+in_region(X, Z, R) :-
+  region_extent(R, E),
+  region_extent_contains(E, X, Z).
+
+region_size(R, S) :-
+  region_extent(R, E),
+  region_extent_area(E, S).
+
+% A TOTAL order over extents: area first, atom order to break ties. This is the
+% whole of AC4 \u2014 "the innermost region" is never "the first solution the engine
+% enumerated", so two KBs holding the same facts in different orders answer the
+% same thing. A region is never smaller than itself under either clause.
+smaller_region(A, B) :-
+  region_size(A, SA),
+  region_size(B, SB),
+  SA < SB.
+
+smaller_region(A, B) :-
+  region_size(A, SA),
+  region_size(B, SB),
+  SA =:= SB,
+  A @< B.
+
+% The innermost region of a KIND containing a point: the one no containing
+% region of that kind is smaller than.
+region_at(X, Z, Kind, R) :-
+  in_region(X, Z, R),
+  region_kind(R, Kind),
+  \\+ ( in_region(X, Z, Other),
+        region_kind(Other, Kind),
+        smaller_region(Other, R) ).
+
+% \u2500\u2500 What the land is \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% A region's terrain is the terrain the DOCUMENT already carries. The state and
+% settlement blocks have had state_terrain/2 and settlement_terrain/2 since the
+% first world was exported; a region_terrain/2 fact beside them would be the
+% second vocabulary for one fact that docs/mechanic-predicates.md \xA710.1 exists
+% to prevent. Only a terrain FEATURE \u2014 a thing with no document field for it \u2014
+% contributes a fact of its own.
+region_terrain(R, T) :- settlement_terrain(R, T).
+region_terrain(R, T) :- state_terrain(R, T).
+region_terrain(R, T) :- region_feature(R, T).
+
+% The three descriptors, each read off the INNERMOST containing region that
+% carries one. A position inside a settlement inside a state answers with the
+% settlement's terrain, and falls through to the state's when the settlement
+% names none \u2014 which is what makes a sparse world answer at all.
+position_terrain(X, Z, T) :-
+  in_region(X, Z, R),
+  region_terrain(R, T),
+  \\+ ( in_region(X, Z, Other),
+        region_terrain(Other, _),
+        smaller_region(Other, R) ).
+
+position_biome(X, Z, B) :-
+  in_region(X, Z, R),
+  region_biome(R, B),
+  \\+ ( in_region(X, Z, Other),
+        region_biome(Other, _),
+        smaller_region(Other, R) ).
+
+position_watershed(X, Z, W) :-
+  in_region(X, Z, R),
+  region_watershed(R, W),
+  \\+ ( in_region(X, Z, Other),
+        region_watershed(Other, _),
+        smaller_region(Other, R) ).
+
+% \u2500\u2500 Whose it is \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+jurisdiction_level(J, settlement) :- settlement(J).
+jurisdiction_level(J, state) :- state(J).
+jurisdiction_level(J, country) :- country(J).
+
+% ONE step up the document chain: the superior the world's own blocks name. A
+% settlement names its state and, when content authored both links, its country
+% directly as well \u2014 normal authoring, and neither link is preferred.
+jurisdiction_parent(S, St) :- settlement_of_state(S, St).
+jurisdiction_parent(S, C) :- settlement_of_country(S, C).
+jurisdiction_parent(St, C) :- state_of_country(St, C).
+
+% The document chain above a jurisdiction: one step, or two. NO recursion \u2014 so it
+% is acyclic by construction rather than by a depth guard, and a malformed world
+% cannot make it loop. A settlement reaches its country both directly and through
+% its state when content authored both; the duplicate solution is folded by the
+% caller, which is cheaper than teaching the KB to prefer one path.
+%
+% geo/history-predicates.ts re-states these two clauses over a WORLD-resolved
+% parent instead of jurisdiction_parent/2, which is the only part of the chain a
+% regime can move \u2014 the shape of the chain is the same at every time.
+jurisdiction_above(J, Above) :- jurisdiction_parent(J, Above).
+jurisdiction_above(S, C) :- jurisdiction_parent(S, St), jurisdiction_parent(St, C).
+
+% THE ONE POLITICAL QUESTION GEOMETRY IS ASKED: the smallest political extent
+% containing this point, across all three levels at once. Inside a settlement
+% that is the settlement; out in the province it is the state; in the marches it
+% is the country.
+innermost_jurisdiction(X, Z, J) :-
+  political_kind(Kind),
+  region_at(X, Z, Kind, J),
+  \\+ ( political_kind(OtherKind),
+        region_at(X, Z, OtherKind, Other),
+        smaller_region(Other, J) ).
+
+% ...and everything above it is the DOCUMENTS' answer, never a second reading of
+% the map. This is the predicate the rest of the ecosystem asks: the rule
+% enforcer, fast travel's discovery, a quest that wants a border crossed.
+position_jurisdiction(X, Z, Level, J) :-
+  innermost_jurisdiction(X, Z, J),
+  jurisdiction_level(J, Level).
+
+position_jurisdiction(X, Z, Level, J) :-
+  innermost_jurisdiction(X, Z, Inner),
+  jurisdiction_above(Inner, J),
+  jurisdiction_level(J, Level).
+
+% Geometry and the documents disagree about this point: a political region
+% contains it that the innermost jurisdiction's own chain never reaches. A
+% content defect \u2014 a settlement placed across a border, a state whose bounds
+% outgrew its country \u2014 NAMED rather than silently resolved, because a silent
+% resolution is how a world ships with two capitals.
+jurisdiction_conflict(X, Z, J) :-
+  political_kind(Kind),
+  region_at(X, Z, Kind, J),
+  \\+ position_jurisdiction(X, Z, _, J).
+
+% \u2500\u2500 Places, and the actors standing in them \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% at_location/2 carries a PLACE, not a coordinate, so a place reaches the map
+% three ways: it has a position, it IS a jurisdiction, or the lot/residence/
+% business blocks already say which settlement it belongs to. The third is the
+% one that costs nothing \u2014 those facts have been exported since the beginning.
+
+place_jurisdiction(P, Level, J) :-
+  place_position(P, X, Z),
+  position_jurisdiction(X, Z, Level, J).
+
+place_jurisdiction(P, Level, J) :-
+  jurisdiction_of(P, Level, J).
+
+place_jurisdiction(P, Level, J) :-
+  place_of_settlement(P, S),
+  jurisdiction_of(S, Level, J).
+
+% A jurisdiction, and everything the documents put above it. The third clause of
+% place_jurisdiction/3 calls THIS rather than calling itself, so nothing in this
+% pack is recursive: a world that authored lot_of_settlement/2 in a cycle gets a
+% wrong answer, which is a content defect, instead of an engine that never
+% returns, which is a crash in whatever frame asked.
+jurisdiction_of(J, Level, J) :-
+  jurisdiction_level(J, Level).
+
+jurisdiction_of(J, Level, Above) :-
+  jurisdiction_level(J, _),
+  jurisdiction_above(J, Above),
+  jurisdiction_level(Above, Level).
+
+place_of_settlement(P, S) :- lot_of_settlement(P, S).
+place_of_settlement(P, S) :- residence_of_settlement(P, S).
+place_of_settlement(P, S) :- business_of_settlement(P, S).
+
+% Every jurisdiction an actor is currently under. The agent must be BOUND, for
+% the same reason candidate_action/3 requires it: an unbound one would enumerate
+% every at_location/2 fact in the world.
+agent_jurisdiction(A, Level, J) :-
+  nonvar(A),
+  at_location(A, P),
+  place_jurisdiction(P, Level, J).
+
+in_jurisdiction(A, J) :-
+  agent_jurisdiction(A, _, J).
+
+% \u2500\u2500 The gate's input \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% One more clause for forbids/4, and no change to anything that reads it.
+% permissible/3, forbidden_by/4, checkAction() and enforceActs() are untouched:
+% permissibility differs by territory because content authored a jurisdiction's
+% law, not because the gate learned about borders.
+%
+% A territorial law is SCOPED, so the enforcement pack's universal clause must
+% not also match it \u2014 a law of Aldermark that bound every actor everywhere would
+% be a more, and the whole point is that it is not. scoped_norm/1 is that pack's
+% extension seam and this is the clause that registers the second scope; without
+% it, every jurisdiction_law/2 in the world would silently become universal.
+scoped_norm(Rule) :- jurisdiction_law(Rule, _).
+
+% The law binds by where the ACTOR stands. Not the target's jurisdiction and not
+% the act's: a smuggler in free waters is beyond a customs law even when the
+% cargo's owner is not, and "where the act happened" is where its actor was.
+forbids(Rule, A, Act, T) :-
+  norm(Rule, _),
+  jurisdiction_law(Rule, J),
+  in_jurisdiction(A, J),
+  rule_forbids_action(Rule, Act),
+  rule_applies(Rule, A, T).
+
+% \u2500\u2500 Identity \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% A region is referable across worlds because the atom it is named by is an
+% ENTITY, and entity_id/2 / entity_curie/2 already name every entity with its
+% KINP identifier. These two rules exist so a caller asking "what is this region
+% called elsewhere" has a predicate to ask rather than a convention to follow \u2014
+% and so nothing downstream is tempted to mint a region id space.
+region_id(R, Id) :- region(R), entity_id(R, Id).
+region_curie(R, Curie) :- region(R), entity_curie(R, Curie).
+`;
+  var GEO_AUTHORED_PREDICATES = Object.freeze([
+    "region/1",
+    "region_kind/2",
+    "region_bounds/5",
+    "region_disc/4",
+    "region_biome/2",
+    "region_watershed/2",
+    "region_feature/2",
+    "place_position/3",
+    "jurisdiction_law/2"
+  ]);
+  var GEO_ADOPTED_PREDICATES = Object.freeze([
+    "country/1",
+    "state/1",
+    "settlement/1",
+    "state_of_country/2",
+    "settlement_of_state/2",
+    "settlement_of_country/2",
+    "state_terrain/2",
+    "settlement_terrain/2",
+    "lot_of_settlement/2",
+    "residence_of_settlement/2",
+    "business_of_settlement/2",
+    "at_location/2",
+    "entity_id/2",
+    "entity_curie/2",
+    "rule_forbids_action/2",
+    "rule_applies/3",
+    "scoped_norm/1"
+  ]);
+  var GEO_RUNTIME_PREDICATES = Object.freeze([]);
+  var MAP_PREDICATE_PACK = Object.freeze({
+    area: "map",
+    prolog: GEO_REGION_PREDICATES_PROLOG,
+    runtimePredicates: GEO_RUNTIME_PREDICATES
+  });
+  var MAP_PREDICATE_PACKS = Object.freeze([
+    MAP_PREDICATE_PACK
+  ]);
+
+  // @insimul/core/src/routines/routine-predicates.ts
+  var ROUTINE_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% NPC routines \u2014 a standing goal, and the clock that decides when it is held
+% packages/core/docs/npc-routines.md \xA73
+%
+% COMPOSITION PACK. Consult AFTER ai/planning-predicates.ts: this pack adds
+% clauses for goal_requires/2 and condition_met/2, which that pack declares
+% :- dynamic, and a dynamic directive arriving after clauses for the same
+% predicate is a permission_error on a strict ISO engine.
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% routine(RoutineId, Name) \u2014 a routine this world knows about.
+% routine_block(RoutineId, BlockId) \u2014 the blocks it is made of.
+% routine_block_window(BlockId, StartHour, EndHour) \u2014 whole hours. Start is
+%   inclusive, End exclusive, and End =< Start WRAPS midnight, so the night
+%   watch is one block rather than two.
+% routine_block_day(BlockId, Weekday) \u2014 the days it runs, counted
+%   day_number mod routine_week_length. NO fact at all means every day.
+% routine_block_goal(BlockId, GoalId) \u2014 the goal/2 it puts the NPC in pursuit
+%   of. The whole of what a routine decides.
+% routine_block_place(BlockId, Location) \u2014 where that goal is pursued.
+% routine_block_priority(BlockId, 0..100) \u2014 what it is worth against a quest,
+%   an errand or a threat, on agent_goal/3's own scale.
+% routine_week_length(N) \u2014 how many days the week has.
+:- dynamic(routine/2).
+:- dynamic(routine_block/2).
+:- dynamic(routine_block_window/3).
+:- dynamic(routine_block_day/2).
+:- dynamic(routine_block_goal/2).
+:- dynamic(routine_block_place/2).
+:- dynamic(routine_block_priority/2).
+:- dynamic(routine_week_length/1).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% follows_routine(Agent, RoutineId) \u2014 whose routine this is. Runtime, because
+%   an NPC takes a job, loses one and retires, and which routine they keep at a
+%   tick belongs in the save file.
+% routine_suspended(Agent, Reason) \u2014 the routine is preempted: a threat, a
+%   conversation, a rule violation. While it holds, the routine adopts nothing
+%   and whatever displaced it is the only goal in play.
+:- dynamic(follows_routine/2).
+:- dynamic(routine_suspended/2).
+
+% \u2500\u2500 Adopted (declared so the pack loads alone; owned elsewhere) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% The clock is gameplay-predicates.ts's, at_location/2 is what traversal
+% writes, and the two planning predicates are ai/planning-predicates.ts's.
+:- dynamic(time_of_day/1).
+:- dynamic(day_number/1).
+:- dynamic(at_location/2).
+:- dynamic(goal_requires/2).
+:- dynamic(condition_met/2).
+
+% \u2500\u2500 The clock \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Which day of the week it is. The week's length is AUTHORED rather than seven:
+% a world with a ten-day week should not need three engines recompiled.
+routine_weekday(W) :-
+  day_number(D),
+  routine_week_length(N),
+  N > 0,
+  W is D mod N.
+
+% Is this hour inside that window? Semidet either way \u2014 a window that matched
+% twice would make a due block a duplicate solution and a routine's priority
+% depend on how many ways it happened to match.
+%
+% Start < End is the ordinary window. Otherwise it WRAPS, and a window whose
+% ends coincide (22 to 22) is the whole day, which is how a routine with one
+% block is authored.
+routine_hour_in(H, Start, End) :- Start < End, !, H >= Start, H < End.
+routine_hour_in(H, Start, End) :- ( H >= Start ; H < End ), !.
+
+routine_window_open(B) :-
+  routine_block_window(B, Start, End),
+  time_of_day(H),
+  routine_hour_in(H, Start, End).
+
+% A block with no routine_block_day/2 fact runs every day. Semidet, for the
+% same reason routine_hour_in/3 is.
+routine_day_matches(B) :- \\+ routine_block_day(B, _), !.
+routine_day_matches(B) :- routine_weekday(W), routine_block_day(B, W), !.
+
+% \u2500\u2500 What is due \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% A block of this agent's routine whose time condition holds right now.
+%
+% The agent must be BOUND, exactly as pursuing/3 and candidate_action/3 require:
+% an unbound agent would enumerate every follows_routine/2 fact, which is the
+% roster being decided by which facts happened to load.
+routine_due(A, B) :-
+  nonvar(A),
+  follows_routine(A, R),
+  routine_block(R, B),
+  routine_window_open(B),
+  routine_day_matches(B).
+
+% The goal a routine wants held, and what it is worth. THIS IS THE WHOLE OF
+% WHAT A ROUTINE DECIDES: a goal id and a number, which RoutineDirector writes
+% as one agent_goal/3 fact. Everything after that \u2014 which goal wins, which
+% actions serve it, whether they are permitted \u2014 is the substrate's, unchanged.
+routine_goal(A, G, P) :-
+  routine_due(A, B),
+  \\+ routine_suspended(A, _),
+  routine_block_goal(B, G),
+  routine_block_priority(B, P).
+
+% \u2500\u2500 Place \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% A block's place is a REQUIREMENT of its goal, stated in the planner's own
+% condition vocabulary \u2014 so "get to the forge" is planned by the planner, out of
+% the actions the world already authored, rather than by a routine that walks
+% people around.
+%
+% The condition atom IS the location atom: an action the world authored
+% action_achieves(walk_to_forge, forge) for is what the planner commits to.
+% Because the requirement hangs on the GOAL, two blocks pursuing one goal in two
+% places are an authoring error (routineIssues says so) \u2014 that is two goals.
+goal_requires(G, Place) :-
+  routine_block_goal(B, G),
+  routine_block_place(B, Place).
+
+% ...and it is met exactly when the actor is there. at_location/2 is the
+% predicate traversal already writes; nothing here moves anybody.
+condition_met(A, Place) :-
+  routine_block_place(_, Place),
+  at_location(A, Place).
+
+% Where the routine wants this agent to be, and whether they are there. US-2
+% turns the gap between the two into movement intent; this pack states it and
+% executes nothing.
+routine_destination(A, Place) :-
+  routine_due(A, B),
+  routine_block_place(B, Place).
+
+routine_in_place(A) :-
+  routine_destination(A, Place),
+  at_location(A, Place).
+`;
+  var ROUTINE_AREA = "routine";
+  var ROUTINE_AUTHORED_PREDICATES = Object.freeze([
+    "routine/2",
+    "routine_block/2",
+    "routine_block_window/3",
+    "routine_block_day/2",
+    "routine_block_goal/2",
+    "routine_block_place/2",
+    "routine_block_priority/2",
+    "routine_week_length/1"
+  ]);
+  var ROUTINE_RUNTIME_PREDICATES = Object.freeze([
+    "follows_routine/2",
+    "routine_suspended/2"
+  ]);
+  var ROUTINE_PACK = Object.freeze({
+    area: ROUTINE_AREA,
+    prolog: ROUTINE_PREDICATES_PROLOG,
+    runtimePredicates: ROUTINE_RUNTIME_PREDICATES
+  });
+  var ROUTINE_PREDICATE_PACKS = Object.freeze([
+    ROUTINE_PACK
+  ]);
+
+  // @insimul/core/src/scaffold/scaffold-predicates.ts
+  var SCAFFOLD_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Whole-game scaffolding \u2014 the pacing and the endings, evaluated
+% packages/core/docs/whole-game-scaffolding.md \xA77
+%
+% The authored facts are src/scaffold/scaffold-document.ts's sixteen; the rules
+% here are the only thing in the build that READS a gate. Nothing below names a
+% mechanic, a threshold or an ending: a scaffold that needed a rule of its own
+% per genre would be a game designer, which \xA75 of the design refuses.
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (the scaffold document \u2014 world content, never in a save) \u2500
+% scaffold(ScaffoldId) \u2014 the scaffold itself.
+% scaffold_genre/2, scaffold_world/2, scaffold_seed/2 \u2014 provenance.
+% scaffold_module(S, ModuleId) \u2014 the mechanics this game HAS.
+% scaffold_start_place/2, scaffold_start_role/2, scaffold_start_time/2 \u2014 where
+%   the player begins, as what, and when.
+% scaffold_start_because(S, Goal) \u2014 a goal that was true of the world when the
+%   start was chosen. Evidence a creator can re-read and a rule can re-check.
+% scaffold_objective(S, Key, Source, Ref, Order) \u2014 one initial objective, by
+%   reference to the machinery that owns it (quest / radiant / arc).
+% scaffold_stage(S, Stage, Order), scaffold_stage_gate(S, Stage, Goal),
+%   scaffold_stage_unlocks(S, Stage, ObjectiveKey) \u2014 the pacing.
+% scaffold_ending(S, Key, Outcome), scaffold_ending_when(S, Key, Goal) \u2014 what
+%   finishes this game, and on what.
+% scaffold_edited(S, Section) \u2014 the section a creator has taken over.
+:- dynamic(scaffold/1).
+:- dynamic(scaffold_genre/2).
+:- dynamic(scaffold_world/2).
+:- dynamic(scaffold_seed/2).
+:- dynamic(scaffold_module/2).
+:- dynamic(scaffold_start_place/2).
+:- dynamic(scaffold_start_role/2).
+:- dynamic(scaffold_start_time/2).
+:- dynamic(scaffold_start_because/2).
+:- dynamic(scaffold_objective/5).
+:- dynamic(scaffold_stage/3).
+:- dynamic(scaffold_stage_gate/3).
+:- dynamic(scaffold_stage_unlocks/3).
+:- dynamic(scaffold_ending/3).
+:- dynamic(scaffold_ending_when/3).
+:- dynamic(scaffold_edited/2).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% scaffold_active(ScaffoldId) \u2014 which scaffold this playthrough is running.
+% The ONLY thing this layer remembers. Which stage is open, which objectives
+% are available and whether the game has ended are questions about the world,
+% and the world already answers them; a second copy could disagree.
+:- dynamic(scaffold_active/1).
+
+% \u2500\u2500 The meta-call \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Does this authored goal hold right now?
+%
+% Every gate, ending and justification below is reached through here, and the
+% catch is load-bearing: a goal naming a predicate no active pack defines
+% RAISES under ISO rather than failing, so a mechanic the creator switched off
+% would end a playthrough with an existence error instead of a closed gate.
+scaffold_holds(G) :- catch(call(G), _, fail).
+
+% \u2500\u2500 Which scaffold is in play \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% The running scaffold: the one a host declared, or \u2014 in a KB carrying exactly
+% the scaffold it was built from \u2014 that one. Semidet either way, so a host that
+% never declares one still gets an answer rather than an enumeration.
+scaffold_in_play(S) :- scaffold_active(S), !, scaffold(S).
+scaffold_in_play(S) :- \\+ scaffold_active(_), scaffold(S), !.
+
+% Where the player begins, as one question.
+scaffold_start(S, Place, Role, Time) :-
+  scaffold_start_place(S, Place),
+  scaffold_start_role(S, Role),
+  scaffold_start_time(S, Time).
+
+% A reason the start was chosen for that is no longer true of the world.
+%
+% Not an error \u2014 worlds move, and a mayor dying does not invalidate a start.
+% It is the question a creator regenerating a scaffold wants answered, and it
+% is only askable because US-1 stored the reasoning rather than the result.
+scaffold_start_unjustified(S, Goal) :-
+  scaffold_start_because(S, Goal),
+  \\+ scaffold_holds(Goal).
+
+% \u2500\u2500 Pacing \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% A stage whose gate holds. The gate is a GOAL, so faction standing, genealogy
+% and the world clock reach this slot exactly as a quest count does, and
+% nothing here knows the difference.
+scaffold_stage_open(S, Stage) :-
+  scaffold_stage(S, Stage, _),
+  scaffold_stage_gate(S, Stage, Gate),
+  scaffold_holds(Gate).
+
+scaffold_stage_blocked(S, Stage) :-
+  scaffold_stage(S, Stage, _),
+  \\+ scaffold_stage_open(S, Stage).
+
+% The furthest-along open stage \u2014 what a host shows as "where you are".
+% Defined by the authored ORDER and not by arrival, because a gate that closes
+% again (a faction made peace) must be able to take the game back a step.
+scaffold_current_stage(S, Stage) :-
+  scaffold_stage_open(S, Stage),
+  scaffold_stage(S, Stage, N),
+  \\+ ( scaffold_stage_open(S, Other),
+        scaffold_stage(S, Other, M),
+        M > N ).
+
+% \u2500\u2500 Objectives \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+scaffold_objective_gated(S, Key) :- scaffold_stage_unlocks(S, _, Key).
+
+% Semidet on purpose: two open stages unlocking one objective is an authoring
+% choice, not two objectives, and a duplicate solution here would double it in
+% every list a host draws.
+scaffold_objective_unlocked(S, Key) :- \\+ scaffold_objective_gated(S, Key), !.
+scaffold_objective_unlocked(S, Key) :-
+  scaffold_stage_unlocks(S, Stage, Key),
+  scaffold_stage_open(S, Stage),
+  !.
+
+scaffold_objective_available(S, Key) :-
+  scaffold_objective(S, Key, _, _, _),
+  scaffold_objective_unlocked(S, Key).
+
+scaffold_objective_locked(S, Key) :-
+  scaffold_objective(S, Key, _, _, _),
+  \\+ scaffold_objective_unlocked(S, Key).
+
+% How much of the game is open. Total is what the scaffold seeded, so a
+% progress readout can never promise more than exists.
+scaffold_progress(S, Available, Total) :-
+  scaffold(S),
+  findall(A, scaffold_objective_available(S, A), Open),
+  length(Open, Available),
+  findall(T, scaffold_objective(S, T, _, _, _), All),
+  length(All, Total).
+
+% \u2500\u2500 Endings \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% An end condition that has been met, and what reaching it means.
+scaffold_ending_reached(S, Key, Outcome) :-
+  scaffold_ending(S, Key, Outcome),
+  scaffold_ending_when(S, Key, When),
+  scaffold_holds(When).
+
+% Is this game finished? Semidet \u2014 a world may satisfy two endings at once and
+% that is still one finished game.
+scaffold_over(S) :- scaffold_ending_reached(S, _, _), !.
+
+% What the finished game was. Enumerates when more than one ending holds: which
+% of them the host announces is a presentation decision, and the authored order
+% is the answer core hands it rather than one it invents here.
+scaffold_outcome(S, Outcome) :- scaffold_ending_reached(S, _, Outcome).
+`;
+  var SCAFFOLD_AREA = "scaffold";
+  var SCAFFOLD_AUTHORED_PREDICATES = Object.freeze([
+    "scaffold/1",
+    "scaffold_genre/2",
+    "scaffold_world/2",
+    "scaffold_seed/2",
+    "scaffold_module/2",
+    "scaffold_start_place/2",
+    "scaffold_start_role/2",
+    "scaffold_start_time/2",
+    "scaffold_start_because/2",
+    "scaffold_objective/5",
+    "scaffold_stage/3",
+    "scaffold_stage_gate/3",
+    "scaffold_stage_unlocks/3",
+    "scaffold_ending/3",
+    "scaffold_ending_when/3",
+    "scaffold_edited/2"
+  ]);
+  var SCAFFOLD_RUNTIME_PREDICATES = Object.freeze([
+    "scaffold_active/1"
+  ]);
+  var SCAFFOLD_RULE_PREDICATES = Object.freeze([
+    "scaffold_holds/1",
+    "scaffold_in_play/1",
+    "scaffold_start/4",
+    "scaffold_start_unjustified/2",
+    "scaffold_stage_open/2",
+    "scaffold_stage_blocked/2",
+    "scaffold_current_stage/2",
+    "scaffold_objective_gated/2",
+    "scaffold_objective_unlocked/2",
+    "scaffold_objective_available/2",
+    "scaffold_objective_locked/2",
+    "scaffold_progress/3",
+    "scaffold_ending_reached/3",
+    "scaffold_over/1",
+    "scaffold_outcome/2"
+  ]);
+  var SCAFFOLD_PACK = Object.freeze({
+    area: SCAFFOLD_AREA,
+    prolog: SCAFFOLD_PREDICATES_PROLOG,
+    runtimePredicates: SCAFFOLD_RUNTIME_PREDICATES
+  });
+  var SCAFFOLD_PREDICATE_PACKS = Object.freeze([
+    SCAFFOLD_PACK
+  ]);
+
+  // @insimul/core/src/prolog/mechanics/combat-predicates.ts
+  var COMBAT_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Combat \u2014 reach, legality and effectiveness
+% docs/mechanic-predicates.md \xA74
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% faction(EntityId, FactionId).
+% faction_stance(FactionA, FactionB, hostile|neutral|allied).
+% resists_damage(EntityId, DamageType) / vulnerable_to(EntityId, DamageType) \u2014
+%   DamageType is an atom the WORLD declares (slashing, fire, silver, \u2026); core
+%   fixes no list, because the set is content.
+:- dynamic(faction/2).
+:- dynamic(faction_stance/3).
+:- dynamic(resists_damage/2).
+:- dynamic(vulnerable_to/2).
+
+% \u2500\u2500 Runtime facts (per playthrough \u2014 save.currentState.prologFacts) \u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% in_combat/1, combat_target/2, threat/3 and incapacitated/1 differ between two
+% playthroughs of the same world, so authoring any of them on a world template
+% is a design error, not a schema entry (\xA73).
+:- dynamic(in_combat/1).
+:- dynamic(combat_target/2).
+:- dynamic(threat/3).
+:- dynamic(incapacitated/1).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% alive/1 is the character block's (see the module header); near/3 and
+% has_equipped/3 are runtime gameplay state (\xA710.1); item_range/2 and
+% item_damage_type/2 are authored weapon stats on the item block.
+% Declared here so this pack answers "no" instead of raising in a KB that
+% carries none of them.
+:- dynamic(alive/1).
+:- dynamic(near/3).
+:- dynamic(has_equipped/3).
+:- dynamic(item_range/2).
+:- dynamic(item_damage_type/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Hostility is a property of the factions, not of the pair: two members of
+% mutually hostile factions are hostile without anyone authoring the pair.
+hostile_to(A, B) :-
+  faction(A, FA),
+  faction(B, FB),
+  faction_stance(FA, FB, hostile).
+
+% A legal target: still standing, not already down, and an enemy. incapacitated/1
+% is deliberately distinct from dead/1 \u2014 "down but not dead" is its own decision
+% state (lootable, untalkable, and NOT a legal attack target).
+can_attack(A, T) :-
+  alive(T),
+  \\+ incapacitated(T),
+  hostile_to(A, T).
+
+% "You may only swing at something you can actually reach with what you're
+% holding." W is the weapon that reaches, so a caller can name it.
+in_reach(A, T, W) :-
+  has_equipped(A, weapon, W),
+  item_range(W, R),
+  near(A, T, R).
+
+% The weapon's damage type means something against this target. The world
+% authors what resists what; core owns no damage formula.
+effective_against(W, T) :-
+  item_damage_type(W, DT),
+  \\+ resists_damage(T, DT).
+`;
+  var COMBAT_RUNTIME_PREDICATES = [
+    "in_combat/1",
+    "combat_target/2",
+    "threat/3",
+    "incapacitated/1"
+  ];
+
+  // @insimul/core/src/prolog/mechanics/perception-predicates.ts
+  var PERCEPTION_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Stealth and perception \u2014 detection and trespass
+% docs/mechanic-predicates.md \xA75
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% senses(EntityId, sight|hearing|smell, Range) \u2014 what this creature can use.
+% restricted_area(LocationId) / access_permitted(Actor, LocationId): "the
+%   innkeeper's family may enter the back room" is a fact about the WORLD, not
+%   about a playthrough, so both are authored. A key picked up mid-game asserts
+%   nothing here \u2014 a trespass rule reads has/2 separately.
+:- dynamic(senses/3).
+:- dynamic(restricted_area/1).
+:- dynamic(access_permitted/2).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% line_of_sight/2 is HOST-SUPPLIED: the engine raycasts and asserts it.
+% light_level/2 is runtime and not authored on purpose (\xA73's test case): a cave's
+%   darkness looks like template data, but the value that decides the query is
+%   the one at query time \u2014 night, a doused torch, a spell.
+% Level is 0\u2013100 for both noise_level/2 and light_level/2.
+:- dynamic(line_of_sight/2).
+:- dynamic(concealed/1).
+:- dynamic(noise_level/2).
+:- dynamic(light_level/2).
+:- dynamic(alerted/2).
+
+% \u2500\u2500 The graded detection state (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% awareness(Observer, Target, Level) \u2014 0\u2013100, accumulated over ticks by
+%   game-engine/logic/DetectionTracker.ts out of what the host's senses reported.
+% detection_state(Observer, Target, unaware|suspicious|searching|alerted).
+:- dynamic(awareness/3).
+:- dynamic(detection_state/3).
+
+% \u2500\u2500 Authored bands (world content \u2014 published at load, never in a save) \u2500\u2500\u2500\u2500
+% detection_threshold(suspicious|searching|alerted, Level) \u2014 the world's
+%   thresholds, out of WorldIR.perception, the way stamina_threshold/2 is (\xA79).
+:- dynamic(detection_threshold/2).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+:- dynamic(near/3).
+:- dynamic(at_location/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Detection, and the sense that produced it. detects_via/3 is the one that
+% carries the reason; detects/2 is the question every authored rule asks.
+detects(O, T) :- detects_via(O, T, _).
+
+detects_via(O, T, sight) :-
+  senses(O, sight, R),
+  near(O, T, R),
+  line_of_sight(O, T),
+  \\+ concealed(T),
+  at_location(T, L),
+  light_level(L, Lx),
+  Lx >= 20.
+
+detects_via(O, T, hearing) :-
+  senses(O, hearing, R),
+  near(O, T, R),
+  noise_level(T, N),
+  N >= 30.
+
+% Nobody detects T. Written over detects/2 so a new sense clause tightens it
+% automatically.
+unseen(T) :- \\+ detects(_, T).
+
+% Somewhere you are not allowed to be. Being SEEN there is a separate question \u2014
+% the guard's rule conjoins trespassing/2 with detects/2 (\xA75).
+trespassing(A, L) :-
+  at_location(A, L),
+  restricted_area(L),
+  \\+ access_permitted(A, L).
+
+% \u2500\u2500 The rungs of the ladder \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% Named, so an authored rule says "the guard is searching for the thief" rather
+% than comparing a number to a band it would have to know the value of.
+suspicious_of(O, T) :- detection_state(O, T, suspicious).
+
+searching_for(O, T) :- detection_state(O, T, searching).
+
+% alerted/2 stays dynamic \u2014 a scripted alarm or a quest script asserts it \u2014 AND
+% is derived from the ladder, so a graded state and the boolean every existing
+% rule already asks can never contradict each other.
+alerted(O, T) :- detection_state(O, T, alerted).
+
+% Noticed at all: any rung above unaware. Written over detection_state/3 so a
+% world that adds a rung gets it here for free.
+noticed(O, T) :-
+  detection_state(O, T, S),
+  S \\== unaware.
+
+% Nobody has noticed T. unseen/1 asks that of THIS instant's sensing;
+% undetected/1 asks it of the accumulated state, which is the one a stealth
+% mechanic actually pays out on.
+undetected(T) :- \\+ noticed(_, T).
+`;
+  var PERCEPTION_RUNTIME_PREDICATES = [
+    "line_of_sight/2",
+    "concealed/1",
+    "noise_level/2",
+    "light_level/2",
+    "alerted/2",
+    "awareness/3",
+    "detection_state/3"
+  ];
+
+  // @insimul/core/src/prolog/mechanics/skill-predicates.ts
+  var SKILL_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Skills \u2014 what exists, what it costs, what it requires
+% docs/mechanic-predicates.md \xA76
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% skill_defined(SkillId, Category).
+% skill_max_level(SkillId, Max).
+% skill_requires(SkillId, PrereqSkillId, MinLevel).
+% skill_level_xp(SkillId, Level, XpNeeded) \u2014 the progression CURVE, kept in
+%   content. Without it the curve is a constant in four engines and the same
+%   save levels up in three of them.
+:- dynamic(skill_defined/2).
+:- dynamic(skill_max_level/2).
+:- dynamic(skill_requires/3).
+:- dynamic(skill_level_xp/3).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+:- dynamic(skill_xp/3).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+:- dynamic(has_skill/3).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% At the world's cap for this skill.
+skill_capped(A, S) :-
+  has_skill(A, S, L),
+  skill_max_level(S, L).
+
+% A skill the world declares, that this actor does not have yet, and whose every
+% prerequisite is met. The double negation is "no prerequisite is unmet", so a
+% skill with no skill_requires/3 facts qualifies.
+can_learn_skill(A, S) :-
+  skill_defined(S, _),
+  \\+ has_skill(A, S, _),
+  \\+ (skill_requires(S, P, Min), \\+ (has_skill(A, P, L), L >= Min)).
+
+% Enough XP banked for the next level, and not already capped.
+can_advance(A, S) :-
+  has_skill(A, S, L),
+  \\+ skill_capped(A, S),
+  Next is L + 1,
+  skill_level_xp(S, Next, Need),
+  skill_xp(A, S, X),
+  X >= Need.
+
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Skill trees \u2014 nodes, what they ask, what they cost, what they do
+% US-1 of 123-skill-trees-and-progression
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% skill_tree(TreeId, SkillId) \u2014 the skill whose levels FUND this tree. It is
+%   the whole coupling between the two halves of progression: advancing
+%   smithing grants points to the trees rooted on smithing, and nothing else
+%   does. A guild or faction tree is authored the same way over a standing.
+% skill_node(NodeId, TreeId).
+% skill_node_cost(NodeId, Points).
+% skill_node_requires(NodeId, Goal) \u2014 Goal is a Prolog goal evaluated with the
+%   actor bound, the convention traversal_requires/3 uses. An authored parent
+%   edge arrives here as skill_node_requires(N, skill_unlocked(Actor, Parent)),
+%   so tree structure and an arbitrary condition are ONE gate.
+% skill_node_effect(NodeId, Effect) \u2014 what taking it does, as a term:
+%   unlocks(Action), modifies(Param, Amount), permits(Thing). The set is
+%   authored; a world that wants a fourth writes it and a rule reads it.
+:- dynamic(skill_tree/2).
+:- dynamic(skill_node/2).
+:- dynamic(skill_node_cost/2).
+:- dynamic(skill_node_requires/2).
+:- dynamic(skill_node_effect/2).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% What is unspent, per tree, and what has been taken. Both are per-playthrough:
+% two saves of one world differ by exactly this (\xA73).
+:- dynamic(skill_points/3).
+:- dynamic(skill_unlocked/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% An authored requirement is written with the ACTOR as its first argument \u2014
+% skill_node_requires(guild_forge, reputation(Actor, smiths_guild, 50)). That
+% variable is a FRESH one every time the fact is read, so it is not the caller's
+% actor and call/1 on the term as stored would be satisfied by anybody at all
+% with the standing \u2014 one guild member's reputation unlocking the whole roster's
+% node. The goal is therefore rebuilt with A in the first argument position
+% before it is called. A requirement authored as a plain atom (bridge_repaired)
+% says nothing about the actor and is called as written.
+skill_goal_met(_, Goal) :-
+  atom(Goal),
+  !,
+  call(Goal).
+skill_goal_met(A, Goal) :-
+  Goal =.. [F, _ | Rest],
+  Bound =.. [F, A | Rest],
+  call(Bound).
+
+% What a node costs. A loaded world publishes a cost for every node (the
+% world's default applied), so the second clause is what keeps the pack
+% answerable about a tree asserted by hand.
+skill_node_price(N, C) :- skill_node_cost(N, C), !.
+skill_node_price(N, 0) :- skill_node(N, _).
+
+% What is unspent in a tree the actor has never earned a point in.
+skill_points_held(A, T, P) :- skill_points(A, T, P), !.
+skill_points_held(_, T, 0) :- skill_tree(T, _).
+
+% A node this actor has not taken, can pay for, and whose every requirement
+% holds. The double negation is "no requirement is unmet", so a node with no
+% skill_node_requires/2 fact qualifies. Whether it is PERMITTED is forbids/4's,
+% exactly as a climb's is: a guild's own rules refuse an unlock without this
+% rule knowing that guilds exist.
+can_unlock(A, N) :-
+  skill_node(N, T),
+  \\+ skill_unlocked(A, N),
+  skill_node_price(N, C),
+  skill_points_held(A, T, P),
+  P >= C,
+  \\+ (skill_node_requires(N, G), \\+ skill_goal_met(A, G)).
+
+% What an actor's skills DO \u2014 the one thing another module asks. A module reads
+% effects; it never reads nodes, which is what keeps a skill tree data over
+% combat, traversal and crafting rather than a system inside them.
+skill_effect(A, E) :- skill_unlocked(A, N), skill_node_effect(N, E).
+`;
+  var SKILL_RUNTIME_PREDICATES = [
+    "skill_xp/3",
+    "skill_points/3",
+    "skill_unlocked/2"
+  ];
+
+  // @insimul/core/src/prolog/mechanics/traversal-predicates.ts
+  var TRAVERSAL_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Traversal \u2014 links, blockage, and reachability
+% docs/mechanic-predicates.md \xA77
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% traversal_link(FromLoc, ToLoc, walk|climb|swim|ride|boat) \u2014 DIRECTED. Mode is
+%   authored, and it is where mounts and boats land: the decision layer's whole
+%   interest in a boat is "this link needs boat and you have it", so there is no
+%   vehicle vocabulary (\xA712).
+% traversal_cost(FromLoc, ToLoc, Cost) \u2014 read by authored rules (travel time,
+%   stamina spend); the pack imposes no cost model of its own.
+% traversal_requires(FromLoc, ToLoc, Goal) \u2014 Goal is a Prolog goal evaluated
+%   with Actor bound, the same convention radiant_precondition/3 uses.
+:- dynamic(traversal_link/3).
+:- dynamic(traversal_cost/3).
+:- dynamic(traversal_requires/3).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% "The landslide closed the pass" is a playthrough event, never world content.
+:- dynamic(traversal_blocked/2).
+:- dynamic(movement_mode/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Pack-local, library-free membership (see the module header).
+traversal_member(X, [X|_]).
+traversal_member(X, [_|T]) :- traversal_member(X, T).
+
+% An authored requirement is written with the ACTOR as its first argument \u2014
+% traversal_requires(camp, ford, has_item(Actor, rope, 1)). That variable is a
+% FRESH one every time the fact is read, so it is not the caller's actor and
+% call/1 on the term as stored would be satisfied by anyone at all holding a
+% rope. The goal is therefore rebuilt with A in the first argument position
+% before it is called. A requirement authored as a plain atom (bridge_repaired)
+% says nothing about the actor and is called as written.
+traversal_goal_met(_, Goal) :-
+  atom(Goal),
+  !,
+  call(Goal).
+traversal_goal_met(A, Goal) :-
+  Goal =.. [F, _ | Rest],
+  Bound =.. [F, A | Rest],
+  call(Bound).
+
+% One link, open, in a mode this actor is using, whose requirement (if any)
+% holds. The \\+ (Requirement, \\+ Met) shape means a link with no
+% traversal_requires/3 fact passes; calling an authored goal is the trust
+% boundary radiant_precondition/3 already accepts.
+can_traverse(A, From, To) :-
+  traversal_link(From, To, Mode),
+  \\+ traversal_blocked(From, To),
+  movement_mode(A, Mode),
+  \\+ (traversal_requires(From, To, Goal), \\+ traversal_goal_met(A, Goal)).
+
+% Reachability over one or more links. Cycle-safe by carrying the visited set,
+% so a loop of links terminates instead of spinning.
+reachable(A, From, To) :- reachable_via(A, From, To, [From]).
+
+reachable_via(A, From, To, _) :- can_traverse(A, From, To).
+reachable_via(A, From, To, Seen) :-
+  can_traverse(A, From, Mid),
+  \\+ traversal_member(Mid, Seen),
+  reachable_via(A, Mid, To, [Mid | Seen]).
+
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Vehicles \u2014 ridden entities, in the same vocabulary
+% US-2 of 122-traversal-and-travel
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% vehicle_mode(VehicleId, ride|boat|...) \u2014 what the thing IS, said as the
+%   traversal mode it lends whoever is driving it. \xA712 cut vehicle/1 and that cut
+%   stands: a kind predicate would say strictly less than this one does.
+:- dynamic(vehicle_mode/2).
+
+% \u2500\u2500 Runtime (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% Ownership is runtime because a horse is bought, inherited, confiscated and
+% stolen; the world's authored owner is where the playthrough STARTS (\xA73).
+% at_location/2 is the world-state predicate, not a vehicle-private one: a
+% vehicle is an entity, and a rule asking what is at the dock must see the boat.
+:- dynamic(vehicle_owner/2).
+:- dynamic(vehicle_occupant/2).
+:- dynamic(vehicle_driver/2).
+:- dynamic(at_location/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% The mode a vehicle lends its driver \u2014 the ONLY thing a vehicle changes about
+% traversal, and the reason there is no vehicle mechanic beside this one. A
+% passenger is carried; the driver is the one movement_mode/2 becomes true of.
+riding_mode(A, Mode) :- vehicle_driver(V, A), vehicle_mode(V, Mode).
+
+% Boarding: same place, not already aboard. Colocation is asked of the location
+% ATOMS \u2014 "three metres from the horse" is the host's question, not this one's.
+% Capacity is deliberately absent: \xA712 cut vehicle_capacity/2, so a world that
+% wants to know whether the cart is full counts vehicle_occupant/2 itself.
+can_board(A, V) :-
+  vehicle_mode(V, _),
+  at_location(V, L),
+  at_location(A, L),
+  \\+ vehicle_occupant(V, A).
+
+% Taking the reins: aboard, and nobody else at the helm. Permission is NOT here
+% \u2014 whether taking somebody else's cart is a crime is forbids/4's answer, which
+% is what lets one world police the roads and another leave them common.
+can_drive(A, V) :-
+  vehicle_occupant(V, A),
+  \\+ (vehicle_driver(V, Other), Other \\== A).
+
+% Nobody has the reins \u2014 what an NPC's candidate_action/3 keys on to notice that
+% the cart at the mill is there for the taking.
+vehicle_unattended(V) :- vehicle_mode(V, _), \\+ vehicle_driver(V, _).
+
+% "It is not theirs" \u2014 the FACT a theft norm is authored over
+% (rule_applies(cart_theft, Actor, V) :- vehicle_not_owned_by(Actor, V)). A
+% vehicle nobody owns is nobody's to steal, so an absent owner FAILS rather than
+% succeeds: core states ownership and never invents a prohibition.
+vehicle_not_owned_by(A, V) :- vehicle_owner(V, Owner), Owner \\== A.
+
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Fast travel \u2014 you may go where you have BEEN and can still GET to
+% US-3 of 122-traversal-and-travel
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% location_discovered/1 is gameplay-predicates.ts's, already asserted whenever a
+% player reaches somewhere. It is DECLARED here rather than re-minted as a
+% traversal-private "known destination" fact, for \xA710.1's reason: two vocabularies
+% for one fact is how a place discovered through a rumour, a map or a quest stops
+% counting as discovered for travel.
+:- dynamic(location_discovered/1).
+
+% \xA77's own worked example, promoted from an authored can_perform/2 clause to a
+% pack rule because the decision layer asks it: fast travel is gated by DISCOVERY
+% and by REACHABILITY, and reachability is what makes it a world operation rather
+% than a teleport \u2014 you cannot fast travel past a landslide you could not have
+% walked past, and a route that needs a rope needs the rope either way.
+%
+% Whether it is PERMITTED is forbids/4's, exactly as a climb's is, and is not here:
+% a closed border, a quarantine and 123's skill gates refuse a journey without this
+% rule knowing they exist. What is also not here is time \u2014 how long the journey
+% takes is arithmetic over traversal_cost/3 and belongs in src/traversal/, never in
+% a predicate a save could carry a stale copy of.
+can_fast_travel(A, Dest) :-
+  location_discovered(Dest),
+  at_location(A, Here),
+  Here \\== Dest,
+  reachable(A, Here, Dest).
+`;
+  var TRAVERSAL_RUNTIME_PREDICATES = [
+    "traversal_blocked/2",
+    "movement_mode/2",
+    "vehicle_owner/2",
+    "vehicle_occupant/2",
+    "vehicle_driver/2"
+  ];
+
+  // @insimul/core/src/prolog/mechanics/equipment-predicates.ts
+  var EQUIPMENT_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Equipment \u2014 slots, requirements, weight and armour
+% docs/mechanic-predicates.md \xA78
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% equip_slot(ItemId, Slot) / equip_slot_capacity(Slot, N) \u2014 "two rings, not five".
+% item_requires(ItemId, SkillId, MinLevel) \u2014 "heavy plate isn't something you
+%   just put on".
+:- dynamic(equip_slot/2).
+:- dynamic(equip_slot_capacity/2).
+:- dynamic(item_requires/3).
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+:- dynamic(carry_capacity/2).
+:- dynamic(item_condition/2).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% has_equipped/3 and has_item/3 are runtime gameplay state; item_weight/2 and
+% item_armor/2 are authored stats on the item block.
+:- dynamic(has_equipped/3).
+:- dynamic(has_item/3).
+:- dynamic(has_skill/3).
+:- dynamic(item_weight/2).
+:- dynamic(item_armor/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% The compat bridge for helper-predicates.ts's objective_complete/3 clauses \u2014
+% note the argument order differs from has_equipped/3, which is why this rule
+% exists at all (\xA710.3).
+equipped(Actor, Item, Slot) :- has_equipped(Actor, Slot, Item).
+
+% Pack-local total. findall/3 and length/2 are ISO builtins the shared engine
+% has; aggregate_all/3 is NOT (it lives in library(aggregate), which a pack may
+% not depend on \u2014 see the module header), and the name is prefixed so this pack
+% cannot shadow a builtin the way sum_list/2 once did.
+equipment_sum([], 0).
+equipment_sum([X | T], S) :-
+  equipment_sum(T, S0),
+  S is S0 + X.
+
+% Room left in a slot the world gave a capacity to.
+slot_free(A, Slot) :-
+  equip_slot_capacity(Slot, N),
+  findall(I, has_equipped(A, Slot, I), Equipped),
+  length(Equipped, Used),
+  Used < N.
+
+% Held, has a slot, the slot has room, and every skill requirement is met. The
+% comparison is inline rather than helper-predicates.ts's skill_gte/3 so this
+% pack consults standalone (see the module header).
+can_equip(A, I) :-
+  has_item(A, I, _),
+  equip_slot(I, Slot),
+  slot_free(A, Slot),
+  \\+ (item_requires(I, S, Min), \\+ (has_skill(A, S, L), L >= Min)).
+
+% Everything carried, by weight. A rule and not a fact: a stored total goes
+% stale against has_item/3 the moment anything is picked up (\xA712). An actor
+% carrying nothing weighs 0 rather than failing, so a caller never has to
+% distinguish "empty" from "unknown".
+carried_weight(A, W) :-
+  findall(Wi, (has_item(A, I, Q), item_weight(I, U), Wi is U * Q), Weights),
+  equipment_sum(Weights, W).
+
+encumbered(A) :-
+  carried_weight(A, W),
+  carry_capacity(A, Max),
+  W > Max.
+
+% Armour from everything worn, whatever slot it is in.
+armor_value(A, V) :-
+  findall(Av, (has_equipped(A, _, I), item_armor(I, Av)), Values),
+  equipment_sum(Values, V).
+
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Trade \u2014 who sells what, whether the shelf is bare, and who is paid
+% docs/mechanic-predicates.md \xA78, US-2 of 124-items-equipment-economy
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% vendor(VendorId, BusinessId) \u2014 who trades, and on whose behalf. A vendor
+%   trading for themselves is said with their own atom in both places, so
+%   vendor(V, B), business_owner(B, O) is one query rather than two shapes.
+% vendor_markup(BusinessId, Percent) \u2014 the SHOP's margin: the business sets the
+%   price and the clerk does not.
+% item_stock_normal(ItemId, Qty) \u2014 what a well-supplied shelf carries. Scarcity
+%   is meaningless without it: three left is a glut of warhorses and a famine of
+%   arrows.
+% item_loot_weight(ItemId, Weight) \u2014 how likely the thing is to turn up at all.
+:- dynamic(vendor/2).
+:- dynamic(vendor_markup/2).
+:- dynamic(item_stock_normal/2).
+:- dynamic(item_loot_weight/2).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% gold/2 belongs to the gameplay-state block and predates this pack; it is
+% declared here so this pack stands alone, exactly as has_item/3 above is, and
+% gameplay-state-predicates.ts is what OWNS the signature (\xA710.1).
+:- dynamic(gold/2).
+% A merchant's shelf is a CONTAINER: container_contains/3 already says "this
+% many of that, in that place", and a shelf is a place \u2014 so trade mints no
+% stock predicate of its own. business_owner/2 is the business block's.
+:- dynamic(container_contains/3).
+:- dynamic(business_owner/2).
+:- dynamic(item_tradeable/1).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% What is on the shelf, with "none" as an answer rather than a failure \u2014 the
+% same stance carried_weight/2 takes, so a caller never has to distinguish
+% "empty" from "unknown".
+stock_level(V, I, Q) :-
+  container_contains(V, I, Q),
+  !.
+stock_level(_, _, 0).
+
+in_stock(V, I, Q) :-
+  vendor(V, _),
+  stock_level(V, I, Q),
+  Q > 0.
+
+% Availability: they have one AND it is merchandise. A quest letter in a
+% merchant's pack is not for sale.
+sells(V, I) :-
+  in_stock(V, I, _),
+  item_tradeable(I).
+
+% Fewer on the shelf than the world calls a normal stock. HOW MUCH that costs is
+% arithmetic and stays out of the vocabulary (\xA711) \u2014 src/items/economy.ts \u2014 for
+% the reason \xA712 gives: a stored price goes stale the moment a shelf moves.
+scarce(V, I) :-
+  vendor(V, _),
+  item_stock_normal(I, N),
+  stock_level(V, I, Q),
+  Q < N.
+
+% Who the money belongs to. A vendor with no separate owner is their own.
+proceeds_to(V, Owner) :-
+  vendor(V, B),
+  business_owner(B, Owner),
+  !.
+proceeds_to(V, V) :-
+  vendor(V, _).
+
+% Whether a purse covers an amount. Named can_pay/2 rather than can_afford/2
+% because the latter belongs to the ToTT economics vocabulary and a pack may not
+% quietly redefine another's rule.
+can_pay(A, Amount) :-
+  gold(A, G),
+  G >= Amount.
+
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Placement \u2014 things in the world before anybody owns them
+% docs/mechanic-predicates.md \xA78, US-3 of 124-items-equipment-economy
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Runtime facts (per playthrough) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% item_at(ItemId, LocationId, Qty) \u2014 lying in the world, owned by nobody. The
+%   fourth place an item can be and the ONLY one that had no predicate: carried
+%   is has_item/3, in a chest is container_contains/3, worn is has_equipped/3.
+%   It carries a quantity because those two do and because the ledger holds one:
+%   forty arrows on a barrow floor said as item_at(arrow, barrow) would be a KB
+%   that means "some arrows" about a stack core knows the size of.
+%   Runtime, not authored: where the world STARTS its things is the template's,
+%   where they are on the fortieth day is the playthrough's (\xA73).
+:- dynamic(item_at/3).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% Containers already had a vocabulary \u2014 helper-predicates.ts declares five
+% container predicates and reasons over them with container_accessible/2 \u2014 so
+% placement mints none of its own and declares them the way it declares
+% has_item/3 above. at_location/2 is the world-state predicate, not a
+% placement-private one: a chest is an entity, and a rule asking what is in the
+% crypt must see it (traversal-predicates.ts makes the same call for a boat).
+:- dynamic(container/1).
+:- dynamic(container_locked/1).
+:- dynamic(at_location/2).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Something lying where this actor is standing \u2014 what a "take" is offered over.
+% Whether they MAY take it is permissible/3's answer, asked by whoever takes it.
+item_here(A, I) :-
+  at_location(A, L),
+  item_at(I, L, _).
+
+% A container within reach. Whether it opens is container_accessible/2, which
+% belongs to helper-predicates.ts and is not called here: a pack that calls
+% another pack's rule is unusable without it (the AC4 coupling \xA78 refuses).
+container_here(A, C) :-
+  at_location(A, L),
+  container(C),
+  at_location(C, L).
+`;
+  var EQUIPMENT_RUNTIME_PREDICATES = [
+    "carry_capacity/2",
+    "item_condition/2",
+    // US-3's one minted predicate — the fourth place, and the one US-1 and US-2
+    // each deferred to placement so its shape would be decided by the story that
+    // needed it. Everything else placement writes belongs to somebody else:
+    // containers are `helper-predicates.ts`'s, `at_location/2` is the world's.
+    "item_at/3"
+  ];
+
+  // @insimul/core/src/prolog/mechanics/stamina-predicates.ts
+  var STAMINA_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Stamina \u2014 thresholds, affordability and regeneration
+% docs/mechanic-predicates.md \xA79
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+
+% \u2500\u2500 Authored facts (world content \u2014 never in a save) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% stamina_regen_base(EntityId, RatePerTick) \u2014 the rate the HOST applies per tick.
+% stamina_threshold(winded|exhausted, Pct) \u2014 the world's balance numbers.
+:- dynamic(stamina_regen_base/2).
+:- dynamic(stamina_threshold/2).
+
+% \u2500\u2500 Facts owned elsewhere that these rules read \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+% energy/3 is runtime gameplay state, in_combat/1 is \xA74's runtime fact, and
+% action/4 is the authored action catalogue whose 4th argument IS the energy
+% cost \u2014 which is why no stamina_cost/2 exists (\xA712).
+:- dynamic(energy/3).
+:- dynamic(in_combat/1).
+:- dynamic(action/4).
+
+% \u2500\u2500 Rules \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+% Integer arithmetic on both sides (C * 100 =< M * P), so no float rounding can
+% make two engines disagree about who is winded. M > 0 keeps a zero-max actor
+% out of the comparison instead of dividing by it.
+winded(A) :-
+  energy(A, C, M),
+  M > 0,
+  stamina_threshold(winded, P),
+  C * 100 =< M * P.
+
+exhausted(A) :-
+  energy(A, C, M),
+  M > 0,
+  stamina_threshold(exhausted, P),
+  C * 100 =< M * P.
+
+% Enough in the tank for what action/4 says this action costs.
+can_afford_stamina(A, ActionId) :-
+  action(ActionId, _, _, Cost),
+  energy(A, C, _),
+  C >= Cost.
+
+% The rate the host applies per tick; core decides only the modifier. You don't
+% catch your breath mid-fight \u2014 hence the cut on the first clause.
+stamina_regen(A, 0) :- in_combat(A), !.
+stamina_regen(A, Rate) :- stamina_regen_base(A, Rate).
+`;
+  var STAMINA_RUNTIME_PREDICATES = [];
+
+  // @insimul/core/src/prolog/mechanics/gameplay-state-predicates.ts
+  var GAMEPLAY_STATE_PREDICATES_PROLOG = `
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+% Runtime gameplay state \u2014 declarations only, no rules
+% docs/mechanic-predicates.md \xA710.1
+% \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+%
+% Declared so a KB that carries none of them FAILS a query rather than raising
+% existence_error, and so a fact restored from a save validates instead of being
+% dropped. Per-playthrough state: these belong in save.currentState.prologFacts
+% and never on a world template (\xA73).
+
+:- dynamic(health/3).            % health(Actor, Current, Max).
+:- dynamic(energy/3).            % energy(Actor, Current, Max).
+:- dynamic(has_equipped/3).      % has_equipped(Actor, Slot, ItemId).
+:- dynamic(has_status/3).        % has_status(Actor, Status, Duration).
+:- dynamic(has_ability/2).       % has_ability(Actor, Ability).
+:- dynamic(near/3).              % near(Actor, Target, Distance).
+:- dynamic(at_location_type/2).  % at_location_type(Actor, LocationType).
+:- dynamic(level/2).             % level(Actor, Level).
+:- dynamic(xp/3).                % xp(Actor, Current, Max).
+:- dynamic(gold/2).              % gold(Actor, Amount).
+`;
+  var GAMEPLAY_STATE_RUNTIME_PREDICATES = [
+    "health/3",
+    "energy/3",
+    "has_equipped/3",
+    "has_status/3",
+    "has_ability/2",
+    "near/3",
+    "at_location_type/2",
+    "level/2",
+    "xp/3",
+    "gold/2"
+  ];
+
+  // @insimul/core/src/prolog/mechanics/index.ts
+  var MECHANIC_PREDICATE_PACKS = [
+    { area: "combat", prolog: COMBAT_PREDICATES_PROLOG, runtimePredicates: COMBAT_RUNTIME_PREDICATES },
+    {
+      area: "perception",
+      prolog: PERCEPTION_PREDICATES_PROLOG,
+      runtimePredicates: PERCEPTION_RUNTIME_PREDICATES
+    },
+    { area: "skill", prolog: SKILL_PREDICATES_PROLOG, runtimePredicates: SKILL_RUNTIME_PREDICATES },
+    {
+      area: "traversal",
+      prolog: TRAVERSAL_PREDICATES_PROLOG,
+      runtimePredicates: TRAVERSAL_RUNTIME_PREDICATES
+    },
+    {
+      area: "equipment",
+      prolog: EQUIPMENT_PREDICATES_PROLOG,
+      runtimePredicates: EQUIPMENT_RUNTIME_PREDICATES
+    },
+    {
+      area: "stamina",
+      prolog: STAMINA_PREDICATES_PROLOG,
+      runtimePredicates: STAMINA_RUNTIME_PREDICATES
+    },
+    {
+      area: "gameplayState",
+      prolog: GAMEPLAY_STATE_PREDICATES_PROLOG,
+      runtimePredicates: GAMEPLAY_STATE_RUNTIME_PREDICATES
+    }
+  ];
+  var MECHANIC_RUNTIME_PREDICATES = Array.from(
+    new Set(MECHANIC_PREDICATE_PACKS.flatMap((pack) => pack.runtimePredicates))
+  );
+
+  // @insimul/core/src/prolog/predicate-packs.ts
+  var PREDICATE_PACKS = Object.freeze([
+    ...MECHANIC_PREDICATE_PACKS,
+    ...AI_PREDICATE_PACKS,
+    ...ROUTINE_PREDICATE_PACKS,
+    ...MAP_PREDICATE_PACKS,
+    ...SCAFFOLD_PREDICATE_PACKS
+  ]);
+  var PREDICATE_PACK_AREAS = Object.freeze(
+    PREDICATE_PACKS.map((pack) => pack.area)
+  );
+  var PREDICATE_PACK_RUNTIME_PREDICATES = Object.freeze(
+    Array.from(new Set(PREDICATE_PACKS.flatMap((pack) => pack.runtimePredicates)))
+  );
+
+  // @insimul/core/src/modules/module-contract.ts
+  var INSIMUL_MODULES = [
+    {
+      id: "combat",
+      name: "Combat",
+      summary: "May this actor attack that one, with what, from how far, and does the attack mean anything against that target.",
+      parts: {
+        predicatePack: "combat",
+        irSection: "combat",
+        // US-1 of `120-combat-and-stamina`. The pure resolution is
+        // `src/combat/resolution.ts` — a function of (attacker, defender, action,
+        // tuning, separation, seed, tick) that four engines reproduce — and this
+        // is the half that remembers: the roster, the accumulated `threat/3`, the
+        // `can_attack/2` gate it asks before anything resolves, and the fact delta
+        // it writes back so a hit is legible to every rule in the world.
+        decisionLayer: ["CombatResolver"],
+        // Two, and they run in opposite directions. `ICombatSystem` is TOLD damage
+        // core already decided; `ITrajectoryProbe` (US-3) is ASKED the one question
+        // core cannot answer — is the line to that target clear — because hit
+        // detection is geometry per frame (`docs/mechanic-predicates.md` §11). A
+        // ranged attack needs the answer; nothing else about it leaves core.
+        hostInterface: ["ICombatSystem", "ITrajectoryProbe"],
+        conformanceCorpus: ["mechanic-combat"],
+        // The two bundles whose GenreConfig turns combat on (`features.combat`,
+        // `combatStyle` other than `none`). An adventure or puzzle world does not
+        // consult the combat pack at all — see `module-activation.ts`.
+        genreBundles: ["rpg", "survival"]
+      }
+    },
+    {
+      id: "perception",
+      name: "Stealth and perception",
+      summary: "Who can see whom, who has noticed, and what a hidden actor may still do.",
+      parts: {
+        predicatePack: "perception",
+        // US-1 of `121-stealth-and-perception`. The bands, the rates and what a
+        // stance or a shadow is worth — the whole of stealth's balance, so a world
+        // where guards are jumpy and one where they are half-asleep differ by
+        // content. What is NOT authored here is every per-tick measurement
+        // (`IPerceptionProbe`): a scene does not exist at authoring time. US-2
+        // added `actions` to the same section — stealth's COLUMNS on the shared
+        // action rows, the way `CombatIR.actions` extends them, never a second
+        // action table.
+        irSection: "perception",
+        // The pure pass is `src/perception/detection.ts` — a function of (host
+        // readings, memory, tuning, seed, tick) four engines reproduce — and this
+        // is the half that remembers: how convinced each pair has become, which
+        // rung that puts them on, and what each observer BELIEVES about where its
+        // target is, which is not where the target is.
+        decisionLayer: ["DetectionTracker"],
+        // One, and it is a question rather than an executor. The host answers what
+        // an observer's senses can reach — a raycast, a light probe, an occlusion
+        // test, the animation state that says a body is prone — and core alone
+        // decides what follows from it (`docs/mechanic-predicates.md` §5, §11).
+        hostInterface: ["IPerceptionProbe"],
+        // The manifest names the QUERY corpus, because that is the shape the C,
+        // Rust and wasm harnesses run (`docs/module-contract.md` §2.5). It cannot
+        // pin a suspicion level — no rule computes one — so US-3 added the second
+        // artifact a native port actually diffs against: `conformance/stealth/`,
+        // one detection tick per case down to the rung, the belief and the fact
+        // delta, driven end to end with no engine by
+        // `src/conformance/__tests__/headless-stealth-host.ts`.
+        conformanceCorpus: ["mechanic-perception"],
+        // Stealth is a mechanic an RPG offers (`rpg`'s proficiency dimensions
+        // include it by name) and an exploration game is built on. It is not one a
+        // strategy, puzzle or simulation world asks for.
+        genreBundles: ["rpg", "adventure"]
+      }
+    },
+    {
+      id: "skill",
+      name: "Skills",
+      summary: "What an actor is good enough at to attempt, and what practising it does.",
+      parts: {
+        predicatePack: "skill",
+        // US-1 of `123-skill-trees-and-progression`. The pending block used to
+        // name `entities.characters.skills`, and that field is real and
+        // unchanged: it is the level each character STARTS at. What a
+        // `Record<string, number>` cannot carry is the thing that makes a tree a
+        // tree — which skills exist at all, the cap, the curve, which nodes hang
+        // off which, what each asks of an actor and what taking it does. Those
+        // are properties of the WORLD, so `WorldIR.skills` is where they live,
+        // exactly as `WorldIR.traversal` is the link graph the road geometry
+        // could not be read as. The two coexist.
+        irSection: "skills",
+        // The pure resolution is `src/skills/skills.ts` — what a level prices,
+        // what a node costs, which refusal applies and in what order — and this
+        // is the half that remembers: levels (`has_skill/3`, adopted rather than
+        // re-minted), banked XP, unspent points per tree and taken nodes. The
+        // same two-part shape `combat`, `stamina`, `perception` and `traversal`
+        // have.
+        decisionLayer: ["SkillProgression"],
+        // US-3, and the part US-1 recorded as an open QUESTION rather than a
+        // to-do. Both halves of the answer matter. The panel is NOT an interface:
+        // what a host draws a tree from is the value `buildSkillView` returns
+        // (`src/skills/skill-view.ts`), so layout stays in the engine and the
+        // tree's meaning stays in core — an `ISkillTreeUi` would have been a UI
+        // callback on the C ABI (§3). What is left over is one thing, and it is
+        // real: a `modifies(Param, Amount)` effect is applied by whoever owns the
+        // field it names, US-2 wired every parameter core owns
+        // (`withSkillModifiers`), and the rest name a quantity only the engine
+        // holds — how fast a body moves, how far it reaches. Those reached nobody
+        // in any engine until this. Told, never asked; absolute, never a delta;
+        // once per change to an actor's taken nodes, never on a frame.
+        hostInterface: ["ISkillModifierSink"],
+        conformanceCorpus: ["mechanic-skill"],
+        // Skill CHECKS, which is a different thing from the language-learning
+        // proficiency stack: `educational` and `language-learning` deliberately do
+        // not select this module even though both track proficiency.
+        genreBundles: ["rpg", "survival"]
+      }
+    },
+    {
+      id: "traversal",
+      name: "Traversal",
+      summary: "Whether an actor can get from here to there, by what mode, and what blocks it.",
+      parts: {
+        predicatePack: "traversal",
+        // US-1 of `122-traversal-and-travel`, and the part the pending block above
+        // named for longest: the World IR carried roads, street networks and water
+        // as GEOMETRY, which is what a renderer needs and what a decision layer
+        // cannot read — geometry does not say whether an actor may go that way, in
+        // what mode, or what it costs them. `WorldIR.traversal` is the authored
+        // link graph `traversal_link/3` always described and nothing exported. The
+        // two coexist: a host lays its navmesh over the geometry and asks core
+        // about the graph.
+        irSection: "traversal",
+        // The pure resolution is `src/traversal/traversal.ts` — affordances, cost
+        // and reachability as functions of the authored graph plus the runtime
+        // facts — and this is the half that remembers: who is where (a location
+        // atom, never a coordinate), which mode each actor is using, which links
+        // this playthrough closed, and the fact delta that makes all of it legible
+        // to every rule in the world. It charges 120's `energy/3` and grows no
+        // meter of its own.
+        // `VehicleRegistry` is the second half (US-2): a vehicle handed entirely to
+        // the engine is an opaque object, and an opaque object has no owner, so
+        // taking it is not theft; no NPC can choose it, because `candidate_action/3`
+        // cannot see it; and no law can forbid riding it. It holds identity,
+        // ownership, occupancy and the reins — and nothing else, because speed and
+        // handling are the host's and it exposes no surface for them.
+        // `FastTravelDirector` is the third (US-3), and the one a generic engine
+        // cannot supply: every engine can put a character somewhere else, and none
+        // of them can say what the WORLD did meanwhile. A journey advances the
+        // clock in bounded steps so the systems that hang off it run forward
+        // through it, and it is gated on discovery and permissibility rather than
+        // on a menu — `can_fast_travel/2` is the KB's own statement of that.
+        decisionLayer: ["TraversalPlanner", "VehicleRegistry", "FastTravelDirector"],
+        // Two, and they run in opposite directions — the same shape `combat` has.
+        // `ITraversalProbe` is ASKED the one question core cannot answer (could
+        // this actor actually get across that, from where they are standing);
+        // `ILocomotionHost` is TOLD to carry out a movement core has already
+        // afforded, permitted and charged for. Between them sits the whole of
+        // locomotion — the path, the speed, the animation, the character
+        // controller — and none of it crosses the boundary
+        // (`docs/mechanic-predicates.md` §11, `docs/module-contract.md` §3).
+        // Vehicles (US-2) add NO third interface, deliberately: riding somewhere is
+        // an ordinary traversal, so it goes out through `ILocomotionHost` with the
+        // vehicle named in the order. A vehicle-shaped host hook is where a speed
+        // and a handling model would arrive. Fast travel (US-3) adds none either,
+        // for the same reason in the other direction: a journey needs nothing from
+        // an engine that a movement does not, and a travel-shaped hook is where a
+        // transition animation and a loading screen would arrive in core.
+        hostInterface: ["ITraversalProbe", "ILocomotionHost"],
+        conformanceCorpus: ["mechanic-traversal"],
+        // The three bundles whose worlds are navigated rather than managed from
+        // above: `adventure` is exploration by definition, `survival` scores
+        // navigation, `rpg` gates regions on whether the player can reach them.
+        genreBundles: ["rpg", "survival", "adventure"]
+      }
+    },
+    {
+      id: "equipment",
+      name: "Equipment",
+      summary: "What may be equipped, into which slot, what it weighs, what it protects, and what wearing it does to the numbers.",
+      parts: {
+        predicatePack: "equipment",
+        // US-1 of `124-items-equipment-economy` moved this from `systems.items`,
+        // and both are real. `systems.items` is the item CATALOGUE — what a thing
+        // weighs, what it is worth, what it does — and it is unchanged; what an
+        // array of items cannot carry is the WORLD's own table, and that was the
+        // gap. `EquipmentManager` shipped with `EquipmentSlot` as a compiled union
+        // of three, so "two rings, not five" — the pack's own justifying example
+        // for `equip_slot_capacity/2` — was unrepresentable and a back slot for a
+        // cloak was a TypeScript change in four engines. `WorldIR.items` is the
+        // slot table those authored facts always described and nothing exported,
+        // exactly as `WorldIR.traversal` is the link graph the road geometry could
+        // not be read as. The two coexist.
+        irSection: "items",
+        // Two, and they divide by what they remember. `EquipmentManager` holds one
+        // actor's worn loadout and totals it into `CombatStats` for a host that
+        // supplied `ICombatStatSink` (US-1 of `112-core-inverted-module-seam`).
+        // `ItemLedger` (US-1 of `124-items-equipment-economy`) holds the thing that
+        // was missing under it: WHERE every item is. Three systems existed —
+        // `ContainerManager` for chests, `EquipmentManager` for slots, an
+        // `assert(has_item(...))` in the action block for a pickup — and none of
+        // them agreed on what an item is, so a sword in a chest, a sword in a pack
+        // and a sword in a hand were three records that shared a name. The ledger
+        // is one representation, four places, and NOT ONE new predicate: the
+        // vocabulary already had `has_item/3`, `container_contains/3` and
+        // `has_equipped/3`, every one keyed by the same authored item atom.
+        // `Market` is the third (US-2 of `124-items-equipment-economy`), and the
+        // one that had to exist for this module to be about ITEMS rather than
+        // about equipment: an item nobody can buy, sell or price is a thing the
+        // world hands out. It is also where the module stops resembling a generic
+        // inventory system — businesses, owners, occupations, factions and
+        // genealogy already exist as simulation here, so a price is resolved from
+        // them (`vendor_markup/2`, `business_owner/2`, `reputation/3`, a shelf's
+        // own `container_contains/3`) rather than read off a table, and a
+        // transaction is `permissible/3` under `buy_item` like any other action —
+        // which is what makes a theft a transaction that failed the gate rather
+        // than a mechanism of its own. It holds no item state: a shelf is a
+        // `container` place in `ItemLedger`.
+        // `ItemPlacer` is the fourth (US-3 of `124-items-equipment-economy`), and
+        // the one the brief lists FIRST: a world whose every sword starts in a
+        // merchant's pack has no exploration in it, and a generated world that
+        // cannot carry its own loot has nothing for the generation band to
+        // generate. It remembers what the world INTENDED to place and how much of
+        // that has happened; where the things themselves are is the ledger's
+        // `world` and `container` places, so this is the third module in a row
+        // that holds no item state. Its scene half is not here at all — the
+        // manifest is `editor/scene/placement.ts` and the re-import policy is
+        // `editor/reimport/diff.ts`, both used unchanged, because a placement id
+        // is the node's `entityId` and therefore the diff's match key: that is
+        // what makes a creator's hand-moved chest survive a regeneration.
+        decisionLayer: ["EquipmentManager", "ItemLedger", "Market", "ItemPlacer"],
+        // Still one, and deliberately: `ItemLedger` adds no host interface at all.
+        // Where an item physically is, the paper doll, the pickup animation and the
+        // dropped-sword mesh are the engine's and core never asks about them; the
+        // numbers a loadout totals go out the way they always did (`ICombatStatSink`)
+        // or through the parameter seam a module already takes as input
+        // (`items/item-effects.ts`, `withEquipmentModifiers`). An item-shaped host
+        // hook is where a mesh handle and a per-frame position would arrive in core.
+        // `Market` (US-2) adds none either, and the answer is the same one in a
+        // different key: money and stock are core state, a price is core's
+        // arithmetic over facts core already reads, and the shop panel — the
+        // layout, the haggling animation, the coin sound — is presentation. A
+        // trade-shaped host hook is where a UI callback would arrive on the C ABI
+        // (`docs/module-contract.md` §3). Adding none is a legitimate answer to
+        // part 4, and this is twice it has been the right one. `ItemPlacer` (US-3)
+        // makes it three, and it is the case that would most obviously have needed
+        // one: a placed sword has a mesh, a transform and a pickup radius. It gets
+        // no hook because the engine is already told where to draw it by the
+        // placement MANIFEST — an artifact, computed once, not a per-frame call
+        // across the ABI (UNIFICATION_ROADMAP decision 1) — and what a node IS
+        // comes back the other way, through `ItemPlacer.placementOf`.
+        //
+        // US-4 is where that answer stopped being an assertion: the headless
+        // reference host (`src/conformance/__tests__/headless-items-host.ts`) runs a
+        // whole playthrough — a placed wreck, a pickup, two equips, a purchase and a
+        // purchase the law refuses — and `asked` ends it holding one entry,
+        // `base_stats(nessa)`. An item-shaped probe would show up there as traffic
+        // and nowhere else. The Babylon host is tasklist 144.
+        hostInterface: ["ICombatStatSink"],
+        // Part 5 names the VOCABULARY corpus, as every module's does. The module's
+        // second artifact is `conformance/items/` (US-4): equipping, pricing,
+        // transaction resolution and placement identity, which no query corpus can
+        // pin because no rule computes a price, a refusal, a hoard or an identity —
+        // the same split `conformance/combat/` and `conformance/skills/` make.
+        // `npm run items-corpus` regenerates it.
+        conformanceCorpus: ["mechanic-equipment"],
+        genreBundles: ["rpg", "survival"]
+      }
+    },
+    {
+      id: "stamina",
+      name: "Stamina",
+      summary: "Whether an actor has the energy for this, and what exhaustion stops them doing.",
+      parts: {
+        predicatePack: "stamina",
+        irSection: "survival.staminaConfig",
+        // US-2 of `120-combat-and-stamina`, ahead of the 125 it was assigned to,
+        // because combat spends this resource and a mechanic cannot spend a
+        // resource no module owns. The pure model is `src/stamina/stamina.ts` —
+        // cost, recovery and the two threshold bands as integer functions of
+        // authored tuning — and this is the half that remembers one meter per
+        // actor and writes `energy/3` back where every rule can read it.
+        decisionLayer: ["StaminaPool"],
+        hostInterface: ["ISurvivalSystem"],
+        conformanceCorpus: ["mechanic-stamina"],
+        // One bundle, on purpose. Stamina is authored in `SurvivalIR`, which
+        // `WorldIR` itself marks "if genre enables it" — a genre that exports no
+        // survival section has nothing for this module to read. An RPG world still
+        // fights: `CombatResolver` takes a pool when one exists and prices nothing
+        // when it does not, which is what "does nothing when not selected" means
+        // for a resource other mechanics spend.
+        genreBundles: ["survival"]
+      }
+    },
+    {
+      id: "agentAi",
+      name: "Agent AI",
+      summary: "What each NPC does next: what it believes, which of the actions it could take are permitted, which is best, and what it has committed to over the next several ticks.",
+      parts: {
+        // One area for five pack texts, in the only order they consult in — see
+        // `ai/substrate-pack.ts`. The substrate is not one of the six mechanic
+        // areas; it is the layer that decides over whichever of them a world
+        // selected, which is why it registers in `PREDICATE_PACKS` rather than in
+        // `MECHANIC_PREDICATE_PACKS`.
+        predicatePack: "agentAi",
+        // The action block. Every plan step and every candidate is an `ActionIR`
+        // the creator authored, which is the whole of "one action vocabulary, not
+        // two": there is no second authored section for AI-only actions, and there
+        // must never be. Goals and norms ride in `systems.rules` and the world's
+        // `knowledgeBase` as authored Prolog (US-3's AC3 — a creator changes a more
+        // by changing content), so the section that carries the module's OWN
+        // authored data is this one.
+        irSection: "systems.actions",
+        decisionLayer: ["AgentPlanner"],
+        hostInterface: ["IAgentActionHost"],
+        conformanceCorpus: ["agent-ai"],
+        // The four bundles whose worlds are populated by characters who act on
+        // their own: an RPG's NPCs have routines and factions, a survival world's
+        // wildlife and raiders decide, an adventure's inhabitants are most of the
+        // content, and a life simulation is nothing else. A puzzle or strategy
+        // world moves pieces the player commands, and a language-learning or
+        // educational world's NPCs are conversation partners driven by the
+        // dialogue stack rather than by utility over a world model.
+        genreBundles: ["rpg", "survival", "adventure", "simulation"]
+      }
+    },
+    {
+      id: "routine",
+      name: "NPC routines",
+      summary: "What this NPC is standing here to do at this hour of this day, where it wants to be doing it, and what displaced it.",
+      parts: {
+        // US-1 of `125-npc-routines-and-locomotion`. Not one of the six mechanic
+        // areas and not the substrate either: it is a CLOCK OVER GOALS, which is
+        // why it registers in `PREDICATE_PACKS` beside `agentAi` rather than in
+        // `MECHANIC_PREDICATE_PACKS`. It is also the build's first composition
+        // pack outside the substrate, and `prolog/predicate-packs.ts` registers it
+        // last for the reason its header gives.
+        predicatePack: "routine",
+        // The World IR carried `NPCDailyScheduleIR` — hours, an activity atom and
+        // a building id per NPC — which is what a behaviour tree needs and what a
+        // decision layer cannot read: an activity is a LABEL, and a label says
+        // nothing about what the NPC wants. `WorldIR.routines` is the same day
+        // authored as goals, and `routineFromDailySchedule` converts one into the
+        // other so the schedule stops being a parallel system.
+        irSection: "routines",
+        // The pure resolution is `src/routines/routines.ts` — which authored block
+        // is open at this hour on this day, as integer arithmetic four engines
+        // reproduce — and this is the half that remembers: whose routine is whose,
+        // what each has adopted, and what preempted it. Its entire output is one
+        // `agent_goal/3` fact per NPC; `AgentPlanner` does everything after that
+        // and has no idea routines exist, which is the whole of "no second
+        // scheduler" (`docs/npc-routines.md` §2).
+        // `LocomotionDirector` is the second half (US-2), and it is what closes the
+        // sentence US-1 opened: a block's place is a REQUIREMENT of its goal, so an
+        // NPC whose day says "be at the forge" holds a goal it cannot satisfy from
+        // where it stands. This turns that standing wish into movement INTENT — a
+        // destination, an urgency and a stance, all atoms — orders ONE adjacent leg
+        // at a time through 122's `TraversalPlanner`, and treats a host that could
+        // not get there as an outcome rather than an exception: it counts the
+        // failures and, after an authored number of them, invalidates the plan so
+        // the substrate re-plans. It computes no path and owns no notion of what is
+        // passable; both are `traversal`'s, asked through one structural interface.
+        decisionLayer: ["RoutineDirector", "LocomotionDirector"],
+        // One, and it is `traversal`'s own — the ONLY part of this manifest two
+        // modules name (US-2 of `125-npc-routines-and-locomotion`). That is the
+        // answer, not a shortcut: an NPC walking to the forge because its day says
+        // so is an ordinary movement, so it leaves through the interface a player's
+        // step leaves through, with the intent named in the order
+        // (`LocomotionOrder.urgency`, `.stance`). A routine-shaped host hook is
+        // precisely where a path, a speed and an animation would have arrived in
+        // core — the same reasoning that gave vehicles and fast travel no interface
+        // of their own, and the reason US-1's pending block refused to invent one
+        // before this story defined the contract. What US-2 DID add is two atoms on
+        // the order every engine already had to implement.
+        //
+        // US-3 added no interface either, and for the third time the absence IS the
+        // contract: an ANIMATION intent (`ActionOrder.animation`, one atom of
+        // `ANIMATION_INTENTS`) rides the order `agentAi`'s `IAgentActionHost`
+        // already carries, so a host learns what a body should be doing in the same
+        // call that tells it the body is doing anything at all. An `IAnimationHost`
+        // beside it would be a second call about one decision, and the cadence of
+        // that second call is a frame loop (`docs/animation-intent.md` §4).
+        hostInterface: ["ILocomotionHost"],
+        conformanceCorpus: ["mechanic-routine"],
+        // The same four bundles `agentAi` names, and necessarily a subset of them:
+        // a routine is a goal for the substrate's planner to serve, so a genre that
+        // selects routines without the substrate would author days nothing acts on.
+        // A puzzle or strategy world moves pieces the player commands and its
+        // inhabitants keep no hours.
+        genreBundles: ["rpg", "survival", "adventure", "simulation"]
+      }
+    },
+    {
+      id: "map",
+      name: "Map and geopolitics",
+      summary: "Which region a position is in, which authority claims it, what that authority claimed in 1850, what this playthrough has found, and what an engine draws from all of it.",
+      parts: {
+        // US-1 of `133-map-and-geopolitical-layer` wrote the pack and deliberately
+        // left it UNregistered (`docs/geopolitical-layer.md` §9): four of the six
+        // parts depended on what the map surface turned out to need, and a
+        // `pending` block written in ignorance of its own answer is worse than no
+        // entry at all. US-3 is that answer, so the area is registered — last in
+        // `PREDICATE_PACKS`, because the pack writes clauses for `forbids/4` and
+        // `scoped_norm/1` that the substrate's enforcement pack declares
+        // `:- dynamic`, and its territorial clause calls that pack's `norm/2`.
+        // The area carries the REGION half only. The temporal half
+        // (`geo/history-predicates.ts`) reads `world_resolve/4` out of the identity
+        // layer, which `GamePrologEngine` does not consult, so registering it would
+        // put a pack in every selected KB whose rules call something that KB has no
+        // definition for — `docs/political-history.md` §6 is the consult order a
+        // caller that wants borders over time follows instead.
+        predicatePack: "map",
+        // The geometry the World IR has exported since the first world:
+        // `CountryIR.bounds`, `StateIR.bounds`, `SettlementIR.position` + `radius`,
+        // `TerrainFeatureIR`, `WaterFeatureIR`. `regionsFromGeography` is the
+        // projection and it adds no field — a region is an extent for a document
+        // that already exists, so a country's name, its laws and its government
+        // stay in the country block where they always were.
+        irSection: "geography",
+        // The pure half is `src/geo/` — the facts, the readers and
+        // `buildMapSurface`, all functions of their inputs — and this is the half
+        // that remembers: what this playthrough has FOUND. That is the module's
+        // only runtime state, it is per-playthrough by definition, and it is
+        // written in `location_discovered/1`, the predicate travel and quests were
+        // already asserting. There is no `map_discovered/1`.
+        decisionLayer: ["MapDirector"],
+        // `traversal`'s own, and the second time in this manifest a module names
+        // another's (after `routine`). It is the answer rather than a shortcut:
+        // what a host DRAWS is the value `MapDirector.surface()` returns — an
+        // `IMapUi` would be a UI callback on the C ABI (§3), and a map is the most
+        // per-frame surface in a game, so it is exactly where one would arrive —
+        // and the only thing a map DOES is send somebody to a place they found,
+        // which is an ordinary fast travel and leaves through the interface every
+        // other movement leaves through. A map-shaped locomotion hook would be a
+        // second way to move a character; a map-shaped UI hook would be a frame
+        // loop across the ABI. Neither exists (`docs/map-surface.md` §5).
+        hostInterface: ["ILocomotionHost"],
+        // The query corpus. It cannot pin the surface — no rule computes one — so
+        // `conformance/map/` is the artifact a native port diffs against, with the
+        // resolution re-run against a REVERSED world in every case.
+        conformanceCorpus: ["geo-map"],
+        // The four bundles whose worlds are places rather than boards, and
+        // necessarily a subset of `agentAi`'s: the pack's jurisdiction clause calls
+        // the substrate's `norm/2`, so a genre that selected the map without the
+        // substrate would author a territorial law with no gate to evaluate it. A
+        // puzzle world has no territory; an educational or language-learning world
+        // has locations without jurisdiction over them.
+        genreBundles: ["rpg", "survival", "adventure", "simulation"]
+      }
+    }
+  ];
+  var PACKS_WITHOUT_A_MODULE = Object.freeze({
+    gameplayState: "Shared state vocabulary, not a mechanic \u2014 `health/3`, `energy/3`, `near/3` and the rest of the adopted gameplay predicates (docs/mechanic-predicates.md \xA710.1). Every module reads it; none owns it.",
+    scaffold: "The shell AROUND the mechanics, not one of them (136-whole-game-scaffolding, docs/whole-game-scaffolding.md \xA77). It fails three of the six parts by construction and each failure is the right answer: no irSection, because a scaffold is authored Prolog a creator edits beside the world rather than a field of WorldIR; no hostInterface, because its decisions are a value core returns and a game that ended is something a host is told through the event bus it already has; and no genreBundles, because \xA72.6 is explicit that a mechanic which is always on is not a module \u2014 every game has a shell, whichever mechanics it selected, so this pack is ALWAYS active. src/scaffold/__tests__/module-position.test.ts holds the classification in both directions."
+  });
+
+  // @insimul/core/src/modules/module-activation.ts
+  var ALWAYS_ACTIVE_PACKS = Object.freeze(
+    Object.keys(PACKS_WITHOUT_A_MODULE)
+  );
+  var PACK_ORDER = PREDICATE_PACKS.map((pack) => pack.area);
+  function describe(module) {
+    return {
+      id: module.id,
+      name: module.name,
+      predicatePack: module.parts.predicatePack ?? null,
+      irSection: module.parts.irSection ?? null,
+      decisionLayer: [...module.parts.decisionLayer ?? []],
+      hostInterface: [...module.parts.hostInterface ?? []],
+      conforms: module.pending === void 0
+    };
+  }
+  function packsFor(modules) {
+    const owned = new Set(modules.map((m) => m.predicatePack).filter((a) => a !== null));
+    return PACK_ORDER.filter((area) => owned.has(area) || ALWAYS_ACTIVE_PACKS.includes(area));
+  }
+  function build(genre, known, modules) {
+    return Object.freeze({
+      genre,
+      known,
+      modules: Object.freeze(modules),
+      predicatePacks: Object.freeze(packsFor(modules)),
+      hostInterfaces: Object.freeze([
+        ...new Set(modules.flatMap((m) => [...m.hostInterface]))
+      ])
+    });
+  }
+  function resolveActiveModules(genreId) {
+    if (!(genreId in GENRE_BUNDLES)) return build(genreId, false, []);
+    return build(
+      genreId,
+      true,
+      INSIMUL_MODULES.filter((m) => m.parts.genreBundles?.includes(genreId)).map(describe)
+    );
+  }
+  function activeModulesForWorld(ir) {
+    return resolveActiveModules(ir.meta.genreConfig.id);
+  }
+  var MODULE_ACTIVATION_TABLE = Object.freeze(
+    Object.fromEntries(Object.keys(GENRE_BUNDLES).map((id) => [id, resolveActiveModules(id)]))
+  );
+  function moduleActivationTable() {
+    return {
+      description: "Genre bundle \u2192 active Insimul modules. Emitted from INSIMUL_MODULES by npm run module-activation; see packages/core/docs/module-contract.md \xA77.",
+      alwaysActivePacks: ALWAYS_ACTIVE_PACKS,
+      genres: Object.fromEntries(
+        Object.entries(MODULE_ACTIVATION_TABLE).map(([id, set]) => [id, set])
+      )
+    };
+  }
+
   // corebridge/js/host-mechanics.js
   var SESSIONS = /* @__PURE__ */ new Map();
   var nextHandle = 1;
@@ -10086,6 +12999,24 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
   function staminaOf(args) {
     return args.stamina === void 0 || args.stamina === null ? void 0 : session({ session: args.stamina }, "stamina").layer;
   }
+  function activated(source, set) {
+    return {
+      source,
+      active: set,
+      predicatePacks: [...set.predicatePacks],
+      hostInterfaces: [...set.hostInterfaces],
+      reason: set.known ? "" : `core has no genre bundle "${set.genre}" \u2014 shared vocabulary only`
+    };
+  }
+  function undeclared(reason) {
+    return {
+      source: "undeclared",
+      active: null,
+      predicatePacks: [...PREDICATE_PACK_AREAS],
+      hostInterfaces: [],
+      reason
+    };
+  }
   var METHODS = {
     /**
      * `radiant.generate` — the first adopted slice (RUNTIME_CORE_ADOPTION.md §5).
@@ -10436,6 +13367,93 @@ radiant_exclusion(rt_visit, radiant_generated(_, rt_visit, _)).
       modules: MECHANIC_MODULES,
       hostInterfaces: HOST_INTERFACES
     }),
+    // ── module activation (tasklist 147, US-3) ────────────────────────────────
+    //
+    // A genre bundle names its modules; a module names its pack, its decision
+    // layers and its host interfaces. All of it is DATA in core
+    // (`src/modules/module-activation.ts`), which is what lets this plugin
+    // activate what a world selected WITHOUT a list of mechanics in its own
+    // source: adding a module to a bundle in core changes the answer these rows
+    // give, and no GDScript changes. `addons/insimul/runtime/mechanics/
+    // insimul_module_activation.gd` is the reader.
+    /**
+     * `modules.activate` — what this world activates.
+     *
+     * args: `{ ir }` a World IR (the genre rides in `meta.genreConfig.id`, which
+     *       is all a plugin has to carry across the ABI), or `{ genre }` for a
+     *       host that already knows the id, or NEITHER.
+     *
+     * The three answers are core's three and they are kept apart, because
+     * conflating any two of them is a bug with a different consequence each
+     * (`GamePrologEngineConfig.genre`, and `resolveActiveModules`'s header):
+     *
+     *   known genre    -> exactly what the bundle selects.
+     *   unknown genre  -> `known: false`, no modules, the always-active packs.
+     *                     A genre core has never heard of must NOT silently
+     *                     inherit every mechanic in the build.
+     *   nothing said   -> every pack in the build. Right for a tool, an editor
+     *                     session or a test; a warning in a game, which is why
+     *                     `source` is reported rather than inferred.
+     *
+     * result: `{ source, active, predicatePacks, hostInterfaces, reason }`.
+     * `active` is core's `ActiveModuleSet` VERBATIM — the same object the
+     * committed `conformance/modules/genre-activation.json` holds, so the gate
+     * can deep-compare the two — and is `null` when no genre was declared.
+     * `predicatePacks` and `hostInterfaces` are lifted to the top level so a
+     * caller reads the same two fields whichever answer it got.
+     */
+    "modules.activate": (args) => {
+      if (args.ir !== void 0 && args.ir !== null) {
+        const id = args.ir?.meta?.genreConfig?.id;
+        if (typeof id !== "string") {
+          return undeclared("the World IR carries no meta.genreConfig.id");
+        }
+        return activated("worldIr", activeModulesForWorld(args.ir));
+      }
+      if (typeof args.genre === "string") return activated("genre", resolveActiveModules(args.genre));
+      return undeclared("no genre and no World IR was passed");
+    },
+    /**
+     * `modules.table` — the WHOLE activation table, byte-for-byte the contents of
+     * core's `conformance/modules/genre-activation.json`.
+     *
+     * Emitted by core's own `moduleActivationTable()`, which is the function
+     * `scripts/emit-module-activation.ts` writes that file with. So the corpus
+     * this repo vendors and the answer this build gives have ONE definition
+     * between them, and `run_activation_tests.sh` compares them.
+     */
+    "modules.table": () => moduleActivationTable(),
+    /**
+     * `prolog.packs` — the rule-pack TEXT for a set of areas, in consult order.
+     *
+     * The activation table says WHICH packs a world consults and no row returned
+     * their source, so a native adapter had the list and nowhere to get the text
+     * (Unity hit this and vendored the eleven packs as game data; this bundle
+     * already carries them, so a row is enough). RUNTIME_CORE_ADOPTION.md §13.1.
+     *
+     * `order` is `PREDICATE_PACK_AREAS` and the returned packs are in it, which
+     * is a HARD constraint rather than tidiness: the routine and map packs add
+     * clauses for predicates the substrate pack declares `:- dynamic`, and a
+     * `:- dynamic` arriving after a clause is a permission_error on a strict ISO
+     * engine — which is the engine this plugin links.
+     *
+     * args: `{ areas?: string[] }`; absent means every pack in the build.
+     * result: `{ packs: [{ area, prolog, runtimePredicates }], order, unknown }`.
+     */
+    "prolog.packs": (args) => {
+      const wanted = Array.isArray(args.areas) ? new Set(args.areas.map(String)) : null;
+      return {
+        packs: PREDICATE_PACKS.filter((pack) => wanted === null || wanted.has(pack.area)).map(
+          (pack) => ({
+            area: pack.area,
+            prolog: pack.prolog,
+            runtimePredicates: [...pack.runtimePredicates]
+          })
+        ),
+        order: [...PREDICATE_PACK_AREAS],
+        unknown: wanted === null ? [] : [...wanted].filter((a) => !PREDICATE_PACK_AREAS.includes(a))
+      };
+    },
     // ── conformance (tasklist 147, US-2) ──────────────────────────────────────
     //
     // A vendored corpus nothing runs is a checked-in file. These three rows are

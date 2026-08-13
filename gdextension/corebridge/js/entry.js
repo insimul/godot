@@ -43,6 +43,23 @@ import { SkillProgression } from '@insimul/core/game-engine/logic/SkillProgressi
 import { EquipmentManager } from '@insimul/core/game-engine/logic/EquipmentManager';
 import { RoutineDirector } from '@insimul/core/game-engine/logic/RoutineDirector';
 import { CombatActionTable } from '@insimul/core/combat/action-table';
+// ── Genre bundle → active module set (tasklist 147, US-3) ───────────────────
+//
+// The activation table is DATA (`docs/module-contract.md` §7): a genre selects
+// modules, a module names its pack and its host interfaces, and a plugin that
+// reads that resolves what to activate without a list of mechanics in its own
+// source. These three rows are the whole of it — `modules.activate` for one
+// world, `modules.table` for the committed table, `prolog.packs` for the pack
+// TEXT that the active set names but does not carry.
+import {
+	activeModulesForWorld,
+	moduleActivationTable,
+	resolveActiveModules,
+} from '@insimul/core/modules/module-activation';
+import {
+	PREDICATE_PACK_AREAS,
+	PREDICATE_PACKS,
+} from '@insimul/core/prolog/predicate-packs';
 // The Prolog seam, resolved by the bundler to js/host-prolog-engine.js — the
 // same native Trealla the rest of this plugin links.
 import { createPrologEngine } from '@insimul/core/prolog/prolog-engine';
@@ -118,6 +135,28 @@ function staminaOf(args) {
 	return args.stamina === undefined || args.stamina === null
 		? undefined
 		: session({ session: args.stamina }, 'stamina').layer;
+}
+
+/** One resolved genre, with the pack list and interfaces lifted to the top. */
+function activated(source, set) {
+	return {
+		source,
+		active: set,
+		predicatePacks: [...set.predicatePacks],
+		hostInterfaces: [...set.hostInterfaces],
+		reason: set.known ? '' : `core has no genre bundle "${set.genre}" — shared vocabulary only`,
+	};
+}
+
+/** No genre was declared: every pack, and nothing activated. See the row. */
+function undeclared(reason) {
+	return {
+		source: 'undeclared',
+		active: null,
+		predicatePacks: [...PREDICATE_PACK_AREAS],
+		hostInterfaces: [],
+		reason,
+	};
 }
 
 /** The adopted surface. One entry per method name callable from the host. */
@@ -515,6 +554,101 @@ const METHODS = {
 		modules: MECHANIC_MODULES,
 		hostInterfaces: HOST_INTERFACES,
 	}),
+
+	// ── module activation (tasklist 147, US-3) ────────────────────────────────
+	//
+	// A genre bundle names its modules; a module names its pack, its decision
+	// layers and its host interfaces. All of it is DATA in core
+	// (`src/modules/module-activation.ts`), which is what lets this plugin
+	// activate what a world selected WITHOUT a list of mechanics in its own
+	// source: adding a module to a bundle in core changes the answer these rows
+	// give, and no GDScript changes. `addons/insimul/runtime/mechanics/
+	// insimul_module_activation.gd` is the reader.
+
+	/**
+	 * `modules.activate` — what this world activates.
+	 *
+	 * args: `{ ir }` a World IR (the genre rides in `meta.genreConfig.id`, which
+	 *       is all a plugin has to carry across the ABI), or `{ genre }` for a
+	 *       host that already knows the id, or NEITHER.
+	 *
+	 * The three answers are core's three and they are kept apart, because
+	 * conflating any two of them is a bug with a different consequence each
+	 * (`GamePrologEngineConfig.genre`, and `resolveActiveModules`'s header):
+	 *
+	 *   known genre    -> exactly what the bundle selects.
+	 *   unknown genre  -> `known: false`, no modules, the always-active packs.
+	 *                     A genre core has never heard of must NOT silently
+	 *                     inherit every mechanic in the build.
+	 *   nothing said   -> every pack in the build. Right for a tool, an editor
+	 *                     session or a test; a warning in a game, which is why
+	 *                     `source` is reported rather than inferred.
+	 *
+	 * result: `{ source, active, predicatePacks, hostInterfaces, reason }`.
+	 * `active` is core's `ActiveModuleSet` VERBATIM — the same object the
+	 * committed `conformance/modules/genre-activation.json` holds, so the gate
+	 * can deep-compare the two — and is `null` when no genre was declared.
+	 * `predicatePacks` and `hostInterfaces` are lifted to the top level so a
+	 * caller reads the same two fields whichever answer it got.
+	 */
+	'modules.activate': (args) => {
+		if (args.ir !== undefined && args.ir !== null) {
+			const id = args.ir?.meta?.genreConfig?.id;
+			// A World IR with no genreConfig is NOT an unknown genre: nothing was
+			// declared. Core's `activeModulesForWorld` would raise on the missing
+			// field rather than resolve, so the adapter answers here — see
+			// RUNTIME_CORE_ADOPTION.md §13.2, which is where it is written up.
+			if (typeof id !== 'string') {
+				return undeclared('the World IR carries no meta.genreConfig.id');
+			}
+			return activated('worldIr', activeModulesForWorld(args.ir));
+		}
+		if (typeof args.genre === 'string') return activated('genre', resolveActiveModules(args.genre));
+		return undeclared('no genre and no World IR was passed');
+	},
+
+	/**
+	 * `modules.table` — the WHOLE activation table, byte-for-byte the contents of
+	 * core's `conformance/modules/genre-activation.json`.
+	 *
+	 * Emitted by core's own `moduleActivationTable()`, which is the function
+	 * `scripts/emit-module-activation.ts` writes that file with. So the corpus
+	 * this repo vendors and the answer this build gives have ONE definition
+	 * between them, and `run_activation_tests.sh` compares them.
+	 */
+	'modules.table': () => moduleActivationTable(),
+
+	/**
+	 * `prolog.packs` — the rule-pack TEXT for a set of areas, in consult order.
+	 *
+	 * The activation table says WHICH packs a world consults and no row returned
+	 * their source, so a native adapter had the list and nowhere to get the text
+	 * (Unity hit this and vendored the eleven packs as game data; this bundle
+	 * already carries them, so a row is enough). RUNTIME_CORE_ADOPTION.md §13.1.
+	 *
+	 * `order` is `PREDICATE_PACK_AREAS` and the returned packs are in it, which
+	 * is a HARD constraint rather than tidiness: the routine and map packs add
+	 * clauses for predicates the substrate pack declares `:- dynamic`, and a
+	 * `:- dynamic` arriving after a clause is a permission_error on a strict ISO
+	 * engine — which is the engine this plugin links.
+	 *
+	 * args: `{ areas?: string[] }`; absent means every pack in the build.
+	 * result: `{ packs: [{ area, prolog, runtimePredicates }], order, unknown }`.
+	 */
+	'prolog.packs': (args) => {
+		const wanted = Array.isArray(args.areas) ? new Set(args.areas.map(String)) : null;
+		return {
+			packs: PREDICATE_PACKS.filter((pack) => wanted === null || wanted.has(pack.area)).map(
+				(pack) => ({
+					area: pack.area,
+					prolog: pack.prolog,
+					runtimePredicates: [...pack.runtimePredicates],
+				}),
+			),
+			order: [...PREDICATE_PACK_AREAS],
+			unknown: wanted === null ? [] : [...wanted].filter((a) => !PREDICATE_PACK_AREAS.includes(a)),
+		};
+	},
 
 	// ── conformance (tasklist 147, US-2) ──────────────────────────────────────
 	//

@@ -1132,6 +1132,154 @@ years ago and never notices its own engine got better.
 
 ---
 
+## 13. Activation from the genre bundle (tasklist 147, US-3)
+
+US-1 made the seven modules reachable and US-2 made them right. Both of them
+still opened whatever the caller asked for. This story is the last of the three
+and it answers a different question: **which modules does THIS world run, and
+what does a module it did not select cost?**
+
+The answer core gives is data — `src/modules/module-activation.ts`, committed as
+`conformance/modules/genre-activation.json` — so the answer this plugin gives is
+a lookup, not a list. Three rows carry it:
+
+| row | what it answers |
+|---|---|
+| `modules.activate` | one world (`{ir}`) or one genre (`{genre}`) → core's `ActiveModuleSet` verbatim, plus `source` |
+| `modules.table` | the whole committed table, from core's own `moduleActivationTable()` |
+| `prolog.packs` | the rule-pack TEXT for a set of areas, in core's consult order |
+
+and two GDScript classes read them: `InsimulModuleActivation` (what this world
+selected) and `InsimulMechanicActivator` (open exactly those sessions, wire
+exactly those interfaces, and say what could not be reached).
+
+### 13.1 The claim, and how it is actually checked
+
+"Adding a module to a genre bundle requires no engine code change" is a claim
+about the ABSENCE of something, and absence is not provable by reading code that
+looks clean. So `check-mechanics.mjs` grew a seventh check that greps both
+activation sources for **every module id, pack area and genre id in the vendored
+table** — comments included, because a comment listing the modules rots exactly
+like code does — and fails on a hit. Its negative control plants one.
+
+The runtime half is `gdextension/test/run_activation_tests.sh` (`npm run
+test:activation`), 30 checks:
+
+* `modules.table` deep-equals the vendored file. One definition between the
+  bytes this repo ships and the answer this build gives.
+* all **8** bundles resolved, by genre id **and** through a World IR's
+  `meta.genreConfig.id`, deep-compared against the committed set — 24 module
+  activations.
+* core's three answers kept apart: a known bundle, an unknown genre (the shared
+  vocabulary and *not* every mechanic in the build), and nothing declared (every
+  pack — right for a tool, a warning in a game, and reported as `source` rather
+  than inferred).
+* **the witness, in a real KB.** For all 8 genres × 11 packs: consult exactly the
+  packs the active set names, on the natively linked Trealla, and ask
+  `current_predicate/1` for that pack's signature predicate. It is there when the
+  module is active and absent when it is not — 88 pairs, and `rpg` carries 10 of
+  the 11 packs while `puzzle` carries 2. The signature is **measured, not
+  listed**: a predicate the build itself proves is defined by that pack alone.
+  A plugin that quietly consulted all eleven packs passes every other check in
+  the file and fails this one.
+* **the scene, replayed.** `templates/project/insimul/scenarios/dark-courtyard.json`
+  is the sample scene's steps as data: 6 steps across 2 modules, and every module
+  it opens must be one the scenario's genre activates. The Godot scene
+  (`mechanic_courtyard_demo.gd`) drives that file with real raycasts and light
+  probes; the gate replays it through the same rows with no Godot binary.
+
+### 13.2 Three findings that should change the module contract
+
+Written up rather than worked around, in the shape §11.2 and §11.3 used.
+
+**1. The activation table names packs it cannot resolve.** `ActiveModuleSet.
+predicatePacks` is the list a host consults, and nothing in the artifact
+resolves an area to its Prolog text or lets a vendored copy be verified. Unity
+met this and had to vendor the eleven pack texts as game data with its own
+hash-pinning tool. This plugin does not, because the bundle it links already
+carries `PREDICATE_PACKS` — `prolog.packs` is one row over data that was already
+there. **The contract should say which of those two is the intended shape**: if
+the table is the adapter-facing artifact, it should carry a per-area digest so a
+vendored pack can be checked against the table that names it; if the pack text is
+expected to arrive with the core build, the table should say so and Unity's
+vendoring is a workaround for a binding gap rather than the pattern.
+
+**2. `activeModulesForWorld` raises where the config resolves.**
+`GamePrologEngineConfig` distinguishes three states — a known genre, an unknown
+one, and none declared — and is careful about it: "absent means every pack, which
+is deliberately NOT what an *unknown* genre means". `activeModulesForWorld(ir)`
+has only two: given an IR whose `meta` carries no `genreConfig`, it reads
+`.id` off `undefined` and throws a `TypeError`. That is a real shape — a
+world exported before the field existed, and (finding 2 of Unity's §14) a
+`SaveFile.worldSnapshot`, which carries no `meta` at all. The adapter answers it
+here (`source: 'undeclared'` with the reason said, checked by the gate), which
+means the two engines will answer it *differently* until core does. **The
+function should resolve the undeclared answer rather than raise**, or return the
+`source` itself so every adapter reports the same three states.
+
+**3. A modified bundle has no active module set.** `packAreasForModules(ids)`
+returns pack areas and nothing else, so the path the module brief calls the
+normal case — "the creator picks the mechanics and modifies from there" — can
+tell a host which packs to consult but *not* which host interfaces to register or
+which systems to activate. `GamePrologEngineConfig.activeModules` is enough for a
+KB and not enough for an adapter. This plugin therefore supports the genre path
+only, deliberately: guessing the rest would have put a second composition rule in
+an engine. **Core should expose the `ActiveModuleSet` for an explicit id set**
+(`resolveActiveModulesFor(ids)`), at which point this becomes an argument to an
+existing row.
+
+### 13.3 A fourth thing, which is not a finding but a boundary
+
+A genre bundle can activate a module **no engine has adopted**. `rpg` and
+`survival` both select `agentAi` and `map`; neither is in this repo's seven, and
+their decision layers are not bundled. Activation therefore has two halves and
+they come apart cleanly:
+
+* the **pack** half needs only the pack text, which the bundle carries for every
+  pack in the build. An unadopted module's vocabulary IS in the KB and its
+  authored gates evaluate — the witness above counts `rpg` at 10 packs, including
+  both of them.
+* the **session** half needs a decision layer behind a bridge row, which those
+  two do not have. `InsimulMechanicActivator` reports them as *selected but not
+  runnable*, and the sample scene prints it.
+
+That is reported rather than skipped because a silently skipped mechanic looks
+identical to a working one from the outside. `check-mechanics.mjs`'s `NOT_ADOPTED`
+table makes the accounting total: an activated module that is neither adopted nor
+declared unadopted fails the gate, so core adding a module to a bundle surfaces
+here as a decision to make.
+
+### 13.4 What is gated, and what still is not
+
+Gated on any box: the seventh mirror check (no hardcoded list), and
+`npm run test:activation`'s 30 checks — the table, the 8 bundles, the three
+answers, the 88 KB witnesses, the 6 scenario steps.
+
+Not gated, and said plainly: **no GDScript runs in any of it.** The activator's
+host filtering, the binder's `creating_module` handshake and the scene's raycasts
+are covered structurally by the lint and by the human pass in VERIFICATION.md
+§0e. The scenario file is what closes most of that gap — the steps a human would
+click through are executed headlessly through the same rows — but the readings
+those steps carry are the scenario's, not a live raycast's, in the gate.
+
+### 13.5 What Unreal inherits
+
+The shape, and one warning.
+
+The shape: **resolve, then filter, then report.** One row returning core's
+`ActiveModuleSet` verbatim; a reader that spells no mechanic; a host table
+filtered per module by the interfaces the module itself declares; and an explicit
+*selected but not runnable* state. The KB witness is the check worth copying
+before any of the others — it is the only one that can fail on a plugin that
+resolves activation correctly and then consults everything anyway.
+
+The warning: `prolog.packs` exists because this plugin links the whole core
+bundle. An adapter that binds a narrower ABI has to solve finding 1 some other
+way, and Unity's vendored-with-hashes answer is the fallback — but it is a
+fallback, and §13.2 is the request that makes it unnecessary.
+
+---
+
 ## Appendix A — drop-in text for `docs/UNIFICATION_ROADMAP.md` Decision 1
 
 That file lives in the **project checkout**, outside this submodule, so this

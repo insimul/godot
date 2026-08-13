@@ -904,3 +904,87 @@ All three print their NOT_MIRRORED exclusions with a count on every run. Without
 | `vendor-core-bundle --check --core` | ✅ re-bundle reproduces the artifact byte-for-byte |
 | `check-mechanics --core` | ✅ manifest matches core `76782e5` |
 | `conformance/ui/*.json` | ⬜ **executed by nothing on this tier** — declared, not hidden (§12.5) |
+
+---
+
+# Genre-bundle activation (tasklist 147, US-3)
+
+Which modules a world actually runs, and what a module it did *not* select costs.
+`RUNTIME_CORE_ADOPTION.md` §13 is the report.
+
+## Runs on any box (no Godot toolchain, no libinsimul)
+
+```sh
+npm run check     # includes check-mechanics' SEVENTH check
+```
+
+Check 7 is the one that holds US-3's claim to account: it greps
+`addons/insimul/runtime/mechanics/insimul_module_activation.gd` and
+`insimul_mechanic_activator.gd` for **every module id, pack area and genre id**
+in `conformance/modules/genre-activation.json` — comments included — and fails on
+a hit. It also fails when the vendored table and `MODULE_HOSTS.json` disagree
+about a module's host interfaces (two artifacts, two tools, one core manifest),
+and when a bundle activates a module that is neither adopted nor declared
+unadopted. Its negative control plants a genre id in a fake source file.
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:activation     # bash gdextension/test/run_activation_tests.sh
+```
+
+**30 checks**, in four parts:
+
+| part | what runs | count |
+| --- | --- | --- |
+| the table | `modules.table` deep-compared to the vendored `genre-activation.json` | 1 |
+| the bundles | every genre resolved through `modules.activate`, by genre id **and** through a World IR's `meta.genreConfig.id`, deep-compared to the committed set | 8 genres, 24 activations |
+| the edges | unknown genre → shared vocabulary only; nothing declared → every pack; a World IR with no `genreConfig` → undeclared, with the reason | 5 |
+| the witness | for every genre × pack: consult exactly the active packs on the native Trealla and ask `current_predicate/1` for that pack's measured signature | 8 × 11 = 88 pairs |
+| the scene | `templates/project/insimul/scenarios/dark-courtyard.json` replayed through the same rows the Godot scene calls | 6 steps, 2 modules |
+
+Expect:
+
+```
+  ✓ `modules.table` is byte-equal to conformance/modules/genre-activation.json
+  ✓ rpg                8 module(s), 10 pack(s), 8 host interface(s)
+  ✓ rpg                10 of 11 pack(s) in the KB, and exactly the active ones
+  ✓ puzzle             2 of 11 pack(s) in the KB, and exactly the active ones
+  ✓ dark-courtyard     rpg: 6 step(s) across 2 module(s), every expectation met
+30 check(s), 0 failure(s)
+```
+
+Like the other libinsimul-linked gates it **fails loudly when the library is
+absent** rather than skipping.
+
+## <a name="godot-activation-sample-scene"></a>Needs a `godot` binary — human scene pass
+
+The half no host gate reaches: the raycasts, the lights and the bodies.
+
+```sh
+godot --path templates/project -s scripts/mechanics/mechanic_courtyard_demo.gd
+```
+
+- [ ] The boot log prints the activation block — the genre, where it came from
+      (`worldIr` / `genre` / `undeclared`), one line per selected module, and the
+      pack list.
+- [ ] It prints **`selected but not runnable`** for `agentAi` and `map` under an
+      `rpg` world. That is the honest state, not a bug: their packs are consulted,
+      their decision layers are not bundled (§13.3).
+- [ ] The guard detects the wanderer when the wanderer crosses the lantern's pool
+      of light and not when they are in the dark — with the visibility number
+      coming from `godot_geometry_probes.gd`'s raycast, not from the scenario.
+- [ ] The spear thrust moves the wanderer's health by the number core decided
+      (the `ICombatSystem.applyDamage` order), and the crossbow shot with the
+      crate in the way applies nothing and reports `blockedBy: crate`.
+- [ ] With a world whose genre is `puzzle`, the same scene activates nothing and
+      says so — no session opens and the steps report `SKIPPED`.
+
+## Status on this machine (activation)
+
+| gate | result |
+| --- | --- |
+| `npm run check` (7 checks + 7 negative controls) | ✅ 186 `.gd` files, 0 problems |
+| `npm run test:activation` | ✅ **30 checks, 0 failures** — 8 bundles, 88 KB witnesses, 6 scenario steps |
+| `vendor-conformance --check --core` | ✅ byte-identical to core `76782e5`; 64 files, 19 case floors + the table floors met |
+| the human scene pass | ⬜ needs a `godot` binary + a built extension |
