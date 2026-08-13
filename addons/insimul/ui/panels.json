@@ -1,0 +1,52 @@
+{
+  "description": "The shipped default-UI panel manifest: panel key -> the scene that serves it, plus the Insimul modules (band 111, conformance/modules/genre-activation.json) a panel needs before it is offered at all. This file is DATA on purpose — insimul_ui_registry.gd resolves through it and spells no panel key and no module id, so adding or gating a panel is a data change, not an engine change. Keys mirror conformance/ui/registry-cases.json -> panel_keys; tools/verify-ui/check-ui.mjs holds the two to each other and checks every scene and every module id.",
+  "version": 1,
+  "panels": {
+    "loading_screen": {
+      "scene": "res://addons/insimul/ui/scenes/loading_screen.tscn"
+    },
+    "notifications": {
+      "scene": "res://addons/insimul/ui/scenes/notification_center.tscn"
+    },
+    "hud": {
+      "scene": "res://addons/insimul/ui/scenes/hud.tscn",
+      "note": "placeholder Control — the minimap/quickbar/radial content lands with US-2"
+    },
+    "main_menu": {
+      "scene": "res://addons/insimul/ui/scenes/main_menu.tscn"
+    },
+    "game_menu": {
+      "scene": "res://addons/insimul/ui/scenes/game_menu.tscn",
+      "note": "placeholder Control — the in-game menu shell lands with US-3"
+    },
+    "quest_journal": {
+      "scene": "res://addons/insimul/ui/scenes/quest_journal.tscn"
+    },
+    "quest_tracker": {
+      "scene": "res://addons/insimul/ui/scenes/quest_tracker.tscn"
+    },
+    "quest_offer": {
+      "scene": "res://addons/insimul/ui/scenes/quest_offer.tscn"
+    },
+    "inventory": {
+      "scene": "res://addons/insimul/ui/scenes/inventory.tscn"
+    },
+    "container": {
+      "scene": "res://addons/insimul/ui/scenes/container.tscn",
+      "requires": ["equipment"]
+    },
+    "merchant": {
+      "scene": "res://addons/insimul/ui/scenes/merchant.tscn",
+      "requires": ["equipment"]
+    },
+    "dialogue": {
+      "scene": "res://addons/insimul/ui/scenes/dialogue.tscn"
+    },
+    "pause_menu": {
+      "scene": "res://addons/insimul/ui/scenes/pause_menu.tscn"
+    },
+    "save_load": {
+      "scene": "res://addons/insimul/ui/scenes/save_load.tscn"
+    }
+  }
+}

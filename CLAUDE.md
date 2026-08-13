@@ -141,6 +141,30 @@ that will bite:
 - One `class_name` per file; use inner `class Foo extends Bar:` for the rest.
 - Tabs, typed locals (`var x := ...`), `##` doc comments.
 
+## The default UI is DATA, and the GDScript gates need an import pass
+
+`addons/insimul/ui/` is the shipped default-UI. Three things that will bite:
+
+1. **The panel set lives in `panels.json`, not in the registry.** Panel key ->
+   scene, plus the band-111 modules a panel needs before it is offered at all.
+   `tools/verify-ui/check-ui.mjs` greps `insimul_ui_registry.gd` for every panel
+   key and every module id in the activation table and fails on a hit — the same
+   discipline as `check-mechanics.mjs`'s seventh check, and for the same reason.
+   It strips comments first, unlike that one: there is no comment here LISTING
+   the panels, and a doc comment showing one call is the rule being documented.
+2. **Nothing under `ui/` may name `InsimulCore`.** The default UI has to load in
+   a project with no native build — otherwise a missing GDExtension takes the
+   menus down with it, and the headless gate could not stage the UI alone.
+   `bind_activation()` is duck-typed (`module_ids()` + `genre()`) for exactly
+   this reason.
+3. **A `godot -s` gate that skipped the import pass ran NOTHING and said so with
+   an exit code of 0.** Godot registers the addon's global `class_name`s only
+   after the project has been scanned, so a throwaway project that goes straight
+   to `-s` fails to parse every script — and `godot -s` still exits 0.
+   `run_ui_registry_headless.sh` therefore runs `--import` first, checks that
+   `.godot/global_script_class_cache.cfg` appeared, and greps the log for parse
+   errors afterwards. That gate was green and empty for three stories.
+
 ## The Talos bridge is a THIRD artifact, and stays one
 
 `addons/insimul_talos/` implements `TALOS_INSIMUL_BRIDGE.md` §7.5: it depends on
