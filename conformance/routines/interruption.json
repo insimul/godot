@@ -1,0 +1,1844 @@
+{
+  "area": "routine-interruption",
+  "description": "A routine’s whole lifecycle as an ordered script — assigned, adopted, preempted, released and picked back up — pinning the fact delta each step writes, whose plan it invalidated, and that resumption adopts the block due THEN rather than replaying the one that was interrupted. US-1 of 125-npc-routines-and-locomotion.",
+  "cases": [
+    {
+      "name": "a-day-preempted-at-five-resumes-into-the-block-due-at-seven",
+      "note": "THE case of this file, and the whole of what “resumes coherently” means. The smith is at the forge at five, a fight preempts it, and by the time the fight is over it is seven — so the day it picks back up is SUPPER, not the shift it was dragged out of. An implementation that queued the interrupted goal reproduces every fact here except the last two.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            },
+            {
+              "id": "night_watch",
+              "name": "The night watch",
+              "blocks": [
+                {
+                  "id": "watch",
+                  "goal": "patrol",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "priority": 55
+                },
+                {
+                  "id": "stand_down",
+                  "goal": "rest",
+                  "startHour": 6,
+                  "endHour": 10,
+                  "place": "barracks",
+                  "priority": 30
+                },
+                {
+                  "id": "drill",
+                  "goal": "train",
+                  "startHour": 6,
+                  "endHour": 10,
+                  "place": "yard",
+                  "priority": 30
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith",
+          "npc_watchman"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "assign",
+            "agent": "npc_watchman",
+            "routine": "night_watch"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 2,
+              "hour": 17
+            }
+          },
+          {
+            "do": "preempt",
+            "agent": "npc_smith",
+            "reason": "combat",
+            "block": "forge_shift"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 2,
+              "hour": 18
+            }
+          },
+          {
+            "do": "resume",
+            "agent": "npc_smith"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 2,
+              "hour": 19
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_watchman, night_watch)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              },
+              {
+                "agent": "npc_watchman",
+                "routine": "night_watch",
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "agent_goal(npc_smith, work, 60)"
+              ],
+              "assert": [
+                "routine_suspended(npc_smith, combat)"
+              ]
+            },
+            "interrupts": [
+              {
+                "agent": "npc_smith",
+                "reason": "external"
+              }
+            ]
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "supper",
+                "goal": null,
+                "priority": null,
+                "destination": "tavern",
+                "changed": false,
+                "suspended": true,
+                "resumed": false
+              },
+              {
+                "agent": "npc_watchman",
+                "routine": "night_watch",
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "routine_suspended(npc_smith, combat)"
+              ],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "supper",
+                "goal": "eat",
+                "priority": 45,
+                "destination": "tavern",
+                "changed": true,
+                "suspended": false,
+                "resumed": true
+              },
+              {
+                "agent": "npc_watchman",
+                "routine": "night_watch",
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, eat, 45)"
+              ]
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "agent_goal(npc_smith, eat, 45)",
+          "follows_routine(npc_smith, smithy_day)",
+          "follows_routine(npc_watchman, night_watch)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": {
+                "goal": "eat",
+                "priority": 45
+              },
+              "suspension": null
+            },
+            {
+              "agent": "npc_watchman",
+              "routine": "night_watch",
+              "adopted": null,
+              "suspension": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-tick-that-changed-nothing-writes-nothing",
+      "note": "NEGATIVE, and the one that keeps routines off the per-tick write path. The second and third ticks are inside the same block at the same priority, so the delta is empty and no event is owed. A module that re-asserted its goal every tick would put every NPC in the world on the save path once an hour.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 10
+            }
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 11
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "agent_goal(npc_smith, work, 60)",
+          "follows_routine(npc_smith, smithy_day)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": {
+                "goal": "work",
+                "priority": 60
+              },
+              "suspension": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "preempting-a-preempted-routine-keeps-the-first-reason",
+      "note": "What interrupted it FIRST is the true answer to “what is it doing instead”, so the second preemption writes nothing and invalidates nothing. A port that overwrote the reason would report an NPC as arrested when it is in a fight it never left.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          },
+          {
+            "do": "preempt",
+            "agent": "npc_smith",
+            "reason": "combat"
+          },
+          {
+            "do": "preempt",
+            "agent": "npc_smith",
+            "reason": "arrested"
+          },
+          {
+            "do": "resume",
+            "agent": "npc_smith"
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "agent_goal(npc_smith, work, 60)"
+              ],
+              "assert": [
+                "routine_suspended(npc_smith, combat)"
+              ]
+            },
+            "interrupts": [
+              {
+                "agent": "npc_smith",
+                "reason": "external"
+              }
+            ]
+          },
+          {
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "routine_suspended(npc_smith, combat)"
+              ],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "follows_routine(npc_smith, smithy_day)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": null,
+              "suspension": null,
+              "resuming": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "resuming-a-routine-nobody-preempted-writes-nothing",
+      "note": "NEGATIVE. Release is idempotent and does not invent a suspension to lift, so a host that calls resume on every NPC when a fight ends does not churn the KB for the ones that were never in it.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          },
+          {
+            "do": "resume",
+            "agent": "npc_smith"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "agent_goal(npc_smith, work, 60)",
+          "follows_routine(npc_smith, smithy_day)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": {
+                "goal": "work",
+                "priority": 60
+              },
+              "suspension": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a-suspended-routine-adopts-nothing-across-a-block-boundary",
+      "note": "The clock keeps running while the NPC is off its routine. Two ticks in two different blocks, and neither adopts anything: whatever displaced the routine is the only goal in play, which is what makes preemption work rather than fight.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          },
+          {
+            "do": "preempt",
+            "agent": "npc_smith",
+            "reason": "conversation"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 17
+            }
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 19
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "agent_goal(npc_smith, work, 60)"
+              ],
+              "assert": [
+                "routine_suspended(npc_smith, conversation)"
+              ]
+            },
+            "interrupts": [
+              {
+                "agent": "npc_smith",
+                "reason": "external"
+              }
+            ]
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": null,
+                "priority": null,
+                "destination": "forge",
+                "changed": false,
+                "suspended": true,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "supper",
+                "goal": null,
+                "priority": null,
+                "destination": "tavern",
+                "changed": false,
+                "suspended": true,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "follows_routine(npc_smith, smithy_day)",
+          "routine_suspended(npc_smith, conversation)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": null,
+              "suspension": {
+                "reason": "conversation",
+                "block": null,
+                "goal": "work"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "giving-up-a-routine-gives-up-the-goal-it-adopted",
+      "note": "An NPC that loses its job stops wanting what the job wanted — but only that. The retracted agent_goal/3 is the routine’s own, which is precisely why a goal some other system gave the NPC survives an assignment change.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          },
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": null
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "follows_routine(npc_smith, smithy_day)",
+                "agent_goal(npc_smith, work, 60)"
+              ],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": null,
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": null,
+              "adopted": null,
+              "suspension": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "an-npc-with-no-routine-holds-no-goal-and-writes-nothing",
+      "note": "NEGATIVE. Ticking a roster nobody assigned anything to is not an error and not an empty routine — it writes nothing at all, which is what lets a host tick every character it has without knowing which of them keep hours.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith",
+          "npc_watchman"
+        ],
+        "steps": [
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": null,
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              },
+              {
+                "agent": "npc_watchman",
+                "routine": null,
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": null,
+              "adopted": null,
+              "suspension": null
+            },
+            {
+              "agent": "npc_watchman",
+              "routine": null,
+              "adopted": null,
+              "suspension": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "forgetting-an-npc-retracts-everything-it-had",
+      "note": "It died, it despawned, it left the simulation. All three runtime facts go — the assignment, the suspension and the adopted goal — because a KB that still says a dead smith is at work is a KB every rule in the world reads wrong.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 9
+            }
+          },
+          {
+            "do": "preempt",
+            "agent": "npc_smith",
+            "reason": "combat"
+          },
+          {
+            "do": "forget",
+            "agent": "npc_smith"
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [
+                "agent_goal(npc_smith, work, 60)"
+              ],
+              "assert": [
+                "routine_suspended(npc_smith, combat)"
+              ]
+            },
+            "interrupts": [
+              {
+                "agent": "npc_smith",
+                "reason": "external"
+              }
+            ]
+          },
+          {
+            "delta": {
+              "retract": [
+                "follows_routine(npc_smith, smithy_day)",
+                "routine_suspended(npc_smith, combat)"
+              ],
+              "assert": []
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [],
+        "state": {
+          "agents": []
+        }
+      }
+    },
+    {
+      "name": "preempting-during-a-gap-suspends-a-routine-that-wanted-nothing",
+      "note": "Nine in the evening: the smith holds no block, so the preemption retracts no goal and asserts only the suspension. An implementation that assumed a preemption always drops something writes a retraction for a fact the KB never carried.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 21
+            }
+          },
+          {
+            "do": "preempt",
+            "agent": "npc_smith",
+            "reason": "ambush"
+          },
+          {
+            "do": "resume",
+            "agent": "npc_smith"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 23
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": false,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "routine_suspended(npc_smith, ambush)"
+              ]
+            },
+            "interrupts": [
+              {
+                "agent": "npc_smith",
+                "reason": "external"
+              }
+            ]
+          },
+          {
+            "delta": {
+              "retract": [
+                "routine_suspended(npc_smith, ambush)"
+              ],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "night",
+                "goal": "sleep",
+                "priority": 50,
+                "destination": "cottage",
+                "changed": true,
+                "suspended": false,
+                "resumed": true
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, sleep, 50)"
+              ]
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "agent_goal(npc_smith, sleep, 50)",
+          "follows_routine(npc_smith, smithy_day)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": {
+                "goal": "sleep",
+                "priority": 50
+              },
+              "suspension": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "the-goal-moves-when-the-clock-crosses-a-block-boundary",
+      "note": "Four ticks across three blocks and a gap: shift, gap, night, and back to the shift the following morning. The adopted goal is retracted and replaced exactly on the boundaries, and the gap retracts without asserting.",
+      "input": {
+        "routines": {
+          "routines": [
+            {
+              "id": "smithy_day",
+              "name": "The smith’s day",
+              "blocks": [
+                {
+                  "id": "forge_shift",
+                  "goal": "work",
+                  "startHour": 8,
+                  "endHour": 18,
+                  "place": "forge",
+                  "priority": 60
+                },
+                {
+                  "id": "supper",
+                  "goal": "eat",
+                  "startHour": 18,
+                  "endHour": 20,
+                  "place": "tavern",
+                  "priority": 45
+                },
+                {
+                  "id": "market_day",
+                  "goal": "shop",
+                  "startHour": 10,
+                  "endHour": 12,
+                  "days": [
+                    5
+                  ],
+                  "place": "market",
+                  "priority": 70
+                },
+                {
+                  "id": "night",
+                  "goal": "sleep",
+                  "startHour": 22,
+                  "endHour": 6,
+                  "place": "cottage"
+                }
+              ]
+            }
+          ],
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "tuning": {
+          "defaultPriority": 50,
+          "weekLength": 7
+        },
+        "roster": [
+          "npc_smith"
+        ],
+        "steps": [
+          {
+            "do": "assign",
+            "agent": "npc_smith",
+            "routine": "smithy_day"
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 17
+            }
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 21
+            }
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 1,
+              "hour": 23
+            }
+          },
+          {
+            "do": "tick",
+            "clock": {
+              "day": 2,
+              "hour": 9
+            }
+          }
+        ]
+      },
+      "expected": {
+        "steps": [
+          {
+            "delta": {
+              "retract": [],
+              "assert": [
+                "follows_routine(npc_smith, smithy_day)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": null,
+                "goal": null,
+                "priority": null,
+                "destination": null,
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [
+                "agent_goal(npc_smith, work, 60)"
+              ],
+              "assert": []
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "night",
+                "goal": "sleep",
+                "priority": 50,
+                "destination": "cottage",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [],
+              "assert": [
+                "agent_goal(npc_smith, sleep, 50)"
+              ]
+            },
+            "interrupts": []
+          },
+          {
+            "outcomes": [
+              {
+                "agent": "npc_smith",
+                "routine": "smithy_day",
+                "block": "forge_shift",
+                "goal": "work",
+                "priority": 60,
+                "destination": "forge",
+                "changed": true,
+                "suspended": false,
+                "resumed": false
+              }
+            ],
+            "delta": {
+              "retract": [
+                "agent_goal(npc_smith, sleep, 50)"
+              ],
+              "assert": [
+                "agent_goal(npc_smith, work, 60)"
+              ]
+            },
+            "interrupts": []
+          }
+        ],
+        "facts": [
+          "agent_goal(npc_smith, work, 60)",
+          "follows_routine(npc_smith, smithy_day)"
+        ],
+        "state": {
+          "agents": [
+            {
+              "agent": "npc_smith",
+              "routine": "smithy_day",
+              "adopted": {
+                "goal": "work",
+                "priority": 60
+              },
+              "suspension": null
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

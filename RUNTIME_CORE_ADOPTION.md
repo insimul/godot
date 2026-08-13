@@ -785,6 +785,501 @@ the evidence a future retirement needs, and it did.
 
 ---
 
+## 11. The band-120 mechanic modules (tasklist 147, US-1)
+
+Core landed nine Insimul modules; the seven in band 120–125 name **eight distinct
+host interfaces** between them. This story implemented all eight in Godot **and
+made all seven modules reachable across the C ABI** — 27 rows in
+`gdextension/corebridge/js/entry.js`, executed end to end by
+`gdextension/test/run_mechanic_tests.sh`.
+
+Unity was the probe (tasklist 145). Its findings are inherited rather than
+rediscovered, and the one difference in outcome has a boring cause: **its bridge
+lives in a repository a Unity worktree cannot edit, and ours is in-tree.** Unity
+could write the host half and had to report `BridgeHasNoRow` for every module;
+this repo owns `gdextension/corebridge/`, so it could write both halves. Nothing
+about the engines made the difference.
+
+### 11.1 What the binary answers now
+
+`core.methods` is the only honest way to ask a build what it can do — not a
+version stamp, not a sibling checkout. Before this story:
+
+```
+{"methods":["core.methods","quest.hydrate","quest.radiantTick",
+            "radiant.baseTemplates","radiant.generate"]}
+```
+
+After it, 32: the same five plus 27 mechanic rows. `mechanic.modules` reports
+which module owns which, so `InsimulMechanicSurface` can tell a creator at boot
+whether combat is live instead of leaving them to infer it from a component that
+exists.
+
+### 11.2 The three findings Unity said were core-side, answered
+
+Unity's §12.2 listed three things that had to be resolved before any row could be
+written, and said all three landed on whoever wrote them. That turned out to be
+this tasklist, so here are the answers as built.
+
+**1. Every host interface is a callback, and the C ABI has none.** Resolved by
+inverting the direction — **readings in, orders out** — implemented in
+`gdextension/corebridge/js/host-mechanics.js`:
+
+- everything core would ASK (`ITrajectoryProbe.query`, `IPerceptionProbe.sense`,
+  `ITraversalProbe.query`, `ICombatStatSink.getBaseStats`) is gathered by the
+  engine BEFORE the call and travels in as an argument; the adapter's shim serves
+  core's question from what arrived;
+- everything core would TELL (`ICombatSystem.applyDamage`,
+  `ISurvivalSystem.consumeStamina`, `ILocomotionHost.travel`,
+  `ISkillModifierSink.applyModifiers`, `ICombatStatSink.applyStats`) is recorded
+  as an order and returned in the result; `InsimulMechanicSession._drain()` calls
+  the wired host implementation for each one, in core's order.
+
+The engine therefore executes exactly what it would have executed in-process,
+with the same arguments — and `insimulcore.h` still has no function pointers.
+This is glue, not a fork: `host-mechanics.js` contains no damage number, no
+suspicion curve, no traversal cost and no price.
+
+**2. The decision layers are stateful sessions, and a bridge call is not.**
+Resolved with a session table: `<module>.create` returns a handle, every verb
+takes one, and `mechanic.dispose` releases it along with the KB it owns.
+
+*Deviation from Unity's proposal, and why.* Its §12.3 sketched a per-module
+`<module>.dispose`; there is one `mechanic.dispose` instead, because a handle
+already names its module and seven identical functions differing only in an
+argument they ignore is a bigger surface for no information. `mechanic.sessions`
+lists what is open, so a leak in a game is visible rather than inferred — and the
+gate uses it: `test_mechanic_bridge.cpp` fails if any session it opened outlives
+it, which is how the create-rows' leak-on-failure bug was found (a `create` that
+threw during registration used to leave a session no caller had a handle to).
+
+**3. Arrival is not a return value when a body takes seconds to move.** Answered
+the same way Unity answered it, for the same reason: what the host already knows
+is reported immediately (no body, unknown destination, a `NavigationAgent3D`
+path that stops short → `arrived: false` with a reason), and anything else
+dispatches the agent and reports `arrived: true`, so world state moves at the
+decision moment and the body catches up. Reporting `arrived: false` for every
+movement that takes time would make `LocomotionDirector` count a successful walk
+as a failure and re-plan against a wall that is not there.
+
+There is also a **strict path** this repo could offer because it owns the rows:
+`traversal.traverse` takes an `arrival` reading, read by core BEFORE the order
+goes out, so a host that already knows the body cannot get there says so and the
+meter is never spent (`GodotLocomotionHost.arrival_reading()`).
+
+### 11.3 Four findings this story added
+
+**1. The Prolog seam had to grow — and the growth is where the wasm engine and a
+native one genuinely differ.** The mechanic layers call four `PrologEngine`
+members between them: `query`, `assertFact`, `retractFact`, `queryOnce`. Only
+`query` existed; the other three threw. Core's `WasmPrologEngine` implements every
+mutation as **rebuild** — record the fact, destroy the KB, re-consult the whole
+accumulated program — and its own header says why, which is not a correctness
+reason: *"Trealla supports incremental assert/retract properly, so this class does
+NOT have to rebuild... It does anyway, [so that] US-2's diff of the two engines
+sees only real disagreements."*
+
+This engine IS that Trealla, linked natively, so `host-prolog-engine.js` asserts
+and retracts in place. The bookkeeping mirrors core's exactly (de-duplication by
+normalized fact text, a retract of something CONSULTED rather than asserted
+changing nothing, a `:- dynamic` directive once per signature), so the divergence
+is in mechanism and not in anything a caller can observe. A rebuild would have
+been fewer lines and would re-consult every rule pack the world loaded on every
+attack — and would churn KB handles, which is the failure mode the `keepalive` KB
+in `insimulcore.c` exists to work around (§6.7). Executing the mechanic corpora
+against it (US-2) is what holds the claim to account.
+
+**2. QuickJS has no `TextEncoder`, and core's identity layer constructs one at
+module scope.** `identity/kinp.ts` percent-encodes non-ASCII local ids, and
+`identity/` is reached by every mechanic module — an observer, a target and an
+agent are all KINP identifiers. The whole bundle failed to evaluate with
+`ReferenceError: 'TextEncoder' is not defined`, at LOAD, not at the call.
+`js/host-text-codec.js` is a UTF-8 polyfill installed before core's modules
+initialise. It is a polyfill and not a seam — nothing about it is
+adapter-specific and core has no import for it to resolve — which is why it
+installs globals and is imported FIRST in `entry.js`.
+
+**3. A session's KB must carry the packs the module's gates read.** Core's
+`checkAction` THROWS when `forbidden_by/4` raises rather than reading an undefined
+procedure as a permit (`ai/rule-enforcement.ts`'s `solve`), and Trealla raises
+`existence_error` for a predicate no program defined. So a traversal or skill
+session opened against a KB of bare facts fails the call. That is core's
+deliberate design and identical on the wasm engine, so it is a **host
+obligation**, not a bridge defect: pass the rule packs the world loaded, not just
+its facts. Stated on `InsimulMechanicSession.open()`, where a caller will hit it.
+
+**4. This template already had a second damage formula.**
+`templates/scripts/systems/combat_system.gd` carries `calculate_damage()` with its
+own critical multiplier and its own `randf_range` variance — the pre-adoption
+combat, which existing games call. `GodotCombatHost` deliberately does not use
+it, call it, or agree with it: damage arrives already decided through
+`ICombatSystem.applyDamage`. The two are not a contradiction but a **migration**,
+and it is named in the host's header rather than quietly resolved, because
+deleting the old one is a change to shipped games and belongs to whoever makes
+that call.
+
+### 11.4 What the host half cost, and the two gaps it did not paper over
+
+Eight interfaces, eight implementations, no stubs. Two are narrower than the
+interface, and each says so where a reader will hit it rather than only here.
+
+| interface | where | the honest edge |
+| --- | --- | --- |
+| `ICombatSystem` | `templates/scripts/mechanics/godot_combat_host.gd` | `execute_attack()` **refuses and warns** rather than rolling. Core never calls it; implementing it would be the second damage pipeline finding 4 describes. |
+| `ICombatStatSink` | same file | Deliberately the same component as `ICombatSystem`: they are two views of one roster, and splitting them would mean two rosters that have to agree. |
+| `ISurvivalSystem` | `godot_survival_host.gd` | `update(delta)` is a **no-op by design** — `survival_system.gd` owns the clock and ticks itself; ticking it twice would decay hunger at double rate. `add_modifier` forwards `modifier.id` as an authored PRESET id and warns when the world has no such preset, so a modifier core invents at runtime does not silently apply. |
+| `ISkillModifierSink` | `godot_skill_modifier_sink.gd` | `move_speed`, `jump_height` and `reach` land on the body's exported properties. **`carry_capacity` lands nowhere**: `inventory_system.gd` limits by `max_slots` and has no weight capacity, so applying it would invent a limit no rule reads. Recorded (`unapplied()`) and announced, not applied. The same gap Unity found. |
+| `ITrajectoryProbe`, `IPerceptionProbe`, `ITraversalProbe` | `godot_geometry_probes.gd` | Real `PhysicsDirectSpaceState3D.intersect_ray` and `NavigationServer3D.map_get_path`. `light_level/2` is an **approximation**: Godot exposes no runtime per-point lightmap read, so it is an ambient floor plus a linecast at the sun. It is a measurement either way — what darkness is WORTH is authored. |
+| `ILocomotionHost` | `godot_locomotion_host.gd` | §11.2 finding 3. Also: with no `NavigationAgent3D` under the body it teleports rather than refusing, because a world that moves without animating (a strategy map, a test scene) is a legitimate world. |
+
+One thing had to be built underneath all of it and did not exist:
+`InsimulActorRegistry` (actor atom → `Node3D`, place atom → position), because
+core names `nessa` and `forge_gate` and a raycast needs a body. It holds no state
+of any kind — a registry that started caching health would be the beginning of a
+second world model.
+
+### 11.5 What is gated, and what still is not
+
+| gate | what it proves |
+| --- | --- |
+| `npm run check` → `check-mechanics.mjs` | Five mirrors: core's manifest against the vendored `MODULE_HOSTS.json`, every interface's member list against the GDScript base class, every interface against *some* implementation (or a `stubbed` entry with a stated consequence), `entry.js`'s module table against core's, and every order the adapter can emit against a dispatch in `insimul_mechanic_session.gd`. `--core` re-derives from core's TypeScript; `--self-test` runs five negative controls that prove no check is vacuous. |
+| `npm run test:mechanics` | 43 checks driving all seven modules end to end through libinsimulcore over the natively linked libinsimul. Reachability, the inversion in both directions, that a host CANNOT decide (the same shot with a clear line, a blocked line and no reading at all), session isolation, and the seam's assert/retract path. |
+
+What is **not** gated is what no gate here can be: no GDScript is executed. The
+Godot implementations live in `templates/`, which is the exported game and is in
+no compiled assembly, so a raycast, a `NavigationAgent3D` and an equipment panel
+are VERIFICATION.md's human checklist in a project with a scene.
+
+### 11.6 What Unreal inherits
+
+1. **The rows exist and are the same rows.** `entry.js` is in `gdextension/` only
+   because tasklist 100's worktree was this repo; when the bridge moves to
+   `native/corebridge` beside libinsimul (§7), Unreal and Unity link the same 27
+   rows and only the host half is theirs to write.
+2. **Readings in, orders out** is the shape. Do not invent a callback ABI for it.
+3. **Ask `core.methods`, never a version.**
+4. **The KB obligation (§11.3 finding 3) will bite every engine**, because it is
+   core's behaviour and not this bridge's.
+
+---
+
+## 12. The band-120 corpora, executed (tasklist 147, US-2)
+
+US-1 landed seven decision layers behind 27 bridge rows and proved they are
+**reachable**. This story proves they are **right**, which is a different claim
+and the only one a creator cares about: given the world core's own golden vectors
+describe, this engine produces the answer core produces.
+
+The headline, and the whole of it:
+
+```
+prolog vocabulary : 254 AGREE, 1 AMEND, 0 DIVERGE, 0 ERROR  (255 cases, 21 files)
+module decisions  : 212 AGREE, 0 AMEND, 0 DIVERGE, 0 ERROR  (212 cases, 18 areas)
+```
+
+467 cases. One amendment, which is core's own and libinsimul's own, printed on
+every run. No divergence anywhere.
+
+### 12.1 Three gates, and why parity needs all three
+
+A corpus can be present, decoded and still never asked a question. This repo has
+shipped each of those failures separately, so it now runs all three:
+
+| gate | what it does with a corpus case | what it would MISS alone |
+| --- | --- | --- |
+| `run_conformance.sh` (US-GP2) | **decodes** every pinned solution through `prolog_value.cpp` | an engine that answers every query wrongly — nothing is executed |
+| `run_corpus_tests.sh` part 1 (new) | **consults the KB and runs the query** on the natively linked Trealla | a build whose GDScript cannot read the answer back |
+| `run_corpus_tests.sh` part 2 (new) | **runs the decision** — `resolveAttack`, `runDetection`, `findRoute`, `resolvePrice` … | everything a rule does not compute, which is most of what a game is |
+
+The third row is the one no Prolog corpus can ever cover, and core says so in
+every decision corpus's own `description`: *"`conformance/prolog/mechanic-combat.json`
+pins the vocabulary; it cannot pin a damage number, because no rule computes
+one."* A repository that vendored only the `mechanic-*` files and called it
+parity would have pinned `can_attack/2` and nothing about the attack.
+
+**§6.5 and §10.5 are now half-retired.** Both recorded that
+`gdextension/tests/conformance_runner.gd` — which needs a Godot binary — was the
+only thing that executed the Prolog corpus *as queries*. `run_corpus_tests.sh`
+does it on any box with a C compiler and libinsimul. What still needs the editor
+is running them through the *GDExtension*, which is a different claim about a
+different binary; §6.5's distinction survives, its "only" does not.
+
+### 12.2 What was vendored, and what was deliberately not
+
+The corpus went from **10 files / 76 cases** to **63 files / 467 executed cases**
+at core `76782e5`. Every exclusion is a NOT_MIRRORED entry in
+`tools/vendor-conformance.mjs` with a reason, and every run PRINTS them with a
+count — an exclusion nobody sees is exactly how a corpus stops being checked.
+
+| core corpus | here | why |
+| --- | --- | --- |
+| `prolog/` (21 files) | **mirrored, executed** | the runner is generic: it consults a KB and runs a query, so it executes `agent-ai` and `geo-map` too, whose modules this repo has *not* adopted. Free coverage, taken. |
+| `combat/`, `stealth/`, `traversal/`, `skills/`, `items/`, `routines/` | **mirrored, executed** | the six adopted modules with a decision corpus, 18 areas |
+| `ai/`, `map/` | not mirrored | `agentAi` and `map` are not among the seven. The **decision** vectors need the layer; the Prolog ones do not, which is why the asymmetry above is deliberate and stated in the exclusion itself. |
+| `generation/`, `grounding/` | not mirrored | authoring-time surfaces this repo does not adopt at all (§7) |
+| `modules/genre-activation.json` | not mirrored | **US-3's corpus.** The plugin has no bundle reader yet. US-3 removes the entry and adds the runner in the same commit — vendoring it now would check in the one file with nothing behind it, which is the failure this story exists to close. |
+| `editor/` | not mirrored | unchanged from before: editor-core adoption is a later wave |
+
+`stamina` is the one adopted module with no decision corpus of its own. That is
+recorded as an **empty list** in `host-corpus.js`'s `CORPUS_AREAS_BY_MODULE`
+rather than by omission, because "no corpus" and "nobody wrote the entry" look
+identical in a file that only lists what exists. Its arithmetic is pinned inside
+`combat/resolution.json` — every attack case carries the meter and pins
+`attackerStaminaAfter` — and its vocabulary in `prolog/mechanic-stamina.json`.
+
+### 12.3 The one divergence, classified
+
+`assert-retract.json::asserta-prepends` does not run as authored on **any**
+Trealla, and has not since before this repo existed. The case uses `log/1` as a
+user dynamic predicate; ISO reserves `log` only as an *evaluable functor*, so
+tau-prolog (which the corpus was authored against) accepts it, and Trealla
+additionally registers the arithmetic functors as **static builtin predicates**,
+so touching `log/1` raises `permission_error(modify, static_procedure, log/1)`.
+Five legs read this file — core's TS runner, libinsimul's C, Rust and wasm
+harnesses, and now this one — and all five rename the predicate in memory and
+print an `[AMEND]` line. **None of them edits the corpus**: it is the source copy
+four repositories vendor byte-identically, and amending it to please one engine
+would erase the evidence in the other three.
+
+Where this leg diverges, and it is worth stating precisely because it is the
+first measured difference between the native Prolog seam and core's wasm one:
+
+> **Core's TS runner applies ONE substitution (`log(` → `entry(`). This gate
+> applies TWO (`log/` → `entry/` as well), matching libinsimul's own
+> `tests/conformance.c` rather than core's runner.**
+>
+> Core leaves `:- dynamic(log/1).` in the KB because its wasm wrapper does not
+> surface a failing **directive** as a failed `consult` — the case only breaks
+> when the query runs. The natively linked Trealla does surface it, so the
+> directive raises at consult and the rename has to reach the indicator too.
+>
+> **Classification: SHAPE.** The same answer, reported at a different stage. The
+> amended case produces the corpus's pinned solutions on both engines; what
+> moved is *when* an error becomes visible, not what the program means. It is
+> not a REGRESSION (nothing that worked stopped) and not a FIX (nothing was
+> wrong). The right lockstep to keep is libinsimul's, because this gate's engine
+> *is* libinsimul's engine.
+
+The table cannot rot. Every case is run **unamended first**, always, so an
+amendment that stops being needed reports `STALE` and fails the gate, and a case
+that starts needing one reports `ERROR` rather than being quietly patched.
+
+### 12.4 The claim `host-prolog-engine.js` made, now held to account
+
+That file's header states a deliberate divergence from core's `WasmPrologEngine`:
+core implements every mutation as a **rebuild** (record the fact, throw the KB
+away, re-consult the accumulated program), and this adapter asserts and retracts
+**in place**, because a mechanic module asserts on every attack, spend,
+observation and step and a rebuild is O(whole program) per fact. Its header ends:
+*"Executing the mechanic corpora against this engine (tasklist 147 US-2) is what
+holds the 'no observable divergence' claim to account."*
+
+It holds. `assert-retract.json` — the file where a mechanism divergence would
+surface first — is 4 cases, 3 AGREE and the 4th is the `log/1` amendment above,
+which is about a builtin name and not about rebuild-versus-in-place. The
+de-duplication and retract-what-was-consulted behaviours the header mirrors are
+exercised by `mechanic-equipment` (29 cases) and `mechanic-routine` (19), both
+green.
+
+### 12.5 What is now impossible to ship, and what still is not
+
+Three guards were added, because "we ran the corpus" is a claim that decays:
+
+1. **Case floors, per area, hand-written.** `vendor-conformance.mjs`'s
+   `CASE_FLOORS` is 19 entries and 465 cases. `prologCases` alone could never
+   catch a shrink — it is written *from* the corpus on every re-vendor, so a
+   corpus that lost half its cases upstream re-vendors to a smaller number and
+   the guard agrees with it. A floor is a number a human wrote down, and
+   re-vendoring never lowers it.
+2. **Both directions of "vendored ⟷ runnable"**, in `check-mechanics.mjs` check 6
+   and again in the gate itself. A corpus vendored with no runner fails; a runner
+   with no vendored corpus fails; a module whose declared `conformanceCorpus`
+   is not on disk fails. The negative control for it is in the `--self-test`.
+3. **Total accounting of `conformance/`.** Every directory is in either
+   `DECISION_DIRS` or `CORPUS_RUN_ELSEWHERE`, and the second names the gate that
+   runs it — or `null`, meaning *nothing here runs it*, which is allowed only
+   because it has to be said out loud. A new directory in neither list fails.
+
+Still not covered here, and stated rather than left to look like coverage:
+
+- **`conformance/ui/*.json` is executed by nothing on this tier.** Eight files.
+  The UI models are GDScript, and the corpus is read by the Godot-binary
+  checklist in `VERIFICATION.md`, not by a host gate. That is a real gap, it is
+  now *declared* (`CORPUS_RUN_ELSEWHERE.ui` is the only non-null entry that says
+  "nothing"), and closing it means a GDScript test runner, not a C++ one.
+- **`content-library/` and `predicate-schema-hash.json` still have no reader**
+  (§10.5, unchanged).
+- **The decision corpora run through the bundle, not through the GDExtension.**
+  Same limit §6.5 records for the Prolog corpus: proving the *GDScript* surface
+  reads these answers correctly needs a built extension and a `godot` binary.
+
+### 12.6 What Unreal inherits
+
+Everything in §12.1 and §12.2, and one shape worth copying verbatim: **the corpus
+case crosses the ABI whole, and the harness compares rather than interprets.**
+`conformance.run` takes `{area, case}` and returns the entire `expected` shape,
+so the C++ side does not know what a combat action, a suspicion rung or a loot
+table is — it reads `area` out of the vendored file, calls, and deep-compares.
+Adding an area is one function in `host-corpus.js` and one row in a table; the
+harness never changes. That is what made 18 areas affordable in one story, and
+it is why the C++ file is 600 lines rather than 6,000.
+
+The second thing to copy is the amendment discipline, which is not obvious and
+is easy to get subtly wrong: **run unamended first, always**, and treat a stale
+amendment as a failure. An engine improves; a table of workarounds that nobody
+re-validates is how a leg keeps applying a rewrite for a bug that was fixed two
+years ago and never notices its own engine got better.
+
+---
+
+## 13. Activation from the genre bundle (tasklist 147, US-3)
+
+US-1 made the seven modules reachable and US-2 made them right. Both of them
+still opened whatever the caller asked for. This story is the last of the three
+and it answers a different question: **which modules does THIS world run, and
+what does a module it did not select cost?**
+
+The answer core gives is data — `src/modules/module-activation.ts`, committed as
+`conformance/modules/genre-activation.json` — so the answer this plugin gives is
+a lookup, not a list. Three rows carry it:
+
+| row | what it answers |
+|---|---|
+| `modules.activate` | one world (`{ir}`) or one genre (`{genre}`) → core's `ActiveModuleSet` verbatim, plus `source` |
+| `modules.table` | the whole committed table, from core's own `moduleActivationTable()` |
+| `prolog.packs` | the rule-pack TEXT for a set of areas, in core's consult order |
+
+and two GDScript classes read them: `InsimulModuleActivation` (what this world
+selected) and `InsimulMechanicActivator` (open exactly those sessions, wire
+exactly those interfaces, and say what could not be reached).
+
+### 13.1 The claim, and how it is actually checked
+
+"Adding a module to a genre bundle requires no engine code change" is a claim
+about the ABSENCE of something, and absence is not provable by reading code that
+looks clean. So `check-mechanics.mjs` grew a seventh check that greps both
+activation sources for **every module id, pack area and genre id in the vendored
+table** — comments included, because a comment listing the modules rots exactly
+like code does — and fails on a hit. Its negative control plants one.
+
+The runtime half is `gdextension/test/run_activation_tests.sh` (`npm run
+test:activation`), 30 checks:
+
+* `modules.table` deep-equals the vendored file. One definition between the
+  bytes this repo ships and the answer this build gives.
+* all **8** bundles resolved, by genre id **and** through a World IR's
+  `meta.genreConfig.id`, deep-compared against the committed set — 24 module
+  activations.
+* core's three answers kept apart: a known bundle, an unknown genre (the shared
+  vocabulary and *not* every mechanic in the build), and nothing declared (every
+  pack — right for a tool, a warning in a game, and reported as `source` rather
+  than inferred).
+* **the witness, in a real KB.** For all 8 genres × 11 packs: consult exactly the
+  packs the active set names, on the natively linked Trealla, and ask
+  `current_predicate/1` for that pack's signature predicate. It is there when the
+  module is active and absent when it is not — 88 pairs, and `rpg` carries 10 of
+  the 11 packs while `puzzle` carries 2. The signature is **measured, not
+  listed**: a predicate the build itself proves is defined by that pack alone.
+  A plugin that quietly consulted all eleven packs passes every other check in
+  the file and fails this one.
+* **the scene, replayed.** `templates/project/insimul/scenarios/dark-courtyard.json`
+  is the sample scene's steps as data: 6 steps across 2 modules, and every module
+  it opens must be one the scenario's genre activates. The Godot scene
+  (`mechanic_courtyard_demo.gd`) drives that file with real raycasts and light
+  probes; the gate replays it through the same rows with no Godot binary.
+
+### 13.2 Three findings that should change the module contract
+
+Written up rather than worked around, in the shape §11.2 and §11.3 used.
+
+**1. The activation table names packs it cannot resolve.** `ActiveModuleSet.
+predicatePacks` is the list a host consults, and nothing in the artifact
+resolves an area to its Prolog text or lets a vendored copy be verified. Unity
+met this and had to vendor the eleven pack texts as game data with its own
+hash-pinning tool. This plugin does not, because the bundle it links already
+carries `PREDICATE_PACKS` — `prolog.packs` is one row over data that was already
+there. **The contract should say which of those two is the intended shape**: if
+the table is the adapter-facing artifact, it should carry a per-area digest so a
+vendored pack can be checked against the table that names it; if the pack text is
+expected to arrive with the core build, the table should say so and Unity's
+vendoring is a workaround for a binding gap rather than the pattern.
+
+**2. `activeModulesForWorld` raises where the config resolves.**
+`GamePrologEngineConfig` distinguishes three states — a known genre, an unknown
+one, and none declared — and is careful about it: "absent means every pack, which
+is deliberately NOT what an *unknown* genre means". `activeModulesForWorld(ir)`
+has only two: given an IR whose `meta` carries no `genreConfig`, it reads
+`.id` off `undefined` and throws a `TypeError`. That is a real shape — a
+world exported before the field existed, and (finding 2 of Unity's §14) a
+`SaveFile.worldSnapshot`, which carries no `meta` at all. The adapter answers it
+here (`source: 'undeclared'` with the reason said, checked by the gate), which
+means the two engines will answer it *differently* until core does. **The
+function should resolve the undeclared answer rather than raise**, or return the
+`source` itself so every adapter reports the same three states.
+
+**3. A modified bundle has no active module set.** `packAreasForModules(ids)`
+returns pack areas and nothing else, so the path the module brief calls the
+normal case — "the creator picks the mechanics and modifies from there" — can
+tell a host which packs to consult but *not* which host interfaces to register or
+which systems to activate. `GamePrologEngineConfig.activeModules` is enough for a
+KB and not enough for an adapter. This plugin therefore supports the genre path
+only, deliberately: guessing the rest would have put a second composition rule in
+an engine. **Core should expose the `ActiveModuleSet` for an explicit id set**
+(`resolveActiveModulesFor(ids)`), at which point this becomes an argument to an
+existing row.
+
+### 13.3 A fourth thing, which is not a finding but a boundary
+
+A genre bundle can activate a module **no engine has adopted**. `rpg` and
+`survival` both select `agentAi` and `map`; neither is in this repo's seven, and
+their decision layers are not bundled. Activation therefore has two halves and
+they come apart cleanly:
+
+* the **pack** half needs only the pack text, which the bundle carries for every
+  pack in the build. An unadopted module's vocabulary IS in the KB and its
+  authored gates evaluate — the witness above counts `rpg` at 10 packs, including
+  both of them.
+* the **session** half needs a decision layer behind a bridge row, which those
+  two do not have. `InsimulMechanicActivator` reports them as *selected but not
+  runnable*, and the sample scene prints it.
+
+That is reported rather than skipped because a silently skipped mechanic looks
+identical to a working one from the outside. `check-mechanics.mjs`'s `NOT_ADOPTED`
+table makes the accounting total: an activated module that is neither adopted nor
+declared unadopted fails the gate, so core adding a module to a bundle surfaces
+here as a decision to make.
+
+### 13.4 What is gated, and what still is not
+
+Gated on any box: the seventh mirror check (no hardcoded list), and
+`npm run test:activation`'s 30 checks — the table, the 8 bundles, the three
+answers, the 88 KB witnesses, the 6 scenario steps.
+
+Not gated, and said plainly: **no GDScript runs in any of it.** The activator's
+host filtering, the binder's `creating_module` handshake and the scene's raycasts
+are covered structurally by the lint and by the human pass in VERIFICATION.md
+§0e. The scenario file is what closes most of that gap — the steps a human would
+click through are executed headlessly through the same rows — but the readings
+those steps carry are the scenario's, not a live raycast's, in the gate.
+
+### 13.5 What Unreal inherits
+
+The shape, and one warning.
+
+The shape: **resolve, then filter, then report.** One row returning core's
+`ActiveModuleSet` verbatim; a reader that spells no mechanic; a host table
+filtered per module by the interfaces the module itself declares; and an explicit
+*selected but not runnable* state. The KB witness is the check worth copying
+before any of the others — it is the only one that can fail on a plugin that
+resolves activation correctly and then consults everything anyway.
+
+The warning: `prolog.packs` exists because this plugin links the whole core
+bundle. An adapter that binds a narrower ABI has to solve finding 1 some other
+way, and Unity's vendored-with-hashes answer is the fallback — but it is a
+fallback, and §13.2 is the request that makes it unnecessary.
+
+---
+
 ## Appendix A — drop-in text for `docs/UNIFICATION_ROADMAP.md` Decision 1
 
 That file lives in the **project checkout**, outside this submodule, so this

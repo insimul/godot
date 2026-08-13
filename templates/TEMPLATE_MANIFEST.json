@@ -109,6 +109,10 @@
       "placeholders": []
     },
     {
+      "path": "project/insimul/scenarios/dark-courtyard.json",
+      "placeholders": []
+    },
+    {
       "path": "project/project.godot",
       "placeholders": [
         "{{INSIMUL_VERSION}}",
@@ -194,6 +198,34 @@
     },
     {
       "path": "scripts/core/game_manager.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_combat_host.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_geometry_probes.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_locomotion_host.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_mechanic_binder.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_skill_modifier_sink.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_survival_host.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/mechanic_courtyard_demo.gd",
       "placeholders": []
     },
     {

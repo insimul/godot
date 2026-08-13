@@ -23,7 +23,7 @@
 // success". Those are mirrored below with the source lines they mirror. The
 // conformance corpus (conformance/radiant/*.json) is what proves the mirror.
 //
-// The four `__insimul_prolog_*` globals are installed by the C host
+// The six `__insimul_prolog_*` globals are installed by the C host
 // (../src/insimulcore.c); they map 1:1 onto libinsimul's KB + query ABI.
 
 /**
@@ -53,17 +53,67 @@ export const DEFAULT_PROLOG_ENGINE = 'wasm';
 /**
  * `PrologEngine` over libinsimul's C ABI.
  *
- * Only the members core's radiant slice actually calls are implemented:
- * `consult`, `query` and `destroy`. Everything else on the interface throws a
- * NAMED error rather than returning a plausible empty value — if a future slice
- * reaches for `getStats()` we want a loud failure at the call site, not silent
- * wrong behaviour that the corpus might not cover.
+ * Only the members the ADOPTED surface actually calls are implemented —
+ * `consult`, `query`, `destroy` for the radiant slice (tasklist 100), and
+ * `assertFact` / `retractFact` / `queryOnce` for the band-120 mechanic modules
+ * (tasklist 147 US-1: those four are the only `PrologEngine` members
+ * `CombatResolver`, `StaminaPool`, `DetectionTracker`, `TraversalPlanner`,
+ * `SkillProgression` and `RoutineDirector` reach for, measured rather than
+ * assumed). Everything else throws a NAMED error rather than returning a
+ * plausible empty value — if a future slice reaches for `getStats()` we want a
+ * loud failure at the call site, not silent wrong behaviour the corpus might
+ * not cover.
+ *
+ * ── THE ONE DELIBERATE DIVERGENCE FROM `WasmPrologEngine` ──────────────────
+ *
+ * Core's wasm engine implements every mutation as **rebuild**: record the fact
+ * in a `factStore`, throw the KB away, create a fresh one and re-consult the
+ * whole accumulated program. Its own header says why, and it is not a
+ * correctness reason — *"Trealla supports incremental assert/retract properly,
+ * so this class does NOT have to rebuild the KB from stored state... It does
+ * anyway, [so that] US-2's diff of the two engines sees only real
+ * disagreements."*
+ *
+ * This engine is that same Trealla, linked natively, so it asserts and retracts
+ * in place. That is a divergence in MECHANISM and, deliberately, not in
+ * OBSERVABLE BEHAVIOUR — the bookkeeping below mirrors core's exactly, so the
+ * two agree on every question a caller can ask:
+ *
+ *  - **De-duplication.** Core stores facts in a `Set` keyed by normalized text,
+ *    so asserting the same fact twice leaves ONE clause and `findall/3` cannot
+ *    double-count. A bare native assert would leave two. `_facts` below is that
+ *    same `Set`, and a repeat assert never reaches the KB.
+ *  - **Retracting something that was CONSULTED rather than asserted.** Core's
+ *    rebuild removes the fact from `factStore` and then re-consults the original
+ *    program — which still contains the clause, so it survives. A bare native
+ *    retract would delete it. So a retract whose fact is not in `_facts` never
+ *    reaches the KB either, and reports success exactly as core's does.
+ *  - **Dynamic declarations.** Core's rebuild emits `:- dynamic(p/n).` ahead of
+ *    the program for every predicate it has ever recorded a fact for. Trealla
+ *    auto-creates a dynamic predicate on assert, so the directive is only needed
+ *    where the consulted program already defined the predicate STATICALLY — it
+ *    is issued once per signature, at first sight, for exactly that case.
+ *
+ * Why diverge at all, when a rebuild would have been fewer lines: a mechanic
+ * module asserts on every attack, spend, observation and step, and a rebuild is
+ * O(whole program) per fact — a combat tick would re-consult every rule pack the
+ * world loaded. It also churns KB handles, which is the failure mode the
+ * `keepalive` KB in ../src/insimulcore.c exists to work around. Executing the
+ * mechanic corpora against this engine (tasklist 147 US-2) is what holds the
+ * "no observable divergence" claim to account.
  */
 class NativePrologEngine {
 	constructor(id) {
 		/** @type {'wasm'} Same Trealla the wasm engine wraps — natively linked. */
 		this.kind = 'wasm';
 		this._id = id;
+		/**
+		 * Facts asserted through this wrapper, keyed `name/arity` -> Set of
+		 * normalized `fact.` text. Core's `factStore`, with core's normalization.
+		 */
+		this._facts = new Map();
+		/** Signatures already declared dynamic — core's `dynamicPredicates`. */
+		this._dynamic = new Set();
 	}
 
 	async consult(program) {
@@ -103,16 +153,118 @@ class NativePrologEngine {
 		this._id = -1;
 	}
 
-	// ── Not reached by the adopted slice. Fail loudly if a future one gets here.
+	/**
+	 * `name/arity` of a fact — core's `extractPredicateSignature`, with its one
+	 * bug fixed and the fix confined to something unobservable.
+	 *
+	 * Core matches the argument list with `[^)]*`, which STOPS at the first inner
+	 * `)`, so `threat(a, pos(1,2), 3)` buckets as `threat/2`. That is harmless
+	 * there because the key is only a bucket, and every caller reaches a fact
+	 * through the same wrong key. Here the key is also what `:- dynamic(...)`
+	 * names, and a directive for a predicate that does not exist protects
+	 * nothing — so the scan below counts top-level commas across the whole term.
+	 * Bucketing stays internal (de-duplication is by full fact text WITHIN a
+	 * bucket, so a differing key cannot change which facts are dropped), which is
+	 * what keeps this a fix rather than a divergence.
+	 */
+	_signature(fact) {
+		const match = fact.match(/^([a-z_]\w*)\s*\(([^)]*)/);
+		if (!match) {
+			const atom = fact.match(/^([a-z_]\w*)\s*\.?$/);
+			return atom ? `${atom[1]}/0` : '';
+		}
+		// Arity is the number of TOP-LEVEL commas plus one; nested compounds and
+		// lists do not raise it. Scan the whole tail rather than `match[2]`, whose
+		// `[^)]*` stops at the first inner `)`.
+		const args = fact.slice(match[1].length + fact.slice(match[1].length).indexOf('(') + 1);
+		let depth = 0;
+		let arity = 1;
+		for (let i = 0; i < args.length; i++) {
+			const ch = args[i];
+			if (ch === '(' || ch === '[') depth++;
+			else if (ch === ']') depth--;
+			else if (ch === ')') {
+				if (depth === 0) break;
+				depth--;
+			} else if (ch === ',' && depth === 0) arity++;
+		}
+		return `${match[1]}/${arity}`;
+	}
+
+	/** Issue `:- dynamic(sig).` once per signature — see the class header. */
+	_ensureDynamic(signature) {
+		if (!signature || this._dynamic.has(signature)) return;
+		this._dynamic.add(signature);
+		// A predicate the program never defined statically needs no directive and
+		// a KB that rejects the directive is telling us the predicate is already
+		// dynamic, so the return value is deliberately not consulted.
+		globalThis.__insimul_prolog_consult(this._id, `:- dynamic(${signature}).`);
+	}
+
+	/**
+	 * @param {string} fact term text, with or without a trailing `.`
+	 * @returns {Promise<boolean>} core's contract: whether the KB is loadable
+	 *   afterwards, NOT whether anything changed.
+	 */
+	async assertFact(fact) {
+		const normalized = String(fact).trim().replace(/\.\s*$/, '');
+		if (!normalized) return true;
+		const signature = this._signature(normalized);
+		let bucket = this._facts.get(signature);
+		if (!bucket) this._facts.set(signature, (bucket = new Set()));
+		// Already there: core's rebuild would emit the identical program, so the
+		// KB must not gain a second clause. See the header's de-duplication note.
+		if (bucket.has(`${normalized}.`)) return true;
+
+		this._ensureDynamic(signature);
+		const err = globalThis.__insimul_prolog_assert(this._id, normalized);
+		if (err !== null) return false;
+		bucket.add(`${normalized}.`);
+		return true;
+	}
+
+	async assertFacts(facts) {
+		let ok = true;
+		for (const fact of facts) ok = (await this.assertFact(fact)) && ok;
+		return ok;
+	}
+
+	async retractFact(fact) {
+		const normalized = String(fact).trim().replace(/\.\s*$/, '');
+		if (!normalized) return true;
+		const bucket = this._facts.get(this._signature(normalized));
+		// Not one of ours: core's rebuild re-consults the original program, which
+		// still carries the clause, so nothing is removed there and nothing is
+		// removed here. See the header's second note.
+		if (!bucket || !bucket.has(`${normalized}.`)) return true;
+		bucket.delete(`${normalized}.`);
+		const res = globalThis.__insimul_prolog_retract(this._id, normalized);
+		// `true` removed, `false` nothing matched (not an error), string = error.
+		return typeof res !== 'string';
+	}
+
+	/** Mirrors `WasmPrologEngine.queryOnce`: one solution is enough. */
+	async queryOnce(queryString) {
+		const result = await this.query(queryString, 1);
+		return result.success && result.bindings.length > 0;
+	}
+
+	/** Mirrors core's: the facts THIS wrapper asserted, in insertion order. */
+	getFactsForPredicate(signature) {
+		const bucket = this._facts.get(signature);
+		return bucket ? Array.from(bucket) : [];
+	}
+
+	getAllFacts() {
+		const all = [];
+		for (const bucket of this._facts.values()) for (const fact of bucket) all.push(fact);
+		return all;
+	}
+
+	// ── Not reached by the adopted surface. Fail loudly if a future one gets here.
 	declareDynamic() { return unimplemented('declareDynamic'); }
-	assertFact() { return unimplemented('assertFact'); }
-	assertFacts() { return unimplemented('assertFacts'); }
-	retractFact() { return unimplemented('retractFact'); }
 	addRule() { return unimplemented('addRule'); }
 	addRules() { return unimplemented('addRules'); }
-	queryOnce() { return unimplemented('queryOnce'); }
-	getFactsForPredicate() { return unimplemented('getFactsForPredicate'); }
-	getAllFacts() { return unimplemented('getAllFacts'); }
 	getAllRules() { return unimplemented('getAllRules'); }
 	clear() { return unimplemented('clear'); }
 	clearFacts() { return unimplemented('clearFacts'); }

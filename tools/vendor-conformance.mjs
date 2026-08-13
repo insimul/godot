@@ -68,7 +68,129 @@ const NOT_MIRRORED = [
       'Vendor these when this repo implements the editor core, not before: a ' +
       'corpus with no runner here would be a checked-in file nothing executes.',
   },
+  {
+    prefix: 'ai/',
+    why:
+      'the agentAi module\u2019s selector vectors. `agentAi` is not one of the seven ' +
+      'band-120 modules this repo adopted (tools/verify-mechanics/MODULE_HOSTS.json ' +
+      'is the list), so there is no decision layer here to run them against. ' +
+      'NOTE the deliberate asymmetry: conformance/prolog/agent-ai.json IS mirrored, ' +
+      'because the Prolog runner is generic and executes any pack\u2019s vocabulary ' +
+      'without the module being adopted. The DECISION vectors need the layer.',
+  },
+  {
+    prefix: 'map/',
+    why:
+      'the map module\u2019s region and jurisdiction vectors — same reason as ai/: ' +
+      '`map` is not one of the seven adopted modules, and conformance/prolog/' +
+      'geo-map.json is mirrored for the same reason agent-ai.json is.',
+  },
+  {
+    prefix: 'generation/',
+    why:
+      'the world-generation corpora (bridges, buildings). Generation is an ' +
+      'authoring-time surface this repo does not adopt at all — see ' +
+      'RUNTIME_CORE_ADOPTION.md \u00a77, "What we should NOT adopt".',
+  },
+  {
+    prefix: 'grounding/',
+    why:
+      'the grounding pack fixtures (roman-cuisine). Not a case corpus and not a ' +
+      'runtime surface: it pins how a content pack is stamped, which is the ' +
+      'platform repo\u2019s job, not the engine plugin\u2019s.',
+  },
 ];
+
+// MINIMUM case counts per corpus area, hand-maintained. `prologCases` alone
+// cannot catch a shrink: it is written FROM the corpus on every re-vendor, so a
+// corpus that lost half its cases upstream re-vendors to a smaller number and
+// the guard agrees with it. A floor is the number a human wrote down, and
+// re-vendoring never lowers it — so losing a case is an ERROR here and raising
+// the bar is a deliberate edit. Keyed by the directory under conformance/;
+// `prolog` is the whole directory because its files are one corpus with one
+// runner. Counts are core 84be9ad's, minus nothing.
+const CASE_FLOORS = {
+  prolog: 255,
+  'combat/action-table.json': 5,
+  'combat/resolution.json': 16,
+  'items/equipping.json': 12,
+  'items/placement.json': 7,
+  'items/pricing.json': 12,
+  'items/transactions.json': 12,
+  'routines/goals.json': 14,
+  'routines/intents.json': 21,
+  'routines/interruption.json': 10,
+  'skills/advancement.json': 12,
+  'skills/effects.json': 11,
+  'skills/trees.json': 6,
+  'skills/unlocks.json': 12,
+  'stealth/actions.json': 6,
+  'stealth/detection.json': 16,
+  'traversal/affordances.json': 14,
+  'traversal/fast-travel.json': 10,
+  'traversal/vehicles.json': 14,
+};
+
+/**
+ * The activation table is not a case corpus, so `CASE_FLOORS` cannot guard it:
+ * `conformance/modules/genre-activation.json` is one object keyed by genre with
+ * a module list per genre, and `caseCount` reads zero from it. Its floors are
+ * the two numbers that can shrink — how many genre bundles core declares, and
+ * how many module ACTIVATIONS there are across all of them
+ * (`sum(genres[*].modules.length)`). A bundle that quietly stopped selecting a
+ * module is a mechanic that silently left every game of that genre, and it is
+ * invisible both to a file count and to a hash that re-vendoring rewrites.
+ * Counts are core 76782e5's, minus nothing.
+ */
+const TABLE_FLOORS = {
+  'modules/genre-activation.json': { genres: 8, activations: 24 },
+};
+
+/** `{ genres, activations }` of the vendored activation table; zeroes if absent. */
+function tableCounts(rel) {
+  const p = path.join(CORPUS, rel);
+  if (!fs.existsSync(p)) return { genres: 0, activations: 0 };
+  const doc = JSON.parse(fs.readFileSync(p, 'utf8'));
+  const genres = Object.values(doc.genres ?? {});
+  return {
+    genres: genres.length,
+    activations: genres.reduce((n, g) => n + (Array.isArray(g.modules) ? g.modules.length : 0), 0),
+  };
+}
+
+/** `cases.length` of one vendored corpus file, or 0 when it is not there. */
+function caseCount(rel) {
+  const p = path.join(CORPUS, rel);
+  if (!fs.existsSync(p)) return 0;
+  const doc = JSON.parse(fs.readFileSync(p, 'utf8'));
+  return Array.isArray(doc.cases) ? doc.cases.length : 0;
+}
+
+/** Every floor that is not met, as a problem line each. */
+function floorProblems() {
+  const out = [];
+  for (const [key, floor] of Object.entries(CASE_FLOORS)) {
+    const actual = key === 'prolog' ? prologCaseCount() : caseCount(key);
+    if (actual < floor) {
+      out.push(
+        `conformance/${key} holds ${actual} case(s), below the floor of ${floor} — ` +
+          'a corpus that shrinks is a contract that quietly stopped being pinned',
+      );
+    }
+  }
+  for (const [key, floors] of Object.entries(TABLE_FLOORS)) {
+    const counts = tableCounts(key);
+    for (const [field, floor] of Object.entries(floors)) {
+      if (counts[field] < floor) {
+        out.push(
+          `conformance/${key} holds ${counts[field]} ${field}, below the floor of ${floor} — ` +
+            'a bundle that stopped selecting a module is a mechanic that silently left the game',
+        );
+      }
+    }
+  }
+  return out;
+}
 
 /** The NOT_MIRRORED entry covering `rel`, or undefined. */
 function excludedBy(rel) {
@@ -157,6 +279,13 @@ function write(coreDir) {
   writeManifest(coreDir, files);
   console.log(`vendor-conformance: mirrored ${files.length} file(s) from core ${gitCommit(path.resolve(coreDir))}`);
   console.log(`  prolog cases now: ${prologCaseCount()}`);
+  // A re-vendor is exactly when a shrink would slip through, because the
+  // manifest is being rewritten from the very data that shrank.
+  const short = floorProblems();
+  if (short.length > 0) {
+    for (const p of short) console.error(`vendor-conformance: FLOOR: ${p}`);
+    fail(`${short.length} corpus area(s) came back below their case floor`);
+  }
 }
 
 function writeManifest(coreDir, files) {
@@ -168,6 +297,9 @@ function writeManifest(coreDir, files) {
     source: '@insimul/core (packages/core/conformance)',
     coreCommit: coreDir ? gitCommit(path.resolve(coreDir)) : 'unknown',
     prologCases: prologCaseCount(),
+    caseFloors: CASE_FLOORS,
+    tableFloors: TABLE_FLOORS,
+    activationTable: tableCounts('modules/genre-activation.json'),
     files: Object.fromEntries(
       files.map((rel) => [rel, sha256(fs.readFileSync(path.join(CORPUS, rel)))]),
     ),
@@ -208,6 +340,7 @@ function check(coreDir) {
   if (cases !== manifest.prologCases) {
     problems.push(`prolog corpus holds ${cases} case(s), manifest records ${manifest.prologCases}`);
   }
+  problems.push(...floorProblems());
 
   if (problems.length > 0) {
     for (const p of problems) console.error(`vendor-conformance: ${p}`);
@@ -216,6 +349,16 @@ function check(coreDir) {
   console.log(
     `vendor-conformance: ${mirrored.length} mirrored file(s) consistent, ` +
       `${cases} prolog cases, core ${manifest.coreCommit}`,
+  );
+  console.log(
+    `vendor-conformance: ${Object.keys(CASE_FLOORS).length} case floor(s) met ` +
+      `(${Object.values(CASE_FLOORS).reduce((a, b) => a + b, 0)} cases pinned as a minimum)`,
+  );
+  const activation = tableCounts('modules/genre-activation.json');
+  console.log(
+    `vendor-conformance: activation table: ${activation.genres} genre bundle(s), ` +
+      `${activation.activations} module activation(s) — executed by ` +
+      'gdextension/test/run_activation_tests.sh',
   );
 
   if (coreDir) {

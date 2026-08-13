@@ -720,3 +720,271 @@ extension, which needs godot-cpp + scons; they hang rather than skip in this
 harness. What the host gates cover is the entire path below GDScript — the same C
 ABI calls, the same bundle, the same Prolog engine — so what is unverified is the
 GDScript wrapper itself, not the adoption.
+
+---
+
+# Band-120 mechanic modules (tasklist 147, US-1)
+
+The seven mechanic modules — combat, stamina, perception, traversal, skill,
+equipment, routine — running through `libinsimulcore` as **27 rows** in
+`gdextension/corebridge/js/entry.js`, with all **eight** host interfaces they
+declare implemented in GDScript. `RUNTIME_CORE_ADOPTION.md` §11 is the design and
+the findings; this is how to check it.
+
+## Runs on any box (no Godot toolchain, no libinsimul)
+
+```sh
+npm run check
+```
+
+The fourth stage is new: `tools/verify-mechanics/check-mechanics.mjs --self-test`.
+It mirrors this repo against a vendored derivation of core's own module manifest
+(`tools/verify-mechanics/MODULE_HOSTS.json`) six ways —
+
+1. **manifest** — the seven modules are present and each names a host interface
+   and a decision layer;
+2. **contract** — every interface's member list has a matching method on the
+   GDScript base class in `addons/insimul/runtime/mechanics/insimul_mechanic_hosts.gd`;
+3. **implementation** — every interface is extended by at least one GDScript
+   class, or declared in `stubbed` **with a stated consequence** (that is what
+   makes "no silent no-op" checkable, and `stubbed` is currently empty);
+4. **bridge** — `entry.js`'s module table agrees with core on host interfaces and
+   decision layers, and every row it declares exists in its `METHODS` table;
+5. **orders** — every order the adapter can emit has a dispatch branch in
+   `insimul_mechanic_session.gd`;
+6. **corpus** (US-2) — every module's declared conformance corpus is vendored,
+   every vendored decision area has a runner in
+   `gdextension/corebridge/js/host-corpus.js`, every runner has a corpus, and
+   every directory under `conformance/` is accounted for by a named gate or by an
+   explicit "nothing here runs it". Both directions, because each catches a
+   different way of ending up with a checked-in file nobody executes.
+
+`--self-test` breaks each check on purpose first and requires it to fail, so a
+green run means six checks that *can* fail did not. To check drift against core
+itself — which needs a checkout that has `packages/core`:
+
+```sh
+node tools/verify-mechanics/check-mechanics.mjs --core ../babylon/packages/core
+node tools/verify-mechanics/check-mechanics.mjs --core ../babylon/packages/core --write   # re-derive
+```
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:mechanics
+```
+
+Drives all seven decision layers end to end — core's real TypeScript in QuickJS,
+on the natively linked Trealla — and asserts **43 checks**. It fails loudly when
+libinsimul is absent rather than skipping, like the radiant gate; point it at a
+build with `INSIMUL_NATIVE_DIR=` or `INSIMUL_NATIVE_DIST=`.
+
+What the 43 cover, and why each is worth a gate rather than an argument:
+
+| claim | how it is checked |
+| --- | --- |
+| the rows are REACHABLE | `mechanic.modules` names seven modules; every row it declares is in `core.methods`; the row count has a floor so a surface that shrinks fails |
+| readings reach core | a blocked line-of-fire reading refuses the shot; `ICombatStatSink.getBaseStats` is asked exactly once per equip |
+| orders reach the host | `applyDamage` carries the resolution's own number; `registerEntity` is an order rather than a bridge-side write; one movement produces exactly one `travel` |
+| the host cannot DECIDE | the same shot is fired with a clear line, a blocked line and no reading at all — the difference is core's, and a missing reading still fights |
+| sessions are real | two sessions of one module do not share state; a disposed handle is an ERROR, not an empty answer; no session outlives the gate |
+| the Prolog seam works | `applied: true` with a KB wired, and three spends of five leaving 85 — the assert/retract path that did not exist before this story |
+
+## Needs a `godot` binary + a built extension — human checklist
+
+No GDScript is executed by any gate here, and the Godot implementations live in
+`templates/`, which is the exported game and is in no compiled assembly. So the
+following is a human pass in a project with a scene, a `NavigationRegion3D` and a
+`CharacterBody3D`:
+
+1. **Boot report.** `print()` `InsimulMechanicSurface.new().report()`. Expect one
+   line per module reading `ready`, and the interfaces each executes through. A
+   module reading `bridge_has_no_row` means the installed `libinsimulcore`
+   predates this story.
+2. **Combat.** Open a `combat` session with two combatants and a `projectile`
+   action; wire `GodotCombatHost.combat_system()` and
+   `GodotGeometryProbes.trajectory()`. Fire with a crate between the two: expect
+   `blockedBy` to name the crate's node and the health bar not to move. Step
+   aside and fire again: expect health to drop by exactly the number in the
+   report, and no second roll anywhere.
+3. **Traversal + locomotion.** Author a `geometric` link, bind both ends with
+   `InsimulActorRegistry.bind_place`, and call `traversal.traverse`. Expect the
+   NPC to walk the `NavigationAgent3D` path, `movement_ordered` to carry the
+   urgency atom core resolved, and the stamina bar to move by the resolved cost
+   (link cost × the world's mode multiplier) — once, not twice.
+4. **Skills.** Unlock a node whose effect is `modifies(move_speed, 10)` and watch
+   the body's `move_speed` rise by 10%. Unlock it again (or reload a save): the
+   value must not move a second time — the totals are absolute.
+5. **The recorded gap.** A node with `modifies(carry_capacity, N)` must print the
+   `carry_capacity` warning and appear in `unapplied()`, and must NOT invent an
+   inventory limit.
+
+## Status on this machine
+
+| gate | result |
+| --- | --- |
+| `npm run check` | ✅ 182 `.gd` files structurally sound; bundle + corpus artifacts consistent; 19 case floors met; 7 modules / 8 interfaces / 27 rows; 6/6 negative controls fail as designed |
+| `check-mechanics.mjs --core …` | ✅ manifest matches core `76782e5` |
+| `npm run test:mechanics` | ✅ **43 checks, 0 failures** |
+| `npm run test:corpus` | ✅ **467 cases** — 254 AGREE / 1 AMEND / 0 DIVERGE prolog, 212 AGREE / 0 DIVERGE decisions |
+| `npm run test:conformance` | ✅ 255 cases / 217 solutions marshalled across 21 files (was 76 / 10) |
+| `npm run test:radiant` | ✅ 11 cases, 5 areas — unchanged by the new bundle |
+| `npm run test:quest-parity` | ✅ 7 AGREE, 0 REGRESSION — unchanged |
+| every other host gate | ✅ 24 / 42 / 19 / 3 / 33 / 11 / 58 — unchanged |
+| human checklist above | ⬜ needs a Godot editor; unchecked here |
+
+---
+
+# Band-120 corpora, executed (tasklist 147, US-2)
+
+The seven modules' **parity**, as distinct from their reachability above:
+`RUNTIME_CORE_ADOPTION.md` §12 is the report, this is how to run it.
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:corpus        # bash gdextension/test/run_corpus_tests.sh
+```
+
+**467 cases in two halves**, both through the same bundle a shipped game loads:
+
+| half | what runs | count |
+| --- | --- | --- |
+| vocabulary | every `conformance/prolog/*.json` case consulted and **queried** on the natively linked Trealla, solutions compared as an unordered multiset | 255 cases, 21 files |
+| decision | every `conformance/{combat,items,routines,skills,stealth,traversal}/` case resolved by core's own `resolveAttack`, `runDetection`, `findRoute`, `resolvePrice`, `resolveAdvance`, `RoutineDirector` …, deep-compared to the pinned `expected` | 212 cases, 18 areas |
+
+Every case is classified — **AGREE / AMEND / DIVERGE / ERROR** — and the counts
+are printed. Only AGREE and AMEND are green. Expect:
+
+```
+prolog vocabulary : 254 AGREE, 1 AMEND, 0 DIVERGE, 0 ERROR  (255 case(s), 21 file(s))
+module decisions  : 212 AGREE, 0 AMEND, 0 DIVERGE, 0 ERROR  (212 case(s), 18 area(s))
+47 check(s), 0 failure(s)
+```
+
+The one `AMEND` is `assert-retract.json::asserta-prepends` and it prints a
+`[AMEND]` line saying why. It is not a defect of this repo — no Trealla runs that
+case as authored, and all five legs that read the file rename the predicate in
+memory rather than editing the corpus. §12.3 classifies it.
+
+Like the other libinsimul-linked gates it **fails loudly when the library is
+absent** rather than skipping; point it at a build with `INSIMUL_NATIVE_DIR=` or
+`INSIMUL_NATIVE_DIST=`.
+
+### The seven checks on the gate itself
+
+Because a parity gate that quietly stopped visiting an area would print a
+smaller green number rather than red:
+
+1–4. file, case and area **floors** for both halves (21 / 255 / 18 / 212);
+5. every vendored area ran through a **declared** runner;
+6. every runner the build declares had a vendored corpus **to** run;
+7. every listed amendment was **still needed** — a stale one fails like a
+   divergence, because an engine that got better and a table nobody re-validated
+   look identical from the outside.
+
+## Drift against core — the check that actually diffs
+
+```sh
+CORE=../babylon/packages/core
+node tools/vendor-conformance.mjs  --check --core "$CORE"   # byte-for-byte, + 19 case floors
+node tools/vendor-core-bundle.mjs  --check --core "$CORE"   # re-bundles and diffs
+node tools/verify-mechanics/check-mechanics.mjs --core "$CORE"
+```
+
+All three print their NOT_MIRRORED exclusions with a count on every run. Without
+`--core` they only verify the artifact's own hashes and say so.
+
+## Status on this machine
+
+| gate | result |
+| --- | --- |
+| `npm run test:corpus` | ✅ **47 checks, 0 failures — 467 cases, 0 divergences** |
+| `vendor-conformance --check --core` | ✅ byte-identical to core `76782e5`; 63 files, 19 floors met |
+| `vendor-core-bundle --check --core` | ✅ re-bundle reproduces the artifact byte-for-byte |
+| `check-mechanics --core` | ✅ manifest matches core `76782e5` |
+| `conformance/ui/*.json` | ⬜ **executed by nothing on this tier** — declared, not hidden (§12.5) |
+
+---
+
+# Genre-bundle activation (tasklist 147, US-3)
+
+Which modules a world actually runs, and what a module it did *not* select costs.
+`RUNTIME_CORE_ADOPTION.md` §13 is the report.
+
+## Runs on any box (no Godot toolchain, no libinsimul)
+
+```sh
+npm run check     # includes check-mechanics' SEVENTH check
+```
+
+Check 7 is the one that holds US-3's claim to account: it greps
+`addons/insimul/runtime/mechanics/insimul_module_activation.gd` and
+`insimul_mechanic_activator.gd` for **every module id, pack area and genre id**
+in `conformance/modules/genre-activation.json` — comments included — and fails on
+a hit. It also fails when the vendored table and `MODULE_HOSTS.json` disagree
+about a module's host interfaces (two artifacts, two tools, one core manifest),
+and when a bundle activates a module that is neither adopted nor declared
+unadopted. Its negative control plants a genre id in a fake source file.
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:activation     # bash gdextension/test/run_activation_tests.sh
+```
+
+**30 checks**, in four parts:
+
+| part | what runs | count |
+| --- | --- | --- |
+| the table | `modules.table` deep-compared to the vendored `genre-activation.json` | 1 |
+| the bundles | every genre resolved through `modules.activate`, by genre id **and** through a World IR's `meta.genreConfig.id`, deep-compared to the committed set | 8 genres, 24 activations |
+| the edges | unknown genre → shared vocabulary only; nothing declared → every pack; a World IR with no `genreConfig` → undeclared, with the reason | 5 |
+| the witness | for every genre × pack: consult exactly the active packs on the native Trealla and ask `current_predicate/1` for that pack's measured signature | 8 × 11 = 88 pairs |
+| the scene | `templates/project/insimul/scenarios/dark-courtyard.json` replayed through the same rows the Godot scene calls | 6 steps, 2 modules |
+
+Expect:
+
+```
+  ✓ `modules.table` is byte-equal to conformance/modules/genre-activation.json
+  ✓ rpg                8 module(s), 10 pack(s), 8 host interface(s)
+  ✓ rpg                10 of 11 pack(s) in the KB, and exactly the active ones
+  ✓ puzzle             2 of 11 pack(s) in the KB, and exactly the active ones
+  ✓ dark-courtyard     rpg: 6 step(s) across 2 module(s), every expectation met
+30 check(s), 0 failure(s)
+```
+
+Like the other libinsimul-linked gates it **fails loudly when the library is
+absent** rather than skipping.
+
+## <a name="godot-activation-sample-scene"></a>Needs a `godot` binary — human scene pass
+
+The half no host gate reaches: the raycasts, the lights and the bodies.
+
+```sh
+godot --path templates/project -s scripts/mechanics/mechanic_courtyard_demo.gd
+```
+
+- [ ] The boot log prints the activation block — the genre, where it came from
+      (`worldIr` / `genre` / `undeclared`), one line per selected module, and the
+      pack list.
+- [ ] It prints **`selected but not runnable`** for `agentAi` and `map` under an
+      `rpg` world. That is the honest state, not a bug: their packs are consulted,
+      their decision layers are not bundled (§13.3).
+- [ ] The guard detects the wanderer when the wanderer crosses the lantern's pool
+      of light and not when they are in the dark — with the visibility number
+      coming from `godot_geometry_probes.gd`'s raycast, not from the scenario.
+- [ ] The spear thrust moves the wanderer's health by the number core decided
+      (the `ICombatSystem.applyDamage` order), and the crossbow shot with the
+      crate in the way applies nothing and reports `blockedBy: crate`.
+- [ ] With a world whose genre is `puzzle`, the same scene activates nothing and
+      says so — no session opens and the steps report `SKIPPED`.
+
+## Status on this machine (activation)
+
+| gate | result |
+| --- | --- |
+| `npm run check` (7 checks + 7 negative controls) | ✅ 186 `.gd` files, 0 problems |
+| `npm run test:activation` | ✅ **30 checks, 0 failures** — 8 bundles, 88 KB witnesses, 6 scenario steps |
+| `vendor-conformance --check --core` | ✅ byte-identical to core `76782e5`; 64 files, 19 case floors + the table floors met |
+| the human scene pass | ⬜ needs a `godot` binary + a built extension |

@@ -1,0 +1,916 @@
+{
+  "area": "items-pricing",
+  "description": "What a thing costs HERE, from whom, and why (US-2 and US-4 of `124-items-equipment-economy`). This is the file that says Insimul does not need a shop table: a price is a function of the simulation that already exists — `vendor_markup/2` of the business, `container_contains/3` on the vendor’s own shelf against `item_stock_normal/2`, `reputation/3` with the faction the shop answers to, and `business_owner/2` — and every term is reported with the percentage and the coin it moved, because a player charged double is owed the reason. The corpus’s own teeth are two cases: the same sword, the same shop, the same shelf, two buyers, two prices, differing only by a fact the KB already held; and a world with no economy at all, where the price IS `item_value/2` and `fallback` says so. Terms are summed against the AUTHORED base rather than compounded, so term order cannot make two engines disagree, and every percentage is applied per unit with the quantity multiplied last. Regenerate with `npm run items-corpus`.",
+  "cases": [
+    {
+      "name": "a-stranger-pays-the-smithy’s-margin",
+      "note": "The baseline every other case differs from: `vendor_markup/2` of the business this vendor trades for, and nothing else, because the shelf is stocked and the KB knows nothing about this buyer. The term names the business it came from.",
+      "input": {
+        "actor": "wren",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 4
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "weapon",
+          "weight": 8,
+          "value": 100,
+          "sellValue": 50,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "steel",
+            "weapon"
+          ],
+          "effects": {
+            "attack": 3
+          },
+          "requires": [],
+          "lootWeight": 3,
+          "id": "steel_sword",
+          "name": "Steel Sword",
+          "equipSlot": "weapon"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "steel_sword",
+          "direction": "buy",
+          "base": 100,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 20,
+              "subject": "ironmongers"
+            }
+          ],
+          "unit": 120,
+          "quantity": 1,
+          "total": 120,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "a-friend-of-the-watch-pays-less-for-the-same-sword",
+      "note": "US-2’s fourth criterion as an artifact: the same item, the same shop, the same shelf, the same day — and a different price, purely because `reputation/3` says this one has done the watch a hundred coins’ worth of good. A port that reads a price off `item_value/2` reproduces the case above and fails this one.",
+      "input": {
+        "actor": "brannoc",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 4,
+          "standing": 100
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "weapon",
+          "weight": 8,
+          "value": 100,
+          "sellValue": 50,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "steel",
+            "weapon"
+          ],
+          "effects": {
+            "attack": 3
+          },
+          "requires": [],
+          "lootWeight": 3,
+          "id": "steel_sword",
+          "name": "Steel Sword",
+          "equipSlot": "weapon"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "steel_sword",
+          "direction": "buy",
+          "base": 100,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 20,
+              "subject": "ironmongers"
+            },
+            {
+              "factor": "standing",
+              "percent": -25,
+              "amount": -25,
+              "subject": "town_watch"
+            }
+          ],
+          "unit": 95,
+          "quantity": 1,
+          "total": 95,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "the-owner-does-not-pay-their-own-shop-a-margin",
+      "note": "`business_owner/2` names the buyer. Authored as its own percentage rather than as \"skip the markup\", because a guild may want the owner to pay nothing and a family firm may want them to pay something.",
+      "input": {
+        "actor": "tomas",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 4
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "weapon",
+          "weight": 8,
+          "value": 100,
+          "sellValue": 50,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "steel",
+            "weapon"
+          ],
+          "effects": {
+            "attack": 3
+          },
+          "requires": [],
+          "lootWeight": 3,
+          "id": "steel_sword",
+          "name": "Steel Sword",
+          "equipSlot": "weapon"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "steel_sword",
+          "direction": "buy",
+          "base": 100,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 20,
+              "subject": "ironmongers"
+            },
+            {
+              "factor": "proprietor",
+              "percent": -30,
+              "amount": -30,
+              "subject": "tomas"
+            }
+          ],
+          "unit": 90,
+          "quantity": 1,
+          "total": 90,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "the-last-two-arrows-cost-more-than-the-first-twenty",
+      "note": "Scarcity, read off `container_contains/3` on the vendor’s own shelf against the item’s `item_stock_normal/2`. There is no stock table: the shelf IS the ledger’s container place, so a purchase that empties it moves the next price by construction.",
+      "input": {
+        "actor": "wren",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 2,
+          "stockNormal": 20
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "misc",
+          "weight": 0,
+          "value": 10,
+          "sellValue": 4,
+          "tradeable": true,
+          "stackable": true,
+          "maxStack": 40,
+          "tags": [
+            "steel"
+          ],
+          "effects": {},
+          "requires": [],
+          "lootWeight": 9,
+          "id": "arrow",
+          "name": "Arrow",
+          "stockNormal": 20
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "arrow",
+          "direction": "buy",
+          "base": 10,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 2,
+              "subject": "ironmongers"
+            },
+            {
+              "factor": "scarcity",
+              "percent": 45,
+              "amount": 5,
+              "subject": "hilde"
+            }
+          ],
+          "unit": 17,
+          "quantity": 1,
+          "total": 17,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "a-full-shelf-is-not-a-discount",
+      "note": "Above the normal level the term is ABSENT rather than zero — a vendor who overbought is not obliged to say so, and a host reading the adjustments can tell \"this world has no scarcity\" from \"this shelf is full\".",
+      "input": {
+        "actor": "wren",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 30,
+          "stockNormal": 20
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "misc",
+          "weight": 0,
+          "value": 10,
+          "sellValue": 4,
+          "tradeable": true,
+          "stackable": true,
+          "maxStack": 40,
+          "tags": [
+            "steel"
+          ],
+          "effects": {},
+          "requires": [],
+          "lootWeight": 9,
+          "id": "arrow",
+          "name": "Arrow",
+          "stockNormal": 20
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "arrow",
+          "direction": "buy",
+          "base": 10,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 2,
+              "subject": "ironmongers"
+            }
+          ],
+          "unit": 12,
+          "quantity": 1,
+          "total": 12,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "a-world-with-no-economy-at-all",
+      "note": "The documented fallback, and a real path rather than a degradation: no vendor, no business, no faction, no shelf. The price IS `item_value/2`, and `fallback` says so, which is what lets a puzzle world, a language-learning world and this corpus’s own harness price an item without simulating a town.",
+      "input": {
+        "actor": "wren",
+        "direction": "buy",
+        "quantity": 1,
+        "market": null,
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "weapon",
+          "weight": 8,
+          "value": 100,
+          "sellValue": 50,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "steel",
+            "weapon"
+          ],
+          "effects": {
+            "attack": 3
+          },
+          "requires": [],
+          "lootWeight": 3,
+          "id": "steel_sword",
+          "name": "Steel Sword",
+          "equipSlot": "weapon"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "steel_sword",
+          "direction": "buy",
+          "base": 100,
+          "adjustments": [],
+          "unit": 100,
+          "quantity": 1,
+          "total": 100,
+          "fallback": true
+        }
+      }
+    },
+    {
+      "name": "selling-pays-the-world’s-margin-and-no-markup",
+      "note": "The mirror, not a second formula: a vendor pays `sellMarginPercent` of `item_sell_value/2` and charges no margin on top, because charging one would be the same term twice.",
+      "input": {
+        "actor": "wren",
+        "direction": "sell",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 4
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "weapon",
+          "weight": 8,
+          "value": 100,
+          "sellValue": 50,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "steel",
+            "weapon"
+          ],
+          "effects": {
+            "attack": 3
+          },
+          "requires": [],
+          "lootWeight": 3,
+          "id": "steel_sword",
+          "name": "Steel Sword",
+          "equipSlot": "weapon"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "steel_sword",
+          "direction": "sell",
+          "base": 40,
+          "adjustments": [],
+          "unit": 40,
+          "quantity": 1,
+          "total": 40,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "a-friend-of-the-watch-is-offered-more-for-one",
+      "note": "Standing flips sign with the direction, which is what makes it one authored percentage rather than two: a friend who is charged less for a sword is offered more for one.",
+      "input": {
+        "actor": "brannoc",
+        "direction": "sell",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 4,
+          "standing": 100
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "weapon",
+          "weight": 8,
+          "value": 100,
+          "sellValue": 50,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "steel",
+            "weapon"
+          ],
+          "effects": {
+            "attack": 3
+          },
+          "requires": [],
+          "lootWeight": 3,
+          "id": "steel_sword",
+          "name": "Steel Sword",
+          "equipSlot": "weapon"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "steel_sword",
+          "direction": "sell",
+          "base": 40,
+          "adjustments": [
+            {
+              "factor": "standing",
+              "percent": 25,
+              "amount": 10,
+              "subject": "town_watch"
+            }
+          ],
+          "unit": 50,
+          "quantity": 1,
+          "total": 50,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "a-vendor-out-of-arrows-pays-more-for-arrows",
+      "note": "The exception that proves the mirror. Scarcity keeps its sign in both directions, so an empty shelf raises what the shop charges AND what it offers — one term, written once, applied to both.",
+      "input": {
+        "actor": "wren",
+        "direction": "sell",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 2,
+          "stockNormal": 20
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "misc",
+          "weight": 0,
+          "value": 10,
+          "sellValue": 4,
+          "tradeable": true,
+          "stackable": true,
+          "maxStack": 40,
+          "tags": [
+            "steel"
+          ],
+          "effects": {},
+          "requires": [],
+          "lootWeight": 9,
+          "id": "arrow",
+          "name": "Arrow",
+          "stockNormal": 20
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "arrow",
+          "direction": "sell",
+          "base": 3,
+          "adjustments": [
+            {
+              "factor": "scarcity",
+              "percent": 45,
+              "amount": 1,
+              "subject": "hilde"
+            }
+          ],
+          "unit": 4,
+          "quantity": 1,
+          "total": 4,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "a-price-never-falls-below-the-world’s-floor",
+      "note": "Every term summed against the AUTHORED base can take a cheap thing below nothing. `minimumPrice` is the world’s own floor and it is applied last, after the terms, so the adjustments still report what they were worth.",
+      "input": {
+        "actor": "tomas",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 1,
+          "stockNormal": 20,
+          "standing": 100
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 5,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "food",
+          "weight": 1,
+          "value": 4,
+          "sellValue": 2,
+          "tradeable": true,
+          "stackable": false,
+          "maxStack": 1,
+          "tags": [
+            "food"
+          ],
+          "effects": {},
+          "requires": [],
+          "lootWeight": 12,
+          "id": "loaf",
+          "name": "Loaf"
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "loaf",
+          "direction": "buy",
+          "base": 4,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 1,
+              "subject": "ironmongers"
+            },
+            {
+              "factor": "scarcity",
+              "percent": 48,
+              "amount": 2,
+              "subject": "hilde"
+            },
+            {
+              "factor": "standing",
+              "percent": -25,
+              "amount": -1,
+              "subject": "town_watch"
+            },
+            {
+              "factor": "proprietor",
+              "percent": -30,
+              "amount": -1,
+              "subject": "tomas"
+            }
+          ],
+          "unit": 5,
+          "quantity": 1,
+          "total": 5,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "quantity-multiplies-the-unit-and-nothing-else",
+      "note": "Every term is per unit and the total is the last multiplication, so a stack of forty arrows cannot round differently from forty single arrows — the rounding a native port would otherwise do forty times.",
+      "input": {
+        "actor": "wren",
+        "direction": "buy",
+        "quantity": 12,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 30,
+          "stockNormal": 20
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": {
+          "itemType": "misc",
+          "weight": 0,
+          "value": 10,
+          "sellValue": 4,
+          "tradeable": true,
+          "stackable": true,
+          "maxStack": 40,
+          "tags": [
+            "steel"
+          ],
+          "effects": {},
+          "requires": [],
+          "lootWeight": 9,
+          "id": "arrow",
+          "name": "Arrow",
+          "stockNormal": 20
+        }
+      },
+      "expected": {
+        "price": {
+          "item": "arrow",
+          "direction": "buy",
+          "base": 10,
+          "adjustments": [
+            {
+              "factor": "markup",
+              "percent": 20,
+              "amount": 2,
+              "subject": "ironmongers"
+            }
+          ],
+          "unit": 12,
+          "quantity": 12,
+          "total": 144,
+          "fallback": false
+        }
+      }
+    },
+    {
+      "name": "an-item-the-catalogue-never-declared-is-worth-the-floor",
+      "note": "An absence, priced. Base zero, no terms read, and the world’s floor still applied — a port that returns the vendor’s markup on a missing row is inventing money.",
+      "input": {
+        "actor": "wren",
+        "itemId": "ghost_blade",
+        "direction": "buy",
+        "quantity": 1,
+        "market": {
+          "vendor": {
+            "id": "hilde",
+            "business": "ironmongers",
+            "markupPercent": 20,
+            "goldReserve": 300,
+            "dealsIn": [
+              "steel"
+            ],
+            "stockSize": 2
+          },
+          "owner": "tomas",
+          "faction": "town_watch",
+          "stock": 4
+        },
+        "tuning": {
+          "markupPercent": 10,
+          "sellMarginPercent": 80,
+          "scarcityPercent": 50,
+          "stockNormal": 0,
+          "standingPercent": 25,
+          "standingScale": 100,
+          "proprietorPercent": 30,
+          "minimumPrice": 1,
+          "buyAction": "buy_item",
+          "sellAction": "sell_item",
+          "stockSize": 2,
+          "stockDepth": 4
+        },
+        "item": null
+      },
+      "expected": {
+        "price": {
+          "item": "ghost_blade",
+          "direction": "buy",
+          "base": 0,
+          "adjustments": [],
+          "unit": 1,
+          "quantity": 1,
+          "total": 1,
+          "fallback": false
+        }
+      }
+    }
+  ]
+}

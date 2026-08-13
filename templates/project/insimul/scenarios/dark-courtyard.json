@@ -1,0 +1,100 @@
+{
+  "description": "The template's mechanic sample scene, as data. A guard on a dark courtyard wall, a wanderer below, one lantern and one crate. Every reading here is one the Godot scene actually takes (a raycast for the line of fire, a light probe for visibility); every decision is core's. `scripts/mechanics/mechanic_courtyard_demo.gd` drives these exact steps in the engine, and gdextension/test/run_activation_tests.sh replays them through the same rows with no Godot binary — so the scene is a gate, not a screenshot.",
+  "scene": "dark-courtyard",
+  "genre": "rpg",
+  "worldFacts": "can_attack(guard, wanderer).\ncan_attack(wanderer, guard).\nhealth(guard, 30, 30).\nhealth(wanderer, 24, 24).\n",
+  "sessions": [
+    {
+      "module": "perception",
+      "args": {
+        "seed": 11,
+        "playthrough": {"kind": "world", "namespace": "insimul", "localId": "dark-courtyard"},
+        "observers": [{"id": "guard", "senses": [{"channel": "sight", "acuity": 1}]}],
+        "targets": [{"id": "wanderer", "location": "courtyard", "light": 20, "stance": "crouching"}]
+      }
+    },
+    {
+      "module": "combat",
+      "args": {
+        "seed": 7,
+        "combatants": [
+          {"id": "guard", "health": 30, "maxHealth": 30},
+          {"id": "wanderer", "health": 24, "maxHealth": 24}
+        ],
+        "actions": [
+          {"id": "spear_thrust", "delivery": "melee", "range": 2, "damage": 5, "accuracy": 1},
+          {"id": "crossbow_shot", "delivery": "projectile", "range": 20, "damage": 6, "accuracy": 1}
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "module": "perception",
+      "row": "observe",
+      "comment": "The wanderer crosses the lantern's pool of light. The scene measures visibility from the raycast and the light probe; the suspicion curve is core's.",
+      "args": {
+        "tick": 1,
+        "readings": [{"observer": "guard", "target": "wanderer", "visibility": 1, "light": 90}]
+      },
+      "expect": [
+        {"path": "report.updates", "length": 1},
+        {"path": "report.applied", "equals": true}
+      ]
+    },
+    {
+      "module": "perception",
+      "row": "observe",
+      "comment": "Back into the dark. A pair with nothing to see is still an answer, and the host does not get to call it 'unseen'.",
+      "args": {
+        "tick": 2,
+        "readings": [{"observer": "guard", "target": "wanderer", "visibility": 0, "light": 5}]
+      },
+      "expect": [{"path": "report.updates", "length": 1}]
+    },
+    {
+      "module": "perception",
+      "row": "state",
+      "comment": "What the guard BELIEVES, which is not what is true.",
+      "args": {},
+      "expect": [{"path": "state", "exists": true}]
+    },
+    {
+      "module": "combat",
+      "row": "attack",
+      "comment": "The guard closes and thrusts. Damage is core's number, and it arrives as an ICombatSystem.applyDamage order the scene carries out on the health bar.",
+      "args": {"attackerId": "guard", "targetId": "wanderer", "action": "spear_thrust", "separation": 1, "tick": 3},
+      "expect": [
+        {"path": "report.resolution.outcome", "equals": "hit"},
+        {"path": "report.resolution.damage", "atLeast": 1},
+        {"path": "report.applied", "equals": true},
+        {"host": "ICombatSystem", "call": "applyDamage", "orderCount": 1}
+      ]
+    },
+    {
+      "module": "combat",
+      "row": "attack",
+      "comment": "The wanderer runs; the guard shoots, and the crate is in the way. The scene's raycast reports the block, core decides what follows from it — nothing is applied.",
+      "args": {
+        "attackerId": "guard",
+        "targetId": "wanderer",
+        "action": "crossbow_shot",
+        "separation": 9,
+        "tick": 4,
+        "trajectory": {"clear": false, "blockedBy": "crate"}
+      },
+      "expect": [
+        {"path": "report.resolution.damage", "equals": 0},
+        {"path": "report.lineOfFire.blockedBy", "equals": "crate"},
+        {"host": "ICombatSystem", "call": "applyDamage", "orderCount": 0}
+      ]
+    },
+    {
+      "module": "combat",
+      "row": "state",
+      "comment": "The roster after the exchange — what a save would carry.",
+      "args": {},
+      "expect": [{"path": "roster", "exists": true}]
+    }
+  ]
+}

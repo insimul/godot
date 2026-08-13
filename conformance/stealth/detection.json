@@ -1,0 +1,2647 @@
+{
+  "area": "stealth-detection",
+  "description": "The perception module’s decision, pinned for fixed inputs (US-3 of 121-stealth-and-perception). Each case carries the WHOLE DetectionInput — the observer roster with its per-channel acuities, the targets with the host’s measurements of them (location, light, stance, noise, concealment), the host’s SensorReadings, the memory carried in from the previous tick, the fully resolved DetectionTuning, the seed and the tick — so a harness in any language reproduces it with no defaults table, no world file and no KB. The one thing core cannot know arrives as an input exactly as it does at runtime: a SensorReading is what the host’s IPerceptionProbe answered, and core performs no geometry, holds no position and reads no clock. `expected.updates` is one DetectionUpdate per (observer, target) pair, sorted by (observer CURIE, target CURIE); `expected.memory` is what the next tick carries in; `expected.facts` is the { retract, assert } delta in the 110 predicate vocabulary (awareness/3 + detection_state/3, and NOTHING for a tick that moved neither); and `expected.perceptions` / `beliefFacts` / `perceptFacts` / `perceivedFacts` are the substrate’s own perception pass (src/ai/perception.ts) verbatim, because detection runs no second sensing model. `unaware` is never asserted — it is the absence of a detection_state/3 fact. Awareness is integer; confidences round to four decimals; every draw comes from a stream derived from (seed, tick, agent CURIE, percept id) rather than from call order, so reversing the roster must not move one byte. Regenerate with `npm run stealth-corpus`.",
+  "cases": [
+    {
+      "name": "unaware-one-tick-of-perfect-sight-is-not-detection",
+      "note": "THE case the module exists for. The host reported a clear, unobstructed, fully lit view — and the guard is still `unaware`, because detection accumulates. An implementation that answers `detects/2` and stops has a guard who is omniscient the instant a ray connects, and it passes nothing else in this file.",
+      "input": {
+        "seed": "corpus",
+        "tick": 1,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 0,
+            "awareness": 12,
+            "stateBefore": "unaware",
+            "state": "unaware",
+            "changed": false,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 1,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 12,
+            "state": "unaware",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 1,
+            "lastPerceivedTick": 1
+          }
+        ],
+        "facts": {
+          "retract": [],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 12)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear)."
+        ]
+      }
+    },
+    {
+      "name": "suspicious-the-band-the-world-authored-and-not-a-constant",
+      "note": "The first rung, reached by carrying the previous tick's level in. 24 + one clear sighting crosses the authored `suspicious` band at 25 — a number that lives in `WorldIR.perception` and reaches the KB as `detection_threshold/2`, so a jumpy world and a half-asleep one differ by content. The delta retracts the old level rather than accumulating a second `awareness/3`.",
+      "input": {
+        "seed": "corpus",
+        "tick": 2,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 24,
+            "state": "unaware"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 24,
+            "awareness": 36,
+            "stateBefore": "unaware",
+            "state": "suspicious",
+            "changed": true,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 2,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 36,
+            "state": "suspicious",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 2,
+            "lastPerceivedTick": 2
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 24)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 36).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), suspicious)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear)."
+        ]
+      }
+    },
+    {
+      "name": "searching-the-second-rung-and-the-belief-that-comes-with-it",
+      "note": "The middle rung. Worth its own case because `searching_for/2` is the state a guard ACTS on and the belief pinned beside it is what they act on it WITH — the location they perceived, stamped this tick, not the location the target is at.",
+      "input": {
+        "seed": "corpus",
+        "tick": 3,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 44,
+            "state": "suspicious"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 44,
+            "awareness": 56,
+            "stateBefore": "suspicious",
+            "state": "searching",
+            "changed": true,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 3,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 56,
+            "state": "searching",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 3,
+            "lastPerceivedTick": 3
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 44).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), suspicious)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 56).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), searching)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear)."
+        ]
+      }
+    },
+    {
+      "name": "alerted-the-top-rung-is-reached-in-one-step-not-climbed-through",
+      "note": "Rising is immediate: a guard who sees you does not wait to be sure. This pair’s recorded rung is `unaware` and sight and hearing together carry it over the top band in one tick, so it lands on `alerted` without passing through the two rungs between — and the two channels are SUMMED, because two senses agreeing is stronger evidence than either alone. A port that steps one rung per tick, or that takes the best channel instead of the sum, reproduces the three cases above and fails this one.",
+      "input": {
+        "seed": "corpus",
+        "tick": 4,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 100
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 72,
+            "state": "unaware"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 72,
+            "awareness": 90,
+            "stateBefore": "unaware",
+            "state": "alerted",
+            "changed": true,
+            "channels": [
+              "hearing",
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 90,
+            "state": "alerted",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4,
+            "lastPerceivedTick": 4
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 72)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 90).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), alerted)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          },
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sound:insimul:world:alderforest:ent:npc-thief",
+            "channel": "hearing",
+            "fidelity": "clear",
+            "confidence": 0.8,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard'))).",
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight).",
+          "percept('sound:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sound:insimul:world:alderforest:ent:npc-thief', hearing)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear).",
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sound:insimul:world:alderforest:ent:npc-thief', hearing, clear)."
+        ]
+      }
+    },
+    {
+      "name": "hysteresis-holds-the-rung-when-the-level-dips-below-the-band",
+      "note": "Falling is NOT immediate, and this is the half every implementation gets wrong. The guard perceived nothing this tick, so the level decays below the `alerted` band — and the rung holds, because it is only left once the level is the authored `hysteresis` margin below the band that reached it. Without this an observer sitting on a threshold oscillates every tick, which is binary seen/unseen in a slower costume.",
+      "input": {
+        "seed": "corpus",
+        "tick": 5,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 78,
+            "state": "alerted",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 78,
+            "awareness": 72,
+            "stateBefore": "alerted",
+            "state": "alerted",
+            "changed": false,
+            "channels": [],
+            "confidence": 0,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4,
+            "beliefRefreshed": false
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 72,
+            "state": "alerted",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 78)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 72)."
+          ]
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "hysteresis-releases-once-the-level-falls-the-authored-margin",
+      "note": "The other side of the same number, one tick further down: 72 decays to 66, which is below `alerted` (80) minus `hysteresis` (10), so the rung finally drops — and it drops to the rung the level actually sits on (`searching`, 50), not one step down a ladder. A port that pins only the case above cannot tell a working hysteresis from a rung that never falls at all.",
+      "input": {
+        "seed": "corpus",
+        "tick": 6,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 72,
+            "state": "alerted"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 72,
+            "awareness": 66,
+            "stateBefore": "alerted",
+            "state": "searching",
+            "changed": true,
+            "channels": [],
+            "confidence": 0,
+            "beliefRefreshed": false
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 66,
+            "state": "searching"
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 72).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), alerted)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 66).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), searching)."
+          ]
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "negative-a-pair-the-host-reported-nothing-for-is-not-on-the-ladder",
+      "note": "THE negative case, and the one that stops the corpus passing vacuously. The roster has an observer and a target, the target is lit and upright, and the host supplied NO reading — so there is no update, no memory and an empty fact delta. A pair with no reading was not sensed at all, which is a different thing from sensed badly. An implementation that seeds every pair \"at awareness 0\" produces one update here and passes every other case in this file.",
+      "input": {
+        "seed": "corpus",
+        "tick": 1,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [],
+        "memory": [],
+        "facts": {
+          "retract": [],
+          "assert": []
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "negative-darkness-below-the-authored-floor-is-not-seen",
+      "note": "A second negative, and a different mechanism: the host reported a perfect line of sight, and the light it also reported is below the authored `lightFloor`, so the sighting presents at strength zero and nothing is perceived. The host measured; the world decided what the measurement is WORTH. A silent target in the dark is genuinely invisible, and that is the promise the whole mechanic rests on.",
+      "input": {
+        "seed": "corpus",
+        "tick": 1,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 5,
+            "stance": "prone",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [],
+        "memory": [],
+        "facts": {
+          "retract": [],
+          "assert": []
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "negative-a-sense-the-creature-lacks-perceives-nothing-however-clear",
+      "note": "A third negative, on the substrate's own rule: the hound has no sight at all, the host reported visibility 1, and the target makes no noise. A missing channel is a sense the creature does not have — not a sense with acuity zero — so there is nothing to fold and the pair never reaches the ladder.",
+      "input": {
+        "seed": "corpus",
+        "tick": 1,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-hound"
+            },
+            "senses": [
+              {
+                "channel": "hearing",
+                "acuity": 1
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-hound"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [],
+        "memory": [],
+        "facts": {
+          "retract": [],
+          "assert": []
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "the-belief-is-not-refreshed-on-a-tick-nobody-perceived",
+      "note": "THE stealth case, and the one a port cannot get right by accident. The guard believes the thief is in the vault; the thief is in the CELLAR; the host reported no reading. The pinned `believedLocation` is still the vault, `beliefRefreshed` is false, and `believedAt` is the tick it was formed on and not this one. An implementation that reads the target's true location on the observer's behalf pins `cellar` here and has no stealth mechanic at all.",
+      "input": {
+        "seed": "corpus",
+        "tick": 7,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "cellar"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 60,
+            "state": "searching",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 5,
+            "lastPerceivedTick": 5
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 60,
+            "awareness": 54,
+            "stateBefore": "searching",
+            "state": "searching",
+            "changed": false,
+            "channels": [],
+            "confidence": 0,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 5,
+            "beliefRefreshed": false
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 54,
+            "state": "searching",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 5,
+            "lastPerceivedTick": 5
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 60)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 54)."
+          ]
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "a-partial-sighting-teaches-the-coarser-place-the-author-supplied",
+      "note": "Cover and concealment drop the sighting to `partial` fidelity, and a partial perception learns the author's coarse form — \"somewhere in the north wing\" — rather than the exact room. That is a genuinely different belief and not the same one with a smaller number on it, which is why the pinned `believedLocation` is the coarse id while the target's `location` is the vault. Cover and concealment MULTIPLY: a port that subtracts them agrees on neither the confidence nor the fidelity band.",
+      "input": {
+        "seed": "corpus",
+        "tick": 2,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0,
+            "concealed": true
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1,
+            "cover": 0.2
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 0,
+            "awareness": 4,
+            "stateBefore": "unaware",
+            "state": "unaware",
+            "changed": false,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 0.2975,
+            "believedLocation": "insimul:world:alderforest:ent:north-wing",
+            "believedAt": 2,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 4,
+            "state": "unaware",
+            "believedLocation": "insimul:world:alderforest:ent:north-wing",
+            "believedAt": 2,
+            "lastPerceivedTick": 2
+          }
+        ],
+        "facts": {
+          "retract": [],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 4)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "partial",
+            "confidence": 0.2975,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:north-wing"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', 'north-wing'), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, partial)."
+        ]
+      }
+    },
+    {
+      "name": "sound-alone-detects-a-target-that-cannot-be-seen",
+      "note": "Light does not enter hearing, and stance does: a target in total darkness making a racket is perceived on `hearing` alone, at the authored `senseWeights.hearing` rather than at sight's full value. The pinned `channels` array is how a port proves it summed the right senses — two senses agreeing is stronger evidence than either alone, and here there is only one.",
+      "input": {
+        "seed": "corpus",
+        "tick": 1,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 0,
+            "stance": "standing",
+            "noise": 95
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1,
+            "audibility": 1
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 40,
+            "state": "suspicious"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 40,
+            "awareness": 45,
+            "stateBefore": "suspicious",
+            "state": "suspicious",
+            "changed": false,
+            "channels": [
+              "hearing"
+            ],
+            "confidence": 0.76,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 1,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 45,
+            "state": "suspicious",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 1,
+            "lastPerceivedTick": 1
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 40)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 45)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sound:insimul:world:alderforest:ent:npc-thief",
+            "channel": "hearing",
+            "fidelity": "clear",
+            "confidence": 0.76,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('sound:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sound:insimul:world:alderforest:ent:npc-thief', hearing)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sound:insimul:world:alderforest:ent:npc-thief', hearing, clear)."
+        ]
+      }
+    },
+    {
+      "name": "distraction-damps-the-gain-of-the-observer-it-was-spent-on",
+      "note": "Two observers, the same target, the same reading, the same tick — and the distracted one gained less. Distraction is the OBSERVER's parameter (mid-fight, in conversation, drunk) where light and cover are the target's, and what full distraction costs is the authored `distractionWeight`. Both updates are in one case precisely so a port cannot pass by applying the damping to everybody.",
+      "input": {
+        "seed": "corpus",
+        "tick": 3,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ],
+            "distraction": 80
+          },
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-watchman"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          },
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-watchman"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 20,
+            "state": "unaware"
+          },
+          {
+            "observer": "insimul:world:alderforest:ent:npc-watchman",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 20,
+            "state": "unaware"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 20,
+            "awareness": 25,
+            "stateBefore": "unaware",
+            "state": "suspicious",
+            "changed": true,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 3,
+            "beliefRefreshed": true
+          },
+          {
+            "observer": "insimul:world:alderforest:ent:npc-watchman",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 20,
+            "awareness": 32,
+            "stateBefore": "unaware",
+            "state": "suspicious",
+            "changed": true,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 3,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 25,
+            "state": "suspicious",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 3,
+            "lastPerceivedTick": 3
+          },
+          {
+            "observer": "insimul:world:alderforest:ent:npc-watchman",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 32,
+            "state": "suspicious",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 3,
+            "lastPerceivedTick": 3
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 20).",
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-watchman'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 20)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 25).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), suspicious).",
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-watchman'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 32).",
+            "detection_state(id(ent, 'insimul:world:alderforest', 'npc-watchman'), id(ent, 'insimul:world:alderforest', 'npc-thief'), suspicious)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          },
+          {
+            "agent": "insimul:world:alderforest:ent:npc-watchman",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard'))).",
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-watchman')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear).",
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-watchman'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear)."
+        ]
+      }
+    },
+    {
+      "name": "an-act-is-perceived-in-the-same-pass-and-moves-nothing-on-the-ladder",
+      "note": "A stealth act rides its ACTOR's reading — an observer who could not sense the thief could not have seen what the thief did — and it is published as a percept in the one pass everything else is perceived in, its id being the enforcement event id. What it does NOT do is move awareness: the pinned update is identical to the tick without it, because two ways for one act to raise suspicion would be two mechanics. What an act costs is the authored `awarenessDelta` of its row, applied once, by the decision layer.",
+      "input": {
+        "seed": "corpus",
+        "tick": 4,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 1
+          }
+        ],
+        "acts": [
+          {
+            "event": "evt:takedown:1",
+            "actor": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "action": "take_down",
+            "object": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-watchman"
+            },
+            "channel": "sight",
+            "strength": 80
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 30,
+            "state": "suspicious"
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 30,
+            "awareness": 42,
+            "stateBefore": "suspicious",
+            "state": "suspicious",
+            "changed": false,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 1,
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 42,
+            "state": "suspicious",
+            "believedLocation": "insimul:world:alderforest:ent:vault",
+            "believedAt": 4,
+            "lastPerceivedTick": 4
+          }
+        ],
+        "facts": {
+          "retract": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 30)."
+          ],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 42)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "evt:takedown:1",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 0.8,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "take_down",
+              "object": "insimul:world:alderforest:ent:npc-watchman"
+            }
+          },
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "clear",
+            "confidence": 1,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:vault"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), take_down, id(ent, 'insimul:world:alderforest', 'npc-watchman'), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard'))).",
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard')))."
+        ],
+        "perceptFacts": [
+          "percept('evt:takedown:1', id(ent, 'insimul:world:alderforest', 'npc-thief'), take_down, id(ent, 'insimul:world:alderforest', 'npc-watchman')).",
+          "percept_channel('evt:takedown:1', sight).",
+          "percept_actor('evt:takedown:1', id(ent, 'insimul:world:alderforest', 'npc-thief')).",
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'evt:takedown:1', sight, clear).",
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, clear)."
+        ]
+      }
+    },
+    {
+      "name": "negative-an-act-nobody-could-sense-is-still-an-act-and-is-witnessed-by-nobody",
+      "note": "The negative case for witnessing, and the one that pins the correction US-3 brought back to the substrate (`docs/game-ai-substrate.md` §9). The identical act, on a tick the host reported no reading for: nothing is perceived, so no `perceived/4` and no `percept/4` — and the pass STILL publishes `percept_actor/2` and `percept_channel/2`, because an act's existence is not its content and `unwitnessed/1` is written over exactly that fact. A port that withholds all three answers \"witnessed\" to every crime nobody saw.",
+      "input": {
+        "seed": "corpus",
+        "tick": 4,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [],
+        "acts": [
+          {
+            "event": "evt:takedown:1",
+            "actor": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "action": "take_down",
+            "object": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-watchman"
+            },
+            "channel": "sight",
+            "strength": 80
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0
+          }
+        }
+      },
+      "expected": {
+        "updates": [],
+        "memory": [],
+        "facts": {
+          "retract": [],
+          "assert": []
+        },
+        "perceptions": [],
+        "beliefFacts": [],
+        "perceptFacts": [
+          "percept_channel('evt:takedown:1', sight).",
+          "percept_actor('evt:takedown:1', id(ent, 'insimul:world:alderforest', 'npc-thief'))."
+        ],
+        "perceivedFacts": []
+      }
+    },
+    {
+      "name": "the-jitter-draw-is-derived-from-identity-and-not-from-call-order",
+      "note": "The one case with the authored jitter left ON, and two observers whose readings are identical — so the only thing that can separate their confidences is the per-agent stream, derived from (seed, tick, agent CURIE, percept id). A port that advances one RNG per perception reproduces every jitter-off case in this file and disagrees here, and it would also disagree with itself when the roster is reversed.",
+      "input": {
+        "seed": "corpus",
+        "tick": 9,
+        "playthrough": {
+          "kind": "world",
+          "namespace": "insimul",
+          "localId": "alderforest%23save-7f"
+        },
+        "observers": [
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          },
+          {
+            "agent": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-watchman"
+            },
+            "senses": [
+              {
+                "channel": "sight",
+                "acuity": 1
+              },
+              {
+                "channel": "hearing",
+                "acuity": 0.8
+              }
+            ]
+          }
+        ],
+        "targets": [
+          {
+            "id": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "location": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "vault"
+            },
+            "coarseLocation": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "north-wing"
+            },
+            "light": 100,
+            "stance": "standing",
+            "noise": 0
+          }
+        ],
+        "readings": [
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-guard"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 0.5
+          },
+          {
+            "observer": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-watchman"
+            },
+            "target": {
+              "kind": "ent",
+              "namespace": "insimul:world:alderforest",
+              "localId": "npc-thief"
+            },
+            "visibility": 0.5
+          }
+        ],
+        "tuning": {
+          "thresholds": {
+            "suspicious": 25,
+            "searching": 50,
+            "alerted": 80
+          },
+          "gain": 12,
+          "decay": 6,
+          "hysteresis": 10,
+          "senseWeights": {
+            "sight": 1,
+            "hearing": 0.6,
+            "smell": 0.3,
+            "touch": 1
+          },
+          "lightFloor": 10,
+          "lightReference": 60,
+          "coverWeight": 0.75,
+          "concealmentMultiplier": 0.35,
+          "stanceVisibility": {
+            "standing": 1,
+            "crouching": 0.7,
+            "prone": 0.45
+          },
+          "stanceNoise": {
+            "standing": 1,
+            "crouching": 0.5,
+            "prone": 0.25
+          },
+          "distractionWeight": 0.75,
+          "fidelity": {
+            "clear": 0.6,
+            "partial": 0.25,
+            "jitter": 0.1
+          }
+        }
+      },
+      "expected": {
+        "updates": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 0,
+            "awareness": 5,
+            "stateBefore": "unaware",
+            "state": "unaware",
+            "changed": false,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 0.4408,
+            "believedLocation": "insimul:world:alderforest:ent:north-wing",
+            "believedAt": 9,
+            "beliefRefreshed": true
+          },
+          {
+            "observer": "insimul:world:alderforest:ent:npc-watchman",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awarenessBefore": 0,
+            "awareness": 5,
+            "stateBefore": "unaware",
+            "state": "unaware",
+            "changed": false,
+            "channels": [
+              "sight"
+            ],
+            "confidence": 0.4472,
+            "believedLocation": "insimul:world:alderforest:ent:north-wing",
+            "believedAt": 9,
+            "beliefRefreshed": true
+          }
+        ],
+        "memory": [
+          {
+            "observer": "insimul:world:alderforest:ent:npc-guard",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 5,
+            "state": "unaware",
+            "believedLocation": "insimul:world:alderforest:ent:north-wing",
+            "believedAt": 9,
+            "lastPerceivedTick": 9
+          },
+          {
+            "observer": "insimul:world:alderforest:ent:npc-watchman",
+            "target": "insimul:world:alderforest:ent:npc-thief",
+            "awareness": 5,
+            "state": "unaware",
+            "believedLocation": "insimul:world:alderforest:ent:north-wing",
+            "believedAt": 9,
+            "lastPerceivedTick": 9
+          }
+        ],
+        "facts": {
+          "retract": [],
+          "assert": [
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-guard'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 5).",
+            "awareness(id(ent, 'insimul:world:alderforest', 'npc-watchman'), id(ent, 'insimul:world:alderforest', 'npc-thief'), 5)."
+          ]
+        },
+        "perceptions": [
+          {
+            "agent": "insimul:world:alderforest:ent:npc-guard",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "partial",
+            "confidence": 0.4408,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:north-wing"
+            }
+          },
+          {
+            "agent": "insimul:world:alderforest:ent:npc-watchman",
+            "percept": "sighting:insimul:world:alderforest:ent:npc-thief",
+            "channel": "sight",
+            "fidelity": "partial",
+            "confidence": 0.4472,
+            "belief": {
+              "subject": "insimul:world:alderforest:ent:npc-thief",
+              "predicate": "at_location",
+              "object": "insimul:world:alderforest:ent:north-wing"
+            }
+          }
+        ],
+        "beliefFacts": [
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', 'north-wing'), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-guard'))).",
+          "claim(id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', 'north-wing'), '@world'(id(world, 'insimul:world:alderforest%23save-7f', 'belief-insimul%3Aworld%3Aalderforest%3Aent%3Anpc-watchman')))."
+        ],
+        "perceptFacts": [
+          "percept('sighting:insimul:world:alderforest:ent:npc-thief', id(ent, 'insimul:world:alderforest', 'npc-thief'), at_location, id(ent, 'insimul:world:alderforest', vault)).",
+          "percept_channel('sighting:insimul:world:alderforest:ent:npc-thief', sight)."
+        ],
+        "perceivedFacts": [
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-guard'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, partial).",
+          "perceived(id(ent, 'insimul:world:alderforest', 'npc-watchman'), 'sighting:insimul:world:alderforest:ent:npc-thief', sight, partial)."
+        ]
+      }
+    }
+  ]
+}

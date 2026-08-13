@@ -1,0 +1,1851 @@
+{
+  "area": "combat-resolution",
+  "description": "The combat module’s decision, pinned for fixed inputs (US-4 of 120-combat-and-stamina). Each case carries the WHOLE input — both combatants, the authored action row, the fully resolved CombatTuning, the scalar separation, the seed and the tick — so a harness in any language reproduces it with no defaults table, no world file and no KB. `kind` is which entry point the case runs: `attack` is resolveAttack, `defense` is resolveDefense, and they are two doors onto ONE action vocabulary (a dodge is a row with a `defense` profile, a ranged attack is a row with `delivery: projectile`). The two things core cannot know arrive as inputs exactly as they do at runtime: `legality` is the KB’s can_attack/2 answer and `lineOfFire` is the host’s ITrajectoryProbe reading. `expected.resolution` is the AttackResolution/DefenseResolution, `expected.facts` is the { retract, assert } delta it becomes in the 110 predicate vocabulary (combat/combat-facts.ts) — empty for an attack that was never made — and `expected.threat`, where present, is threatAfterDamage accumulated onto `threatBefore`. Rolls are derived from (seed, tick, attacker, defender, action, phase) mixed FNV-1a → mulberry32, one stream per phase, never a shared RNG. Regenerate with `npm run combat-corpus`.",
+  "cases": [
+    {
+      "kind": "attack",
+      "name": "melee-hit-flat-tuning",
+      "note": "The base case, and the one every other reads against: a sword swing with variance, crits and baseline evasion all authored to zero, so the damage IS the weapon’s `item_damage/2` and an assertion about health is an assertion about health.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 12,
+            "varied": 12,
+            "critical": 12,
+            "typed": 12,
+            "blocked": 12,
+            "mitigated": 12
+          },
+          "damage": 12,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 18,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                30,
+                30
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                18,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                40
+              ]
+            }
+          ]
+        },
+        "threat": 40
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "melee-hit-with-variance-and-a-critical",
+      "note": "The whole damage pipeline under the authored tuning: base → variance → critical → type → block → armour, every stage in `breakdown`. A port that agrees on the total by getting the variance and the critical wrong in opposite directions fails here.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0.2,
+          "criticalChance": 0.15,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0.05,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 3
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": true,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 12,
+            "varied": 11.377,
+            "critical": 22.754,
+            "typed": 22.754,
+            "blocked": 22.754,
+            "mitigated": 22.754
+          },
+          "damage": 23,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 7,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                30,
+                30
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                7,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                76
+              ]
+            }
+          ]
+        },
+        "threat": 76
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "melee-miss-the-swing-that-did-not-connect",
+      "note": "Accuracy is a gate the derived stream answers, not a subtraction from damage. The swing happened — it cost its stamina and it started a fight — and it moved no health. The roll comes from (seed, tick, attacker, defender, action, `accuracy`), so a port that advances one RNG per attack reproduces the hit cases and fails this one.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8,
+          "accuracy": 0.7
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 5
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "missed",
+          "reason": "missed",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "ranged-hit-with-a-clear-line",
+      "note": "A crossbow bolt is the same row type a sword swing is: `delivery: projectile` and a long `range` are the whole of \"ranged\" (US-3). The host answered `clear: true` and therefore changed nothing — the damage, the reach and the cost were all core’s.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "crossbow",
+            "damage": 14,
+            "damageType": "piercing",
+            "range": 20
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "crossbow_shot",
+          "delivery": "projectile",
+          "range": 20,
+          "accuracy": 0.9,
+          "staminaCost": 6
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 12,
+        "seed": "corpus",
+        "tick": 4,
+        "lineOfFire": {
+          "clear": true
+        }
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "crossbow_shot",
+          "outcome": "hit",
+          "damageType": "piercing",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 14,
+            "varied": 14,
+            "critical": 14,
+            "typed": 14,
+            "blocked": 14,
+            "mitigated": 14
+          },
+          "damage": 14,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 16,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 6,
+          "staminaSpent": 6,
+          "attackerStaminaAfter": 54
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                30,
+                30
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                16,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                46
+              ]
+            }
+          ]
+        },
+        "threat": 46
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "ranged-blocked-line-is-a-miss-not-a-new-outcome",
+      "note": "THE ranged case. The host said a pillar is in the way; core decided what that MEANS — the bolt was loosed, it cost what it costs, and it is in the wall. The reason is `line_blocked` whatever the host named as the obstruction, because a corpus case pins an atom and `pillar` is scenery. An implementation that invented a `blocked` outcome, or that refunded the stamina, fails here.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "crossbow",
+            "damage": 14,
+            "damageType": "piercing",
+            "range": 20
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "crossbow_shot",
+          "delivery": "projectile",
+          "range": 20,
+          "accuracy": 0.9,
+          "staminaCost": 6
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 12,
+        "seed": "corpus",
+        "tick": 4,
+        "lineOfFire": {
+          "clear": false,
+          "blockedBy": "pillar"
+        }
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "crossbow_shot",
+          "outcome": "missed",
+          "reason": "line_blocked",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 6,
+          "staminaSpent": 6,
+          "attackerStaminaAfter": 54
+        },
+        "facts": {
+          "retract": [],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "a-melee-row-never-consults-the-line-of-fire",
+      "note": "The same blocked reading as the case above, on a `contact` row: nothing obstructs a sword, and the hit lands. `delivery` is the only thing that makes the host’s answer relevant, which is what keeps a melee attack from ever asking a question core does not need.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1,
+        "lineOfFire": {
+          "clear": false,
+          "blockedBy": "pillar"
+        }
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 12,
+            "varied": 12,
+            "critical": 12,
+            "typed": 12,
+            "blocked": 12,
+            "mitigated": 12
+          },
+          "damage": 12,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 18,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                30,
+                30
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                18,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                40
+              ]
+            }
+          ]
+        },
+        "threat": 40
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "out-of-reach-costs-nothing",
+      "note": "Reach is the action’s range, else the weapon’s `item_range/2`, against a SCALAR separation in the world’s authored distance unit — core performs no vector math and knows no handedness, unit scale or up-axis. Walking up to something you cannot reach is not a swing, so `staminaSpent` is zero while `staminaCost` still reports the price.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 6,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "out_of_reach",
+          "reason": "beyond_reach",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 0,
+          "attackerStaminaAfter": 60
+        },
+        "facts": {
+          "retract": [],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "dodged-an-open-evasion-window-turns-the-blow-aside",
+      "note": "The dodge case on the ATTACK side: an actor mid-sidestep is a defender with a `dodgeBonus`, and the blow comes out `dodged` through the ordinary gate. There is no defensive code path in the resolution at all — which is why `resolveDefense` could be added without touching this one.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true,
+          "dodgeBonus": 0.55
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 2
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "dodged",
+          "reason": "dodged",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "mitigation-resistance-a-raised-guard-and-armour",
+      "note": "The mitigation case: `resists_damage/2` halves it, `blockReduction` halves what is left, and `armor_value/2` comes off flat at the end. Three different kinds of reduction in one pipeline, in the one order four engines must share — a port that applies armour before the block gets a different number and fails here.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true,
+          "resists": [
+            "slashing"
+          ],
+          "armor": 2,
+          "blocking": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": false,
+          "isBlocked": true,
+          "isResisted": true,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 12,
+            "varied": 12,
+            "critical": 12,
+            "typed": 6,
+            "blocked": 3,
+            "mitigated": 1
+          },
+          "damage": 1,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 29,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                30,
+                30
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                29,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                3
+              ]
+            }
+          ]
+        },
+        "threat": 3
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "vulnerability-multiplies-where-resistance-divides",
+      "note": "The other half of `damageType`, and the reason the type stage is its own line in `breakdown`: the same swing against a target `vulnerable_to(slashing)` is multiplied by the authored `vulnerableMultiplier`. Neither multiplier is a compiled constant; both are the world’s.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true,
+          "vulnerableTo": [
+            "slashing"
+          ]
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": true,
+          "breakdown": {
+            "base": 12,
+            "varied": 12,
+            "critical": 12,
+            "typed": 18,
+            "blocked": 18,
+            "mitigated": 18
+          },
+          "damage": 18,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 12,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                30,
+                30
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                12,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                60
+              ]
+            }
+          ]
+        },
+        "threat": 60
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "exhausted-a-swing-that-could-not-be-paid-for",
+      "note": "The exhaustion case. The attacker’s `energy/3` is below the action’s `action/4` EnergyCost, so there was no swing: no health moved, no fight started, no stamina left the meter, and the fact delta is empty. It is its own outcome and not a `refused` with a reason, because \"too spent to lift the sword\" is a thing a world shows a player and an AI reacts to.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 3,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "exhausted",
+          "reason": "insufficient_stamina",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 0,
+          "attackerStaminaAfter": 3
+        },
+        "facts": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "death-a-lethal-blow-at-zero-health",
+      "note": "The death case, and the transition the rest of the simulation observes: `alive/1` is retracted and `incapacitated/1` asserted, the corpse leaves `in_combat/1` and stops being anybody’s `combat_target/2`. The lifecycle facts a death also owes (`deceased/3`, `cause_of_death/2`) belong to the decision layer, not to the pure resolution, and are asserted by `CombatResolver` — so a port reproduces this delta and adds those two.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 6,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "threatBefore": 40,
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 12,
+            "varied": 12,
+            "critical": 12,
+            "typed": 12,
+            "blocked": 12,
+            "mitigated": 12
+          },
+          "damage": 12,
+          "targetHealthBefore": 6,
+          "targetHealthAfter": 0,
+          "targetMaxHealth": 30,
+          "incapacitated": true,
+          "killed": true,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                6,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                40
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "alive",
+              "args": [
+                "bandit"
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                0,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                80
+              ]
+            },
+            {
+              "predicate": "incapacitated",
+              "args": [
+                "bandit"
+              ]
+            }
+          ]
+        },
+        "threat": 80
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "subdual-zero-health-without-a-death",
+      "note": "The same blow from an action authored `lethal: false`. The target is `incapacitated/1` and still `alive/1` — which is what a duelling, sparring or arrest mechanic is, authored rather than coded. A world that sets `deathAtZero: false` gets this for every action.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 6,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8,
+          "lethal": false
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "hit",
+          "damageType": "slashing",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "breakdown": {
+            "base": 12,
+            "varied": 12,
+            "critical": 12,
+            "typed": 12,
+            "blocked": 12,
+            "mitigated": 12
+          },
+          "damage": 12,
+          "targetHealthBefore": 6,
+          "targetHealthAfter": 0,
+          "targetMaxHealth": 30,
+          "incapacitated": true,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 8,
+          "attackerStaminaAfter": 52
+        },
+        "facts": {
+          "retract": [
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                6,
+                30
+              ]
+            },
+            {
+              "predicate": "in_combat",
+              "args": [
+                "bandit"
+              ]
+            },
+            {
+              "predicate": "combat_target",
+              "args": [
+                "knight",
+                "bandit"
+              ]
+            }
+          ],
+          "assert": [
+            {
+              "predicate": "in_combat",
+              "args": [
+                "knight"
+              ]
+            },
+            {
+              "predicate": "health",
+              "args": [
+                "bandit",
+                0,
+                30
+              ]
+            },
+            {
+              "predicate": "threat",
+              "args": [
+                "bandit",
+                "knight",
+                40
+              ]
+            },
+            {
+              "predicate": "incapacitated",
+              "args": [
+                "bandit"
+              ]
+            }
+          ]
+        },
+        "threat": 40
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "refused-a-forbidden-attack-does-not-resolve",
+      "note": "THE negative case, and the one that stops the corpus passing vacuously. The rules layer answered `can_attack/2` false, so the attack did not happen: no damage, no health movement, no `in_combat/1`, no stamina spent, and an EMPTY fact delta. An implementation that resolves a forbidden attack \"for zero damage\" passes every other case in this file and fails this one — permission is a gate, not a modifier.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1,
+        "legality": {
+          "permitted": false,
+          "reason": "not_permitted"
+        }
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "refused",
+          "reason": "not_permitted",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 0,
+          "attackerStaminaAfter": 60
+        },
+        "facts": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    },
+    {
+      "kind": "attack",
+      "name": "refused-a-downed-target-is-not-a-legal-target",
+      "note": "State is a gate of its own, checked after legality and before everything else: an `incapacitated/1` defender cannot be attacked even where the rules layer permits it. Same empty delta, different reason — two refusals a harness must keep distinguishable.",
+      "input": {
+        "attacker": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "defender": {
+          "id": "bandit",
+          "health": 30,
+          "maxHealth": 30,
+          "alive": true,
+          "incapacitated": true
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        },
+        "tuning": {
+          "baseDamage": 10,
+          "damageVariance": 0,
+          "criticalChance": 0,
+          "criticalMultiplier": 2,
+          "blockReduction": 0.5,
+          "dodgeChance": 0,
+          "resistMultiplier": 0.5,
+          "vulnerableMultiplier": 1.5,
+          "deathAtZero": true
+        },
+        "separation": 1.5,
+        "seed": "corpus",
+        "tick": 1,
+        "legality": {
+          "permitted": true
+        }
+      },
+      "expected": {
+        "resolution": {
+          "attackerId": "knight",
+          "targetId": "bandit",
+          "actionId": "swing",
+          "outcome": "refused",
+          "reason": "target_incapacitated",
+          "isCritical": false,
+          "isBlocked": false,
+          "isResisted": false,
+          "isVulnerable": false,
+          "damage": 0,
+          "targetHealthBefore": 30,
+          "targetHealthAfter": 30,
+          "targetMaxHealth": 30,
+          "incapacitated": false,
+          "killed": false,
+          "statusesApplied": [],
+          "staminaCost": 8,
+          "staminaSpent": 0,
+          "attackerStaminaAfter": 60
+        },
+        "facts": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    },
+    {
+      "kind": "defense",
+      "name": "dodge-opens-a-window-the-host-will-time",
+      "note": "The dodge case on the DEFENSIVE side. What core decides: that the window opens, how wide the evasion is, what `has_status/3` atom the actor wears, and what it cost. What core does NOT decide: when it closes. `window` and `recovery` are authored time handed to the host — there is no clock, no tick and no expiry anywhere in the pinned output, and a port that added one would have nothing here to reproduce it against.",
+      "input": {
+        "actor": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "action": {
+          "id": "sidestep",
+          "staminaCost": 10,
+          "defense": {
+            "status": "evading",
+            "evasionBonus": 0.55,
+            "window": 0.4,
+            "recovery": 0.25
+          }
+        }
+      },
+      "expected": {
+        "resolution": {
+          "actorId": "knight",
+          "actionId": "sidestep",
+          "outcome": "evading",
+          "status": "evading",
+          "magnitude": 55,
+          "evasionBonus": 0.55,
+          "window": 0.4,
+          "recovery": 0.25,
+          "staminaCost": 10,
+          "staminaSpent": 10,
+          "actorStaminaAfter": 50
+        },
+        "facts": {
+          "retract": [],
+          "assert": [
+            {
+              "predicate": "has_status",
+              "args": [
+                "knight",
+                "evading",
+                55
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "defense",
+      "name": "a-row-with-no-defense-profile-is-not-a-dodge",
+      "note": "The negative case for the defensive path: the sword swing put through `resolveDefense` is refused with `not_a_defense` and an empty delta. \"Dodge\" is not a kind of action in code — it is a row that authored an evasion — so the check is for the DATA and not for an id, a category or a flag.",
+      "input": {
+        "actor": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 60,
+            "max": 60
+          }
+        },
+        "action": {
+          "id": "swing",
+          "staminaCost": 8
+        }
+      },
+      "expected": {
+        "resolution": {
+          "actorId": "knight",
+          "actionId": "swing",
+          "outcome": "refused",
+          "reason": "not_a_defense",
+          "status": "evading",
+          "magnitude": 0,
+          "evasionBonus": 0,
+          "window": 0,
+          "staminaCost": 8,
+          "staminaSpent": 0,
+          "actorStaminaAfter": 60
+        },
+        "facts": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    },
+    {
+      "kind": "defense",
+      "name": "dodge-exhausted-out-of-the-same-meter-a-swing-is-paid-from",
+      "note": "One shared resource, proven at the boundary: the actor who cannot pay for a swing cannot pay for a sidestep either, out of the same `energy/3` and through the same `action/4` cost column. A world where dodging had its own pool would resolve this `evading`.",
+      "input": {
+        "actor": {
+          "id": "knight",
+          "health": 40,
+          "maxHealth": 40,
+          "alive": true,
+          "weapon": {
+            "id": "steel_sword",
+            "damage": 12,
+            "damageType": "slashing",
+            "range": 2
+          },
+          "stamina": {
+            "current": 4,
+            "max": 60
+          }
+        },
+        "action": {
+          "id": "sidestep",
+          "staminaCost": 10,
+          "defense": {
+            "status": "evading",
+            "evasionBonus": 0.55,
+            "window": 0.4,
+            "recovery": 0.25
+          }
+        }
+      },
+      "expected": {
+        "resolution": {
+          "actorId": "knight",
+          "actionId": "sidestep",
+          "outcome": "exhausted",
+          "reason": "insufficient_stamina",
+          "status": "evading",
+          "magnitude": 0,
+          "evasionBonus": 0,
+          "window": 0,
+          "recovery": 0.25,
+          "staminaCost": 10,
+          "staminaSpent": 0,
+          "actorStaminaAfter": 4
+        },
+        "facts": {
+          "retract": [],
+          "assert": []
+        }
+      }
+    }
+  ]
+}

@@ -41,6 +41,47 @@ now runs **76 of 76**, and both it and the radiant gate assert a case-count
 floor, so a corpus that shrinks again fails loudly instead of printing a smaller
 green number.
 
+## Tasklist 147 US-2 — the band-120 corpora, and a floor that a re-vendor cannot lower
+
+The mirror is now **63 files**, up from 34, at core `76782e5`:
+
+| | before | now |
+|---|---|---|
+| `prolog/` files | 10 | **21** (the eight `mechanic-*` packs, `scaffold`, `agent-ai`, `geo-map`) |
+| `prolog/` cases | 76 | **255** |
+| decision corpora | none | `combat/` `stealth/` `traversal/` `skills/` `items/` `routines/` — **212 cases / 18 areas** |
+| executed as QUERIES | only with a Godot binary | **all 255**, on any box, `npm run test:corpus` |
+| executed as DECISIONS | nothing | **all 212** |
+
+Two guards were added with them:
+
+- **`CASE_FLOORS`** in `tools/vendor-conformance.mjs` — 19 hand-written minimums,
+  465 cases. `prologCases` alone could never catch a shrink, because it is
+  written *from* the corpus on every re-vendor: an upstream corpus that lost half
+  its cases re-vendors to a smaller number and the guard agrees with it. A floor
+  is a number a human wrote down, and a re-vendor cannot lower it.
+- **`NOT_MIRRORED`**, now six entries rather than one. Every core corpus this
+  repo does *not* carry is listed with a reason, and every run PRINTS them with a
+  count — an exclusion nobody sees is how a corpus stops being checked. The
+  reasons are in `RUNTIME_CORE_ADOPTION.md` §12.2; the shape of them is that a
+  DECISION corpus needs the module's layer to be adopted, while a Prolog corpus
+  does not (which is why `prolog/agent-ai.json` is mirrored and `ai/` is not).
+
+## Tasklist 147 US-3 — the activation table, and a floor a case count cannot hold
+
+The mirror is now **64 files**. `modules/genre-activation.json` — core's genre
+bundle to active-module-set table, emitted from `INSIMUL_MODULES` — left
+`NOT_MIRRORED` in the **same commit** that added the thing which runs it
+(`gdextension/test/run_activation_tests.sh`, via the `modules.table` and
+`modules.activate` rows). That is the rule this repo now works by, and its old
+NOT_MIRRORED entry said so in as many words.
+
+It needed a new kind of guard. `CASE_FLOORS` reads `cases.length`, and this file
+has no `cases`: it is one object keyed by genre. So `tools/vendor-conformance.mjs`
+grew **`TABLE_FLOORS`** — 8 genre bundles, 24 module activations — because the
+failure worth catching here is a bundle that quietly stopped selecting a module,
+and that is invisible to a file count and to a hash the re-vendor rewrites.
+
 ## Local, not mirrored
 
 `VENDORED.json`'s `local` list is the set of paths that are this repo's own and
@@ -56,8 +97,15 @@ declared local.
 
 ## Honest orphan note
 
-Not every mirrored file has a reader in this repo yet — `content-library/` and
-`predicate-schema-hash.json` currently have none. They are mirrored for
-completeness and provenance. A file with no reader is dead weight; a file that
-has quietly diverged is worse, because it makes a green gate mean less than it
-appears to.
+Not every mirrored file has a reader in this repo — `content-library/`,
+`predicate-schema-hash.json` and **`ui/` (8 files)** have none on the host tier.
+They are mirrored for completeness and provenance. A file with no reader is dead
+weight; a file that has quietly diverged is worse, because it makes a green gate
+mean less than it appears to.
+
+Since US-2 that is no longer a note anyone has to remember. Every directory under
+`conformance/` is now accounted for in `check-mechanics.mjs` by either
+`DECISION_DIRS` (something runs it here) or `CORPUS_RUN_ELSEWHERE` (a named gate,
+or an explicit `null` meaning *nothing here runs it*). A directory in neither
+list fails the gate — so the next corpus cannot be vendored into silence, and the
+three above are orphans **on the record** rather than by omission.

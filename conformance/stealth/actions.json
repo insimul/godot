@@ -1,0 +1,744 @@
+{
+  "area": "stealth-actions",
+  "description": "How a world’s authored rows become stealth actions, and what performing one does (US-2/US-3 of 121-stealth-and-perception). `actions` is the SHARED action block (`systems.actions`) and `columns` is stealth’s columns on those same rows (`WorldIR.perception.actions`) — never a second action table, the way CombatIR.actions extends the same rows. `expected.rows` is StealthActionTable.loadFromIR’s result in load order; `expected.facts` is what the table publishes back into the KB, which is `action/4`, `action_category/2`, `action_requires_target/1` and `action_target_type/2` and deliberately NOTHING stealth owns (§11 of docs/mechanic-predicates.md keeps per-act tuning out of the vocabulary — what a row PRODUCES is noise_level/2, concealed/1 and awareness/3, and those are already legible); `expected.effects` is what performing the row changes, as plain data the decision layer applies; and `expected.percepts` is the act as something there is to perceive, `null` for a row that authored no `presence` and is therefore imperceptible. The act’s percept id IS its enforcement event id, which is what makes witnessing the perception pass’s answer rather than a second ledger. Regenerate with `npm run stealth-corpus`.",
+  "cases": [
+    {
+      "name": "the-four-verbs-core-ships-for-a-world-that-authored-none",
+      "note": "DEFAULT_STEALTH_ACTIONS, put through the table as a world’s own rows would be. Hide, sneak, distract and take down differ by the NUMBERS on them and by nothing else — there is no `kind` field and no discriminated union — so \"add a smoke bomb\" is one more row rather than a case in a switch four engines each have to grow.",
+      "actions": [],
+      "columns": [
+        {
+          "id": "hide",
+          "name": "Hide",
+          "energyCost": 5,
+          "conceals": true,
+          "stance": "crouching",
+          "noise": 0,
+          "awarenessDelta": -10,
+          "presence": {
+            "channel": "sight",
+            "strength": 20
+          }
+        },
+        {
+          "id": "sneak",
+          "name": "Sneak",
+          "energyCost": 10,
+          "stance": "crouching",
+          "noise": 10,
+          "presence": {
+            "channel": "sight",
+            "strength": 30
+          }
+        },
+        {
+          "id": "distract",
+          "name": "Distract",
+          "requiresTarget": true,
+          "targetType": "person",
+          "energyCost": 10,
+          "distraction": 60,
+          "noise": 70,
+          "presence": {
+            "channel": "hearing",
+            "strength": 70
+          }
+        },
+        {
+          "id": "take_down",
+          "name": "Take down",
+          "requiresTarget": true,
+          "targetType": "person",
+          "energyCost": 30,
+          "incapacitates": true,
+          "noise": 40,
+          "presence": {
+            "channel": "sight",
+            "strength": 80
+          }
+        }
+      ],
+      "expected": {
+        "loaded": 4,
+        "rows": [
+          {
+            "id": "hide",
+            "name": "Hide",
+            "energyCost": 5,
+            "presence": {
+              "channel": "sight",
+              "strength": 20
+            },
+            "noise": 0,
+            "stance": "crouching",
+            "conceals": true,
+            "awarenessDelta": -10
+          },
+          {
+            "id": "sneak",
+            "name": "Sneak",
+            "energyCost": 10,
+            "presence": {
+              "channel": "sight",
+              "strength": 30
+            },
+            "noise": 10,
+            "stance": "crouching"
+          },
+          {
+            "id": "distract",
+            "name": "Distract",
+            "requiresTarget": true,
+            "targetType": "person",
+            "energyCost": 10,
+            "presence": {
+              "channel": "hearing",
+              "strength": 70
+            },
+            "noise": 70,
+            "distraction": 60
+          },
+          {
+            "id": "take_down",
+            "name": "Take down",
+            "requiresTarget": true,
+            "targetType": "person",
+            "energyCost": 30,
+            "presence": {
+              "channel": "sight",
+              "strength": 80
+            },
+            "noise": 40,
+            "incapacitates": true
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action",
+            "args": [
+              "hide",
+              "Hide",
+              "stealth",
+              5
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "hide",
+              "stealth"
+            ]
+          },
+          {
+            "predicate": "action",
+            "args": [
+              "sneak",
+              "Sneak",
+              "stealth",
+              10
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "sneak",
+              "stealth"
+            ]
+          },
+          {
+            "predicate": "action",
+            "args": [
+              "distract",
+              "Distract",
+              "stealth",
+              10
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "distract",
+              "stealth"
+            ]
+          },
+          {
+            "predicate": "action_requires_target",
+            "args": [
+              "distract"
+            ]
+          },
+          {
+            "predicate": "action_target_type",
+            "args": [
+              "distract",
+              "person"
+            ]
+          },
+          {
+            "predicate": "action",
+            "args": [
+              "take_down",
+              "Take down",
+              "stealth",
+              30
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "take_down",
+              "stealth"
+            ]
+          },
+          {
+            "predicate": "action_requires_target",
+            "args": [
+              "take_down"
+            ]
+          },
+          {
+            "predicate": "action_target_type",
+            "args": [
+              "take_down",
+              "person"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "id": "hide",
+            "effects": {
+              "actor": {
+                "noise": 0,
+                "stance": "crouching",
+                "concealed": true
+              },
+              "awarenessDelta": -10,
+              "incapacitates": false
+            }
+          },
+          {
+            "id": "sneak",
+            "effects": {
+              "actor": {
+                "noise": 10,
+                "stance": "crouching"
+              },
+              "awarenessDelta": 0,
+              "incapacitates": false
+            }
+          },
+          {
+            "id": "distract",
+            "effects": {
+              "actor": {
+                "noise": 70
+              },
+              "awarenessDelta": 0,
+              "incapacitates": false,
+              "distraction": 60
+            }
+          },
+          {
+            "id": "take_down",
+            "effects": {
+              "actor": {
+                "noise": 40
+              },
+              "awarenessDelta": 0,
+              "incapacitates": true
+            }
+          }
+        ],
+        "percepts": [
+          {
+            "id": "hide",
+            "percept": {
+              "event": "evt:act:1",
+              "actor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-thief"
+              },
+              "action": "hide",
+              "object": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-guard"
+              },
+              "channel": "sight",
+              "strength": 20,
+              "coarseActor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "someone"
+              }
+            }
+          },
+          {
+            "id": "sneak",
+            "percept": {
+              "event": "evt:act:1",
+              "actor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-thief"
+              },
+              "action": "sneak",
+              "object": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-guard"
+              },
+              "channel": "sight",
+              "strength": 30,
+              "coarseActor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "someone"
+              }
+            }
+          },
+          {
+            "id": "distract",
+            "percept": {
+              "event": "evt:act:1",
+              "actor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-thief"
+              },
+              "action": "distract",
+              "object": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-guard"
+              },
+              "channel": "hearing",
+              "strength": 70,
+              "coarseActor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "someone"
+              }
+            }
+          },
+          {
+            "id": "take_down",
+            "percept": {
+              "event": "evt:act:1",
+              "actor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-thief"
+              },
+              "action": "take_down",
+              "object": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-guard"
+              },
+              "channel": "sight",
+              "strength": 80,
+              "coarseActor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "someone"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a-stealth-category-row-alone-is-a-complete-action",
+      "note": "A world that authored no stealth columns at all still has stealth actions: a row the creator filed under `stealth` IS one, and its energyCost is charged out of the same meter a swing is paid from. The `chore` row beside it is not loaded — one action block, and stealth reads the rows that are already in it.",
+      "actions": [
+        {
+          "id": "slip_away",
+          "category": "stealth",
+          "name": "Slip away",
+          "energyCost": 6
+        },
+        {
+          "id": "haul_water",
+          "category": "chore",
+          "energyCost": 12
+        }
+      ],
+      "columns": [],
+      "expected": {
+        "loaded": 1,
+        "rows": [
+          {
+            "id": "slip_away",
+            "name": "Slip away",
+            "energyCost": 6
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action",
+            "args": [
+              "slip_away",
+              "Slip away",
+              "stealth",
+              6
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "slip_away",
+              "stealth"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "id": "slip_away",
+            "effects": {
+              "actor": {},
+              "awarenessDelta": 0,
+              "incapacitates": false
+            }
+          }
+        ],
+        "percepts": [
+          {
+            "id": "slip_away",
+            "percept": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "stealth-columns-win-over-the-shared-row",
+      "note": "The precedence, which is the thing four engines will each get subtly wrong: stealth column → shared row → unset, where a 0 on the shared row means unset (ActionIR defaults it to 0) and a value in a column was authored. Here the row authors a name and a cost and the columns override both, and everything that is stealth’s alone — presence, stance, concealment — has nowhere else it could have come from.",
+      "actions": [
+        {
+          "id": "hide",
+          "category": "stealth",
+          "name": "Duck behind",
+          "energyCost": 3
+        }
+      ],
+      "columns": [
+        {
+          "id": "hide",
+          "name": "Hide",
+          "energyCost": 5,
+          "conceals": true,
+          "stance": "crouching",
+          "noise": 0,
+          "awarenessDelta": -10,
+          "presence": {
+            "channel": "sight",
+            "strength": 20
+          }
+        }
+      ],
+      "expected": {
+        "loaded": 1,
+        "rows": [
+          {
+            "id": "hide",
+            "name": "Hide",
+            "energyCost": 5,
+            "presence": {
+              "channel": "sight",
+              "strength": 20
+            },
+            "noise": 0,
+            "stance": "crouching",
+            "conceals": true,
+            "awarenessDelta": -10
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action",
+            "args": [
+              "hide",
+              "Hide",
+              "stealth",
+              5
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "hide",
+              "stealth"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "id": "hide",
+            "effects": {
+              "actor": {
+                "noise": 0,
+                "stance": "crouching",
+                "concealed": true
+              },
+              "awarenessDelta": -10,
+              "incapacitates": false
+            }
+          }
+        ],
+        "percepts": [
+          {
+            "id": "hide",
+            "percept": {
+              "event": "evt:act:1",
+              "actor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-thief"
+              },
+              "action": "hide",
+              "object": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-guard"
+              },
+              "channel": "sight",
+              "strength": 20,
+              "coarseActor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "someone"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "columns-whose-shared-row-is-absent-still-load",
+      "note": "A world may extend an action the export did not carry — a mod’s garrote, a DLC’s smoke bomb — and refusing it would make the table depend on load order. The row loads from its columns alone, which is also the shape a runtime-added stealth tool takes: no TypeScript change, one more row.",
+      "actions": [
+        {
+          "id": "slip_away",
+          "category": "stealth",
+          "energyCost": 6
+        }
+      ],
+      "columns": [
+        {
+          "id": "garrote",
+          "name": "Garrote",
+          "requiresTarget": true,
+          "targetType": "person",
+          "energyCost": 25,
+          "incapacitates": true,
+          "presence": {
+            "channel": "sight",
+            "strength": 55
+          }
+        }
+      ],
+      "expected": {
+        "loaded": 2,
+        "rows": [
+          {
+            "id": "slip_away",
+            "energyCost": 6
+          },
+          {
+            "id": "garrote",
+            "name": "Garrote",
+            "requiresTarget": true,
+            "targetType": "person",
+            "energyCost": 25,
+            "presence": {
+              "channel": "sight",
+              "strength": 55
+            },
+            "incapacitates": true
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action",
+            "args": [
+              "slip_away",
+              "slip_away",
+              "stealth",
+              6
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "slip_away",
+              "stealth"
+            ]
+          },
+          {
+            "predicate": "action",
+            "args": [
+              "garrote",
+              "Garrote",
+              "stealth",
+              25
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "garrote",
+              "stealth"
+            ]
+          },
+          {
+            "predicate": "action_requires_target",
+            "args": [
+              "garrote"
+            ]
+          },
+          {
+            "predicate": "action_target_type",
+            "args": [
+              "garrote",
+              "person"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "id": "slip_away",
+            "effects": {
+              "actor": {},
+              "awarenessDelta": 0,
+              "incapacitates": false
+            }
+          },
+          {
+            "id": "garrote",
+            "effects": {
+              "actor": {},
+              "awarenessDelta": 0,
+              "incapacitates": true
+            }
+          }
+        ],
+        "percepts": [
+          {
+            "id": "slip_away",
+            "percept": null
+          },
+          {
+            "id": "garrote",
+            "percept": {
+              "event": "evt:act:1",
+              "actor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-thief"
+              },
+              "action": "garrote",
+              "object": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "npc-guard"
+              },
+              "channel": "sight",
+              "strength": 55,
+              "coarseActor": {
+                "kind": "ent",
+                "namespace": "insimul:world:alderforest",
+                "localId": "someone"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "negative-a-row-with-no-presence-is-an-act-nobody-can-witness",
+      "note": "THE negative case for the action table. A lockpick turned slowly presents on no sense, so `stealthActFor` yields no percept at all — the act still happens, it is still `act/4` in the KB and it is still a violation if a norm forbade it, and `witness/2` simply finds nobody. That is an authoring, not a degradation, and an implementation that invents a default presence makes every crime perceptible and has no stealth.",
+      "actions": [],
+      "columns": [
+        {
+          "id": "pick_lock",
+          "name": "Pick lock",
+          "energyCost": 8,
+          "noise": 5
+        }
+      ],
+      "expected": {
+        "loaded": 1,
+        "rows": [
+          {
+            "id": "pick_lock",
+            "name": "Pick lock",
+            "energyCost": 8,
+            "noise": 5
+          }
+        ],
+        "facts": [
+          {
+            "predicate": "action",
+            "args": [
+              "pick_lock",
+              "Pick lock",
+              "stealth",
+              8
+            ]
+          },
+          {
+            "predicate": "action_category",
+            "args": [
+              "pick_lock",
+              "stealth"
+            ]
+          }
+        ],
+        "effects": [
+          {
+            "id": "pick_lock",
+            "effects": {
+              "actor": {
+                "noise": 5
+              },
+              "awarenessDelta": 0,
+              "incapacitates": false
+            }
+          }
+        ],
+        "percepts": [
+          {
+            "id": "pick_lock",
+            "percept": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "negative-a-row-in-no-stealth-category-and-with-no-columns-is-not-loaded",
+      "note": "The second negative: the shared action block is shared, and stealth does not claim every row in it. A combat row and a chore row with no stealth columns load nothing, so the table is empty and publishes no facts — an implementation that swallows the whole action block would give every swing a stance and a concealment.",
+      "actions": [
+        {
+          "id": "swing",
+          "category": "combat",
+          "energyCost": 8
+        },
+        {
+          "id": "haul_water",
+          "category": "chore",
+          "energyCost": 12
+        }
+      ],
+      "columns": [],
+      "expected": {
+        "loaded": 0,
+        "rows": [],
+        "facts": [],
+        "effects": [],
+        "percepts": []
+      }
+    }
+  ]
+}
