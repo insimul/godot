@@ -4,11 +4,12 @@
   "license": "Apache-2.0",
   "description": "Insimul Godot engine plugin (GDExtension + addon + game template)",
   "scripts": {
-    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check",
+    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check && node tools/verify-mechanics/check-mechanics.mjs --self-test",
     "test:conformance": "bash gdextension/test/run_conformance.sh",
     "test:radiant": "bash gdextension/test/run_radiant_tests.sh",
     "test:quest-parity": "bash gdextension/test/run_quest_parity_tests.sh",
     "vendor:core": "node tools/vendor-core-bundle.mjs",
-    "vendor:conformance": "node tools/vendor-conformance.mjs"
+    "vendor:conformance": "node tools/vendor-conformance.mjs",
+    "test:mechanics": "bash gdextension/test/run_mechanic_tests.sh"
   }
 }

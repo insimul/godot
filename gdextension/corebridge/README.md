@@ -55,7 +55,9 @@ corpus is what proves it.
 | `include/insimulcore.h` | **The contract.** The one file that must not fork when this moves. |
 | `src/insimulcore.c` | The QuickJS host: ABI, promise pump, Prolog bridge. |
 | `js/entry.js` | The adopted surface — one entry per callable core method. |
-| `js/host-prolog-engine.js` | Core's Prolog seam, implemented over libinsimul. |
+| `js/host-prolog-engine.js` | Core's Prolog seam, implemented over libinsimul. Asserts and retracts **in place** rather than rebuilding the KB the way core's wasm engine does, with core's bookkeeping mirrored so nothing observable differs — see the file header. |
+| `js/host-mechanics.js` | The session table and the eight host-interface shims the mechanic rows run through. Glue only: no mechanic is decided here. |
+| `js/host-text-codec.js` | `TextEncoder`/`TextDecoder` for QuickJS, which has neither. A polyfill rather than a seam, imported FIRST because core's `identity/kinp.ts` constructs one at module scope. |
 | `js/host-crypto.js` | Stand-in for Node's `crypto`, which core's `save-envelope.ts` imports at module scope. It **throws**: nothing on the adopted surface hashes, and a plausible wrong digest is worse than a stop. See `RUNTIME_CORE_ADOPTION.md` §8. |
 | `vendor/quickjs/` | QuickJS 2025-04-26, unmodified (see `../THIRD_PARTY.md`). |
 | `vendor/core/` | **Generated.** The bundled core + its provenance. Never hand-edit. |
@@ -68,8 +70,23 @@ runtime surface:
 | method | status |
 |---|---|
 | `radiant.generate`, `radiant.baseTemplates` | **adopted** — `InsimulRadiantSource` calls these at runtime. |
+| `combat.*`, `stamina.*`, `perception.*`, `traversal.*`, `skill.*`, `equipment.*`, `routine.*` | **adopted** — the seven band-120 mechanic modules (27 rows), driven by `InsimulMechanicSession`. Each module is opened once (`<module>.create` → a handle), called many times, and released with `mechanic.dispose`, because a decision layer is stateful and a bridge call is not. |
+| `mechanic.modules`, `mechanic.sessions`, `mechanic.dispose` | the session table and its introspection. |
 | `quest.hydrate`, `quest.radiantTick` | **comparison only.** Nothing in the runtime calls them; they exist so `run_quest_parity_tests.sh` can diff core against this repo's hand-ported `gdextension/src/quest_system.cpp` over the same vectors. Quest hydration is still served by the C++ port. See `RUNTIME_CORE_ADOPTION.md` §10.3. |
 | `core.methods` | introspection, so a gate can assert the surface. |
+
+### Readings in, orders out
+
+Every host interface core declares is a **callback**, and this ABI has none — no
+function pointer crosses `insimul_core_call`, deliberately. So the mechanic rows
+invert the direction: the engine gathers what core would have ASKED it (a
+raycast, a navmesh path, an entity's base stats) before the call and passes it in
+as an argument, and everything core would have TOLD the host comes back in the
+result as `orders` for the engine to drain. `js/host-mechanics.js` is the
+adapter's half; `addons/insimul/runtime/mechanics/insimul_mechanic_session.gd` is
+the engine's. Neither contains a damage number, a cost or a suspicion level —
+those are all core's, and `gdextension/test/run_mechanic_tests.sh` proves it by
+firing the same shot with opposite host readings.
 
 Keeping that distinction visible matters: a method reachable across the ABI is
 not the same as a capability this plugin has adopted, and the gate asserts the
@@ -104,6 +121,7 @@ scons, no godot-cpp, no Godot binary — and runs the shared radiant corpus:
 npm run test:radiant                       # 11 cases, source=core
 bash gdextension/test/run_radiant_tests.sh --source none   # 4 AGREE, 7 GAIN, 0 REGRESSION
 npm run test:quest-parity                  # hand-ported C++ vs core: 7 AGREE, 0 REGRESSION
+npm run test:mechanics                     # the seven mechanic modules: 43 checks
 ```
 
 It **links libinsimul** (core's radiant algorithm is Prolog-driven), so it needs

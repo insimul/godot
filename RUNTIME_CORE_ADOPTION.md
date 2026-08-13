@@ -785,6 +785,184 @@ the evidence a future retirement needs, and it did.
 
 ---
 
+## 11. The band-120 mechanic modules (tasklist 147, US-1)
+
+Core landed nine Insimul modules; the seven in band 120–125 name **eight distinct
+host interfaces** between them. This story implemented all eight in Godot **and
+made all seven modules reachable across the C ABI** — 27 rows in
+`gdextension/corebridge/js/entry.js`, executed end to end by
+`gdextension/test/run_mechanic_tests.sh`.
+
+Unity was the probe (tasklist 145). Its findings are inherited rather than
+rediscovered, and the one difference in outcome has a boring cause: **its bridge
+lives in a repository a Unity worktree cannot edit, and ours is in-tree.** Unity
+could write the host half and had to report `BridgeHasNoRow` for every module;
+this repo owns `gdextension/corebridge/`, so it could write both halves. Nothing
+about the engines made the difference.
+
+### 11.1 What the binary answers now
+
+`core.methods` is the only honest way to ask a build what it can do — not a
+version stamp, not a sibling checkout. Before this story:
+
+```
+{"methods":["core.methods","quest.hydrate","quest.radiantTick",
+            "radiant.baseTemplates","radiant.generate"]}
+```
+
+After it, 32: the same five plus 27 mechanic rows. `mechanic.modules` reports
+which module owns which, so `InsimulMechanicSurface` can tell a creator at boot
+whether combat is live instead of leaving them to infer it from a component that
+exists.
+
+### 11.2 The three findings Unity said were core-side, answered
+
+Unity's §12.2 listed three things that had to be resolved before any row could be
+written, and said all three landed on whoever wrote them. That turned out to be
+this tasklist, so here are the answers as built.
+
+**1. Every host interface is a callback, and the C ABI has none.** Resolved by
+inverting the direction — **readings in, orders out** — implemented in
+`gdextension/corebridge/js/host-mechanics.js`:
+
+- everything core would ASK (`ITrajectoryProbe.query`, `IPerceptionProbe.sense`,
+  `ITraversalProbe.query`, `ICombatStatSink.getBaseStats`) is gathered by the
+  engine BEFORE the call and travels in as an argument; the adapter's shim serves
+  core's question from what arrived;
+- everything core would TELL (`ICombatSystem.applyDamage`,
+  `ISurvivalSystem.consumeStamina`, `ILocomotionHost.travel`,
+  `ISkillModifierSink.applyModifiers`, `ICombatStatSink.applyStats`) is recorded
+  as an order and returned in the result; `InsimulMechanicSession._drain()` calls
+  the wired host implementation for each one, in core's order.
+
+The engine therefore executes exactly what it would have executed in-process,
+with the same arguments — and `insimulcore.h` still has no function pointers.
+This is glue, not a fork: `host-mechanics.js` contains no damage number, no
+suspicion curve, no traversal cost and no price.
+
+**2. The decision layers are stateful sessions, and a bridge call is not.**
+Resolved with a session table: `<module>.create` returns a handle, every verb
+takes one, and `mechanic.dispose` releases it along with the KB it owns.
+
+*Deviation from Unity's proposal, and why.* Its §12.3 sketched a per-module
+`<module>.dispose`; there is one `mechanic.dispose` instead, because a handle
+already names its module and seven identical functions differing only in an
+argument they ignore is a bigger surface for no information. `mechanic.sessions`
+lists what is open, so a leak in a game is visible rather than inferred — and the
+gate uses it: `test_mechanic_bridge.cpp` fails if any session it opened outlives
+it, which is how the create-rows' leak-on-failure bug was found (a `create` that
+threw during registration used to leave a session no caller had a handle to).
+
+**3. Arrival is not a return value when a body takes seconds to move.** Answered
+the same way Unity answered it, for the same reason: what the host already knows
+is reported immediately (no body, unknown destination, a `NavigationAgent3D`
+path that stops short → `arrived: false` with a reason), and anything else
+dispatches the agent and reports `arrived: true`, so world state moves at the
+decision moment and the body catches up. Reporting `arrived: false` for every
+movement that takes time would make `LocomotionDirector` count a successful walk
+as a failure and re-plan against a wall that is not there.
+
+There is also a **strict path** this repo could offer because it owns the rows:
+`traversal.traverse` takes an `arrival` reading, read by core BEFORE the order
+goes out, so a host that already knows the body cannot get there says so and the
+meter is never spent (`GodotLocomotionHost.arrival_reading()`).
+
+### 11.3 Four findings this story added
+
+**1. The Prolog seam had to grow — and the growth is where the wasm engine and a
+native one genuinely differ.** The mechanic layers call four `PrologEngine`
+members between them: `query`, `assertFact`, `retractFact`, `queryOnce`. Only
+`query` existed; the other three threw. Core's `WasmPrologEngine` implements every
+mutation as **rebuild** — record the fact, destroy the KB, re-consult the whole
+accumulated program — and its own header says why, which is not a correctness
+reason: *"Trealla supports incremental assert/retract properly, so this class does
+NOT have to rebuild... It does anyway, [so that] US-2's diff of the two engines
+sees only real disagreements."*
+
+This engine IS that Trealla, linked natively, so `host-prolog-engine.js` asserts
+and retracts in place. The bookkeeping mirrors core's exactly (de-duplication by
+normalized fact text, a retract of something CONSULTED rather than asserted
+changing nothing, a `:- dynamic` directive once per signature), so the divergence
+is in mechanism and not in anything a caller can observe. A rebuild would have
+been fewer lines and would re-consult every rule pack the world loaded on every
+attack — and would churn KB handles, which is the failure mode the `keepalive` KB
+in `insimulcore.c` exists to work around (§6.7). Executing the mechanic corpora
+against it (US-2) is what holds the claim to account.
+
+**2. QuickJS has no `TextEncoder`, and core's identity layer constructs one at
+module scope.** `identity/kinp.ts` percent-encodes non-ASCII local ids, and
+`identity/` is reached by every mechanic module — an observer, a target and an
+agent are all KINP identifiers. The whole bundle failed to evaluate with
+`ReferenceError: 'TextEncoder' is not defined`, at LOAD, not at the call.
+`js/host-text-codec.js` is a UTF-8 polyfill installed before core's modules
+initialise. It is a polyfill and not a seam — nothing about it is
+adapter-specific and core has no import for it to resolve — which is why it
+installs globals and is imported FIRST in `entry.js`.
+
+**3. A session's KB must carry the packs the module's gates read.** Core's
+`checkAction` THROWS when `forbidden_by/4` raises rather than reading an undefined
+procedure as a permit (`ai/rule-enforcement.ts`'s `solve`), and Trealla raises
+`existence_error` for a predicate no program defined. So a traversal or skill
+session opened against a KB of bare facts fails the call. That is core's
+deliberate design and identical on the wasm engine, so it is a **host
+obligation**, not a bridge defect: pass the rule packs the world loaded, not just
+its facts. Stated on `InsimulMechanicSession.open()`, where a caller will hit it.
+
+**4. This template already had a second damage formula.**
+`templates/scripts/systems/combat_system.gd` carries `calculate_damage()` with its
+own critical multiplier and its own `randf_range` variance — the pre-adoption
+combat, which existing games call. `GodotCombatHost` deliberately does not use
+it, call it, or agree with it: damage arrives already decided through
+`ICombatSystem.applyDamage`. The two are not a contradiction but a **migration**,
+and it is named in the host's header rather than quietly resolved, because
+deleting the old one is a change to shipped games and belongs to whoever makes
+that call.
+
+### 11.4 What the host half cost, and the two gaps it did not paper over
+
+Eight interfaces, eight implementations, no stubs. Two are narrower than the
+interface, and each says so where a reader will hit it rather than only here.
+
+| interface | where | the honest edge |
+| --- | --- | --- |
+| `ICombatSystem` | `templates/scripts/mechanics/godot_combat_host.gd` | `execute_attack()` **refuses and warns** rather than rolling. Core never calls it; implementing it would be the second damage pipeline finding 4 describes. |
+| `ICombatStatSink` | same file | Deliberately the same component as `ICombatSystem`: they are two views of one roster, and splitting them would mean two rosters that have to agree. |
+| `ISurvivalSystem` | `godot_survival_host.gd` | `update(delta)` is a **no-op by design** — `survival_system.gd` owns the clock and ticks itself; ticking it twice would decay hunger at double rate. `add_modifier` forwards `modifier.id` as an authored PRESET id and warns when the world has no such preset, so a modifier core invents at runtime does not silently apply. |
+| `ISkillModifierSink` | `godot_skill_modifier_sink.gd` | `move_speed`, `jump_height` and `reach` land on the body's exported properties. **`carry_capacity` lands nowhere**: `inventory_system.gd` limits by `max_slots` and has no weight capacity, so applying it would invent a limit no rule reads. Recorded (`unapplied()`) and announced, not applied. The same gap Unity found. |
+| `ITrajectoryProbe`, `IPerceptionProbe`, `ITraversalProbe` | `godot_geometry_probes.gd` | Real `PhysicsDirectSpaceState3D.intersect_ray` and `NavigationServer3D.map_get_path`. `light_level/2` is an **approximation**: Godot exposes no runtime per-point lightmap read, so it is an ambient floor plus a linecast at the sun. It is a measurement either way — what darkness is WORTH is authored. |
+| `ILocomotionHost` | `godot_locomotion_host.gd` | §11.2 finding 3. Also: with no `NavigationAgent3D` under the body it teleports rather than refusing, because a world that moves without animating (a strategy map, a test scene) is a legitimate world. |
+
+One thing had to be built underneath all of it and did not exist:
+`InsimulActorRegistry` (actor atom → `Node3D`, place atom → position), because
+core names `nessa` and `forge_gate` and a raycast needs a body. It holds no state
+of any kind — a registry that started caching health would be the beginning of a
+second world model.
+
+### 11.5 What is gated, and what still is not
+
+| gate | what it proves |
+| --- | --- |
+| `npm run check` → `check-mechanics.mjs` | Five mirrors: core's manifest against the vendored `MODULE_HOSTS.json`, every interface's member list against the GDScript base class, every interface against *some* implementation (or a `stubbed` entry with a stated consequence), `entry.js`'s module table against core's, and every order the adapter can emit against a dispatch in `insimul_mechanic_session.gd`. `--core` re-derives from core's TypeScript; `--self-test` runs five negative controls that prove no check is vacuous. |
+| `npm run test:mechanics` | 43 checks driving all seven modules end to end through libinsimulcore over the natively linked libinsimul. Reachability, the inversion in both directions, that a host CANNOT decide (the same shot with a clear line, a blocked line and no reading at all), session isolation, and the seam's assert/retract path. |
+
+What is **not** gated is what no gate here can be: no GDScript is executed. The
+Godot implementations live in `templates/`, which is the exported game and is in
+no compiled assembly, so a raycast, a `NavigationAgent3D` and an equipment panel
+are VERIFICATION.md's human checklist in a project with a scene.
+
+### 11.6 What Unreal inherits
+
+1. **The rows exist and are the same rows.** `entry.js` is in `gdextension/` only
+   because tasklist 100's worktree was this repo; when the bridge moves to
+   `native/corebridge` beside libinsimul (§7), Unreal and Unity link the same 27
+   rows and only the host half is theirs to write.
+2. **Readings in, orders out** is the shape. Do not invent a callback ABI for it.
+3. **Ask `core.methods`, never a version.**
+4. **The KB obligation (§11.3 finding 3) will bite every engine**, because it is
+   core's behaviour and not this bridge's.
+
+---
+
 ## Appendix A — drop-in text for `docs/UNIFICATION_ROADMAP.md` Decision 1
 
 That file lives in the **project checkout**, outside this submodule, so this

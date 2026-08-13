@@ -10,7 +10,7 @@
  *     InsimulCore         gdextension/src/insimul_core.cpp   [RefCounted]
  *        |  C ABI          insimul_core_call(h, "radiant.generate", json)
  *     THIS FILE           QuickJS + the vendored core bundle
- *        |  JS -> C        __insimul_prolog_{create,consult,query,destroy}
+ *        |  JS -> C        __insimul_prolog_{create,consult,assert,retract,query,destroy}
  *     libinsimul          Trealla, natively linked (vendor/insimul/insimul.h)
  *
  * Two deliberate choices worth knowing before editing:
@@ -215,6 +215,58 @@ static JSValue js_prolog_consult(JSContext *ctx, JSValueConst this_val, int argc
 }
 
 /*
+ * __insimul_prolog_assert(id, fact) -> null on success | error string
+ *
+ * Term text WITHOUT a trailing full stop, exactly as libinsimul's ABI takes it.
+ * INCREMENTAL, unlike core's `WasmPrologEngine`, which rebuilds its whole
+ * program into a fresh KB on every mutation — see the divergence note in
+ * js/host-prolog-engine.js. Trealla supports assert/retract properly and core
+ * says so in as many words; the rebuild there exists to keep a two-engine diff
+ * attributable, not because the engine needs it.
+ */
+static JSValue js_prolog_assert(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	(void)this_val;
+	insimul_core *core = (insimul_core *)JS_GetContextOpaque(ctx);
+	int32_t id = -1;
+	if (argc < 2 || JS_ToInt32(ctx, &id, argv[0]) < 0) {
+		return JS_ThrowTypeError(ctx, "__insimul_prolog_assert(id, fact)");
+	}
+	insimul_kb *kb = kb_for(core, id);
+	if (!kb) return JS_NewString(ctx, "insimulcore: no such Prolog KB");
+
+	const char *fact = JS_ToCString(ctx, argv[1]);
+	if (!fact) return JS_EXCEPTION;
+	int rc = insimul_kb_assert(kb, fact);
+	JS_FreeCString(ctx, fact);
+	return rc == 0 ? JS_NULL : JS_NewString(ctx, kb_error(kb));
+}
+
+/*
+ * __insimul_prolog_retract(id, fact) -> true | false | error string
+ *
+ * `true` when a clause was removed, `false` when none matched (libinsimul's
+ * documented rc 1, which is not an error), an error string on rc -1.
+ */
+static JSValue js_prolog_retract(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	(void)this_val;
+	insimul_core *core = (insimul_core *)JS_GetContextOpaque(ctx);
+	int32_t id = -1;
+	if (argc < 2 || JS_ToInt32(ctx, &id, argv[0]) < 0) {
+		return JS_ThrowTypeError(ctx, "__insimul_prolog_retract(id, fact)");
+	}
+	insimul_kb *kb = kb_for(core, id);
+	if (!kb) return JS_NewString(ctx, "insimulcore: no such Prolog KB");
+
+	const char *fact = JS_ToCString(ctx, argv[1]);
+	if (!fact) return JS_EXCEPTION;
+	int rc = insimul_kb_retract(kb, fact);
+	JS_FreeCString(ctx, fact);
+	if (rc == 0) return JS_TRUE;
+	if (rc > 0) return JS_FALSE;
+	return JS_NewString(ctx, kb_error(kb));
+}
+
+/*
  * __insimul_prolog_query(id, goal, max) -> JSON array of binding-set objects.
  *
  * The solutions are libinsimul's own binding JSON, concatenated verbatim — the
@@ -316,6 +368,10 @@ insimul_core *insimul_core_create(void) {
 			JS_NewCFunction(core->ctx, js_prolog_create, "__insimul_prolog_create", 0));
 	JS_SetPropertyStr(core->ctx, global, "__insimul_prolog_consult",
 			JS_NewCFunction(core->ctx, js_prolog_consult, "__insimul_prolog_consult", 2));
+	JS_SetPropertyStr(core->ctx, global, "__insimul_prolog_assert",
+			JS_NewCFunction(core->ctx, js_prolog_assert, "__insimul_prolog_assert", 2));
+	JS_SetPropertyStr(core->ctx, global, "__insimul_prolog_retract",
+			JS_NewCFunction(core->ctx, js_prolog_retract, "__insimul_prolog_retract", 2));
 	JS_SetPropertyStr(core->ctx, global, "__insimul_prolog_query",
 			JS_NewCFunction(core->ctx, js_prolog_query, "__insimul_prolog_query", 3));
 	JS_SetPropertyStr(core->ctx, global, "__insimul_prolog_destroy",

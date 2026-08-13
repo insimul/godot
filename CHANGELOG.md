@@ -12,6 +12,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **The band-120 mechanic modules — combat, stamina, perception, traversal,
+  skill, equipment and routine — are reachable and implemented.** Seven of core's
+  decision layers now run behind **27 new rows** in
+  `gdextension/corebridge/js/entry.js` (`combat.attack`, `stamina.spend`,
+  `perception.observe`, `traversal.traverse`, `skill.unlock`, `equipment.equip`,
+  `routine.tick`, …), and all **eight** host interfaces they declare are
+  implemented in GDScript. Adopting a mechanic is a row plus a host
+  implementation; not one line of core is re-implemented here.
+  See `RUNTIME_CORE_ADOPTION.md` §11.
+- **`InsimulMechanicSession`** (`addons/insimul/runtime/mechanics/`) — the host
+  side of *readings in, orders out*: a game gathers what core would have asked it
+  (a raycast, a navmesh path, an entity's base stats) before the call, and every
+  call core would have made to a host interface comes back as an order this class
+  carries out. That is what lets eight callback interfaces cross a C ABI that has
+  no callbacks.
+- **`InsimulMechanicHosts`** — all eight interfaces as base classes, each with
+  the fallback core documents for a MISSING host implemented once (a shot with no
+  probe is clear, a geometric link with no answer is passable, an ordered
+  movement with no locomotion host has arrived).
+- **`InsimulMechanicSurface`** — per-module reachability asked of the BUILD
+  (`core.methods` + `mechanic.modules`), so a boot log says which mechanics are
+  live instead of leaving a creator to infer it.
+- **`InsimulActorRegistry`** — actor atom → `Node3D`, place atom → position. Core
+  names `nessa` and `forge_gate`; a raycast needs a body.
+- **Godot host implementations** in `templates/scripts/mechanics/`:
+  `godot_geometry_probes.gd` (`PhysicsDirectSpaceState3D.intersect_ray` +
+  `NavigationServer3D.map_get_path` for the three probes),
+  `godot_locomotion_host.gd` (`NavigationAgent3D` driving a `CharacterBody3D`),
+  `godot_combat_host.gd` (`ICombatSystem` + `ICombatStatSink` over one roster),
+  `godot_survival_host.gd` (forwards onto the template's own `survival_system.gd`
+  so the meter the player sees is the meter core charges) and
+  `godot_skill_modifier_sink.gd`.
+- **`npm run test:mechanics`** — 43 checks driving all seven modules end to end
+  through libinsimulcore on the natively linked libinsimul: the rows are
+  reachable, readings reach core, orders reach the host, the host **cannot**
+  decide, sessions are isolated and disposed, and the Prolog seam's new
+  assert/retract path works.
+- **`tools/verify-mechanics/check-mechanics.mjs`** in `npm run check` — five
+  mirrors between core's module manifest, the GDScript hosts and the bridge rows,
+  with `--core` re-derivation and five negative controls that prove no check is
+  vacuous.
+
+### Changed
+- **The Prolog seam grew `assertFact`, `retractFact` and `queryOnce`** (the only
+  `PrologEngine` members the mechanic layers reach that it lacked), and
+  `__insimul_prolog_{assert,retract}` were added to the C host to back them.
+  They mutate the KB **in place** rather than rebuilding it the way core's wasm
+  engine does — the same Trealla, so nothing a caller can observe differs, with
+  core's de-duplication and retract bookkeeping mirrored exactly.
+  `RUNTIME_CORE_ADOPTION.md` §11.3.
+- The vendored core bundle now carries the seven decision layers (54 KB → 353 KB,
+  42 core modules), and ships a `TextEncoder`/`TextDecoder` polyfill: core's
+  `identity/kinp.ts` constructs one at module scope and QuickJS has neither, so
+  the whole bundle failed to evaluate without it.
+
 - **`@insimul/core` adoption, first slice — radiant quest generation.**
   `InsimulRadiantSource` (`addons/insimul/runtime/radiant_source.gd`) generates
   radiant quests by calling core's own deterministic, Prolog-driven generator

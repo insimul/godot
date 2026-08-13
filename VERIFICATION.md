@@ -720,3 +720,107 @@ extension, which needs godot-cpp + scons; they hang rather than skip in this
 harness. What the host gates cover is the entire path below GDScript — the same C
 ABI calls, the same bundle, the same Prolog engine — so what is unverified is the
 GDScript wrapper itself, not the adoption.
+
+---
+
+# Band-120 mechanic modules (tasklist 147, US-1)
+
+The seven mechanic modules — combat, stamina, perception, traversal, skill,
+equipment, routine — running through `libinsimulcore` as **27 rows** in
+`gdextension/corebridge/js/entry.js`, with all **eight** host interfaces they
+declare implemented in GDScript. `RUNTIME_CORE_ADOPTION.md` §11 is the design and
+the findings; this is how to check it.
+
+## Runs on any box (no Godot toolchain, no libinsimul)
+
+```sh
+npm run check
+```
+
+The fourth stage is new: `tools/verify-mechanics/check-mechanics.mjs --self-test`.
+It mirrors this repo against a vendored derivation of core's own module manifest
+(`tools/verify-mechanics/MODULE_HOSTS.json`) five ways —
+
+1. **manifest** — the seven modules are present and each names a host interface
+   and a decision layer;
+2. **contract** — every interface's member list has a matching method on the
+   GDScript base class in `addons/insimul/runtime/mechanics/insimul_mechanic_hosts.gd`;
+3. **implementation** — every interface is extended by at least one GDScript
+   class, or declared in `stubbed` **with a stated consequence** (that is what
+   makes "no silent no-op" checkable, and `stubbed` is currently empty);
+4. **bridge** — `entry.js`'s module table agrees with core on host interfaces and
+   decision layers, and every row it declares exists in its `METHODS` table;
+5. **orders** — every order the adapter can emit has a dispatch branch in
+   `insimul_mechanic_session.gd`.
+
+`--self-test` breaks each check on purpose first and requires it to fail, so a
+green run means five checks that *can* fail did not. To check drift against core
+itself — which needs a checkout that has `packages/core`:
+
+```sh
+node tools/verify-mechanics/check-mechanics.mjs --core ../babylon/packages/core
+node tools/verify-mechanics/check-mechanics.mjs --core ../babylon/packages/core --write   # re-derive
+```
+
+## Runs on any box **with libinsimul built**
+
+```sh
+npm run test:mechanics
+```
+
+Drives all seven decision layers end to end — core's real TypeScript in QuickJS,
+on the natively linked Trealla — and asserts **43 checks**. It fails loudly when
+libinsimul is absent rather than skipping, like the radiant gate; point it at a
+build with `INSIMUL_NATIVE_DIR=` or `INSIMUL_NATIVE_DIST=`.
+
+What the 43 cover, and why each is worth a gate rather than an argument:
+
+| claim | how it is checked |
+| --- | --- |
+| the rows are REACHABLE | `mechanic.modules` names seven modules; every row it declares is in `core.methods`; the row count has a floor so a surface that shrinks fails |
+| readings reach core | a blocked line-of-fire reading refuses the shot; `ICombatStatSink.getBaseStats` is asked exactly once per equip |
+| orders reach the host | `applyDamage` carries the resolution's own number; `registerEntity` is an order rather than a bridge-side write; one movement produces exactly one `travel` |
+| the host cannot DECIDE | the same shot is fired with a clear line, a blocked line and no reading at all — the difference is core's, and a missing reading still fights |
+| sessions are real | two sessions of one module do not share state; a disposed handle is an ERROR, not an empty answer; no session outlives the gate |
+| the Prolog seam works | `applied: true` with a KB wired, and three spends of five leaving 85 — the assert/retract path that did not exist before this story |
+
+## Needs a `godot` binary + a built extension — human checklist
+
+No GDScript is executed by any gate here, and the Godot implementations live in
+`templates/`, which is the exported game and is in no compiled assembly. So the
+following is a human pass in a project with a scene, a `NavigationRegion3D` and a
+`CharacterBody3D`:
+
+1. **Boot report.** `print()` `InsimulMechanicSurface.new().report()`. Expect one
+   line per module reading `ready`, and the interfaces each executes through. A
+   module reading `bridge_has_no_row` means the installed `libinsimulcore`
+   predates this story.
+2. **Combat.** Open a `combat` session with two combatants and a `projectile`
+   action; wire `GodotCombatHost.combat_system()` and
+   `GodotGeometryProbes.trajectory()`. Fire with a crate between the two: expect
+   `blockedBy` to name the crate's node and the health bar not to move. Step
+   aside and fire again: expect health to drop by exactly the number in the
+   report, and no second roll anywhere.
+3. **Traversal + locomotion.** Author a `geometric` link, bind both ends with
+   `InsimulActorRegistry.bind_place`, and call `traversal.traverse`. Expect the
+   NPC to walk the `NavigationAgent3D` path, `movement_ordered` to carry the
+   urgency atom core resolved, and the stamina bar to move by the resolved cost
+   (link cost × the world's mode multiplier) — once, not twice.
+4. **Skills.** Unlock a node whose effect is `modifies(move_speed, 10)` and watch
+   the body's `move_speed` rise by 10%. Unlock it again (or reload a save): the
+   value must not move a second time — the totals are absolute.
+5. **The recorded gap.** A node with `modifies(carry_capacity, N)` must print the
+   `carry_capacity` warning and appear in `unapplied()`, and must NOT invent an
+   inventory limit.
+
+## Status on this machine
+
+| gate | result |
+| --- | --- |
+| `npm run check` | ✅ 182 `.gd` files structurally sound; bundle + corpus artifacts consistent; 7 modules / 8 interfaces / 27 rows; 5/5 negative controls fail as designed |
+| `check-mechanics.mjs --core …` | ✅ manifest matches core `84be9ad` |
+| `npm run test:mechanics` | ✅ **43 checks, 0 failures** |
+| `npm run test:radiant` | ✅ 11 cases, 5 areas — unchanged by the new bundle |
+| `npm run test:quest-parity` | ✅ 7 AGREE, 0 REGRESSION — unchanged |
+| every other host gate | ✅ 24 / 76 / 42 / 19 / 3 / 33 / 11 / 58 — unchanged |
+| human checklist above | ⬜ needs a Godot editor; unchecked here |

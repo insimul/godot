@@ -197,6 +197,26 @@
       "placeholders": []
     },
     {
+      "path": "scripts/mechanics/godot_combat_host.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_geometry_probes.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_locomotion_host.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_skill_modifier_sink.gd",
+      "placeholders": []
+    },
+    {
+      "path": "scripts/mechanics/godot_survival_host.gd",
+      "placeholders": []
+    },
+    {
       "path": "scripts/services/ai_service.gd",
       "placeholders": []
     },
