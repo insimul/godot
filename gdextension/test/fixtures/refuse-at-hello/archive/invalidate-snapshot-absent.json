@@ -1,0 +1,20 @@
+{
+  "case": "invalidate — an archive stamped on the wrong axes",
+  "why": "Half a stamp is not a stamp. The C ABI matches; the save format was never recorded, so nothing about the format can be concluded.",
+  "matrix": "../matrix/SYNTHETIC-supported-cell.json",
+  "archive": {
+    "id": "ckpt-go-explore-00417",
+    "engine": "godot",
+    "recorded_at": "2026-08-01T00:00:00Z",
+    "tier": 2,
+    "note": "A Go-Explore archive entry. TBP's save_checkpoint response carries {id, tier, frame, latency_ms, bytes, level} and no version field, so these axes are stamped by the adapter alongside the id.",
+    "axes": {
+      "engine_version": "4.6.2",
+      "c_abi": "0.1.0"
+    }
+  },
+  "expect": {
+    "verdict": "invalidate",
+    "token": "insimul_checkpoint_snapshot_version_absent"
+  }
+}

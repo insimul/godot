@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "description": "Insimul Godot engine plugin (GDExtension + addon + game template)",
   "scripts": {
-    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check && node tools/verify-mechanics/check-mechanics.mjs --self-test",
+    "check": "node tools/verify-godot/check.mjs && node tools/vendor-core-bundle.mjs --check && node tools/vendor-conformance.mjs --check && node tools/vendor-supported-versions.mjs --check && node tools/verify-mechanics/check-mechanics.mjs --self-test && node tools/verify-talos-bridge/check-bridge.mjs --self-test",
     "test:conformance": "bash gdextension/test/run_conformance.sh",
     "test:radiant": "bash gdextension/test/run_radiant_tests.sh",
     "test:quest-parity": "bash gdextension/test/run_quest_parity_tests.sh",
@@ -12,6 +12,8 @@
     "vendor:conformance": "node tools/vendor-conformance.mjs",
     "test:mechanics": "bash gdextension/test/run_mechanic_tests.sh",
     "test:corpus": "bash gdextension/test/run_corpus_tests.sh",
-    "test:activation": "bash gdextension/test/run_activation_tests.sh"
+    "test:activation": "bash gdextension/test/run_activation_tests.sh",
+    "test:talos-bridge": "bash gdextension/test/run_talos_bridge_tests.sh",
+    "vendor:versions": "node tools/vendor-supported-versions.mjs"
   }
 }

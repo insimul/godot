@@ -1,0 +1,54 @@
+{
+  "WARNING": "SYNTHETIC. This is NOT a support claim and must never be read as one. No Insimul cell is supported today — the published matrix at docs/supported-versions.json says so per axis, with sources. This file exists so the refuse-at-hello gate has something to ADMIT: a gate that refuses every input proves nothing, and the only way to show it discriminates is to hand it a world in which one cell is supported and check that it says yes.",
+  "artifact": "insimul/supported-engine-versions",
+  "synthetic": true,
+  "version": 1,
+  "summary": "A hypothetical Godot 4.6 cell with all four axes verified on both sides — the shape the real matrix would take once the artifacts exist.",
+  "engines": [
+    {
+      "engine": "godot",
+      "cell": {
+        "status": "supported",
+        "insimul_minor": "4.6",
+        "talos_minor": "4.6",
+        "why": "SYNTHETIC: every axis verified on both sides and the minors agree.",
+        "blocking_axes": []
+      },
+      "axes": {
+        "engine_version": {
+          "value": "4.6",
+          "status": "verified",
+          "source": "SYNTHETIC — no such artifact exists"
+        },
+        "c_abi": {
+          "value": "0.1.0",
+          "status": "verified",
+          "source": "SYNTHETIC — libinsimul carries no compiled-in ABI symbol; the real axis is proxied by the library semver"
+        },
+        "snapshot_version": {
+          "value": "3.0",
+          "status": "verified",
+          "source": "SYNTHETIC — the real value is measured, but never round-tripped through an engine runtime"
+        },
+        "plugin_version": {
+          "value": "1.0.0",
+          "status": "verified",
+          "source": "SYNTHETIC — no insimul-talos-bridge artifact exists in any engine repo"
+        }
+      }
+    }
+  ],
+  "counterparty": {
+    "project": "talos",
+    "matrix": "talos/docs/supported-versions.json",
+    "claims": [
+      {
+        "engine": "godot",
+        "minor": "4.6",
+        "engine_version": "4.6.0",
+        "green": true,
+        "note": "This half is real (talos commit f230e8d, 282 tests) — it is the Insimul half above that is invented."
+      }
+    ]
+  }
+}

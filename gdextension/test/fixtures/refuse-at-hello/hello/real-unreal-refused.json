@@ -1,0 +1,44 @@
+{
+  "case": "refuse — today's real Unreal row (the silence)",
+  "why": "The sharpest real case. Insimul.uplugin carries no EngineVersion key at all, which UE itself reads as 'any version' — silently permissive exactly where §7.7 needs a refusal. The matrix records the axis as `unstated`, and the contract turns a silence into a named refusal.",
+  "matrix": "published",
+  "hello": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocol": "tbp/1.5",
+      "engine": "unreal",
+      "engine_version": "5.5.4",
+      "plugin_version": "0.4.1",
+      "session_id": "sess-fixture-0001",
+      "resume_token": "rtok-fixture",
+      "run_mode": "uncooked",
+      "process_role": "standalone",
+      "capabilities": {
+        "injection_paths": [
+          "event"
+        ],
+        "consumption_echo": true,
+        "checkpoint_tier": 2,
+        "frame_tap": "in_engine",
+        "insimul": {
+          "core_version": "0.1.0",
+          "snapshot_version": "3.0",
+          "plugin_version": "1.0.0",
+          "world_id": "w-fixture",
+          "seed": "1234",
+          "active_modules": [
+            "combat",
+            "quests"
+          ],
+          "kb_query": true,
+          "kb_checkpoint": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "verdict": "refuse",
+    "token": "insimul_engine_version_unstated"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "case": "refuse — today's real Unity row (the disjoint one)",
+  "why": "Insimul's UPM package declares 2022.3; Talos publishes 6000.3.21f1. The engine_version axis is `declared`, never verified, so the refusal names that axis first — the disjointness is recorded in the cell, and the axis is the actionable half.",
+  "matrix": "published",
+  "hello": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocol": "tbp/1.5",
+      "engine": "unity",
+      "engine_version": "6000.3.21f1",
+      "plugin_version": "0.4.1",
+      "session_id": "sess-fixture-0001",
+      "resume_token": "rtok-fixture",
+      "run_mode": "uncooked",
+      "process_role": "standalone",
+      "capabilities": {
+        "injection_paths": [
+          "event"
+        ],
+        "consumption_echo": true,
+        "checkpoint_tier": 2,
+        "frame_tap": "in_engine",
+        "insimul": {
+          "core_version": "0.1.0",
+          "snapshot_version": "3.0",
+          "plugin_version": "0.1.0",
+          "world_id": "w-fixture",
+          "seed": "1234",
+          "active_modules": [
+            "combat",
+            "quests"
+          ],
+          "kb_query": true,
+          "kb_checkpoint": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "verdict": "refuse",
+    "token": "insimul_engine_version_declared"
+  }
+}

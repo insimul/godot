@@ -1,0 +1,54 @@
+{
+  "WARNING": "SYNTHETIC, and deliberately DISJOINT. Same as SYNTHETIC-supported-cell.json except the counterparty ships 4.5 while Insimul verified 4.6 — the one shape that reaches the counterparty rule, which the all-agreeing fixture can never exercise. Not a support claim.",
+  "artifact": "insimul/supported-engine-versions",
+  "synthetic": true,
+  "version": 1,
+  "summary": "A hypothetical cell where both projects verified an artifact and they verified DIFFERENT minors.",
+  "engines": [
+    {
+      "engine": "godot",
+      "cell": {
+        "status": "supported",
+        "insimul_minor": "4.6",
+        "talos_minor": "4.6",
+        "why": "SYNTHETIC: every axis verified on both sides and the minors agree.",
+        "blocking_axes": []
+      },
+      "axes": {
+        "engine_version": {
+          "value": "4.6",
+          "status": "verified",
+          "source": "SYNTHETIC — no such artifact exists"
+        },
+        "c_abi": {
+          "value": "0.1.0",
+          "status": "verified",
+          "source": "SYNTHETIC — libinsimul carries no compiled-in ABI symbol; the real axis is proxied by the library semver"
+        },
+        "snapshot_version": {
+          "value": "3.0",
+          "status": "verified",
+          "source": "SYNTHETIC — the real value is measured, but never round-tripped through an engine runtime"
+        },
+        "plugin_version": {
+          "value": "1.0.0",
+          "status": "verified",
+          "source": "SYNTHETIC — no insimul-talos-bridge artifact exists in any engine repo"
+        }
+      }
+    }
+  ],
+  "counterparty": {
+    "project": "talos",
+    "matrix": "talos/docs/supported-versions.json",
+    "claims": [
+      {
+        "engine": "godot",
+        "minor": "4.5",
+        "engine_version": "4.5.0",
+        "green": true,
+        "note": "SYNTHETIC: Talos publishes 4.6, not 4.5. The minor is altered here to produce a disjoint intersection."
+      }
+    ]
+  }
+}

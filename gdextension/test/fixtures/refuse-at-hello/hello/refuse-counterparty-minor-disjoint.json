@@ -1,0 +1,44 @@
+{
+  "case": "refuse — both sides verified, different minors",
+  "why": "The intersection rule as a runtime refusal, and the only case that reaches it: Insimul verified 4.6, the counterparty verified 4.5. Two green matrices with an empty intersection is still an empty intersection.",
+  "matrix": "../matrix/SYNTHETIC-disjoint-counterparty.json",
+  "hello": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocol": "tbp/1.5",
+      "engine": "godot",
+      "engine_version": "4.6.2",
+      "plugin_version": "0.4.1",
+      "session_id": "sess-fixture-0001",
+      "resume_token": "rtok-fixture",
+      "run_mode": "uncooked",
+      "process_role": "standalone",
+      "capabilities": {
+        "injection_paths": [
+          "event"
+        ],
+        "consumption_echo": true,
+        "checkpoint_tier": 2,
+        "frame_tap": "in_engine",
+        "insimul": {
+          "core_version": "0.1.0",
+          "snapshot_version": "3.0",
+          "plugin_version": "1.0.0",
+          "world_id": "w-fixture",
+          "seed": "1234",
+          "active_modules": [
+            "combat",
+            "quests"
+          ],
+          "kb_query": true,
+          "kb_checkpoint": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "verdict": "refuse",
+    "token": "insimul_counterparty_minor_disjoint"
+  }
+}

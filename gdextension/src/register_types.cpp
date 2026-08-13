@@ -11,6 +11,7 @@
 #include "insimul_quest_core.h"
 #include "insimul_runtime_core.h"
 #include "insimul_save_codec.h"
+#include "insimul_talos_bridge.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -28,6 +29,10 @@ void initialize_insimul_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(InsimulQuestCore);
 	GDREGISTER_CLASS(InsimulRuntimeCore);
 	GDREGISTER_CLASS(InsimulSaveCodec);
+	// The decision half of insimul-talos-bridge (addons/insimul_talos/). Inert
+	// unless that addon hands it a contract, and nothing in addons/insimul/ ever
+	// does — see insimul_talos_bridge.h.
+	GDREGISTER_CLASS(InsimulTalosBridge);
 }
 
 void uninitialize_insimul_module(ModuleInitializationLevel p_level) {

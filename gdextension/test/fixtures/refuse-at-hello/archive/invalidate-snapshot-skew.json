@@ -1,0 +1,22 @@
+{
+  "case": "invalidate — an archive from before a save-format bump",
+  "why": "§7.7's second rule and the worst available failure: Go-Explore archives persist ACROSS runs, so an entry written under SAVE_FILE_VERSION 2.0 outlives the upgrade. Restoring a stale-format snapshot that happens to parse produces a world that is subtly not the world the archive believed it had. Invalidated, never restored.",
+  "matrix": "../matrix/SYNTHETIC-supported-cell.json",
+  "archive": {
+    "id": "ckpt-go-explore-00417",
+    "engine": "godot",
+    "recorded_at": "2026-08-01T00:00:00Z",
+    "tier": 2,
+    "note": "A Go-Explore archive entry. TBP's save_checkpoint response carries {id, tier, frame, latency_ms, bytes, level} and no version field, so these axes are stamped by the adapter alongside the id.",
+    "axes": {
+      "engine_version": "4.6.2",
+      "c_abi": "0.1.0",
+      "snapshot_version": "2.0",
+      "plugin_version": "1.0.0"
+    }
+  },
+  "expect": {
+    "verdict": "invalidate",
+    "token": "insimul_checkpoint_snapshot_version_skew"
+  }
+}

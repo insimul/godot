@@ -14,6 +14,7 @@ npm run test:radiant     # the first adopted slice, 11 conformance vectors
 npm run test:quest-parity
 npm run test:conformance
 npm run test:activation  # 8 genre bundles, 88 KB witnesses, the sample scenario
+npm run test:talos-bridge # the insimul-talos-bridge decision half, 67 checks
 ```
 
 Everything under `gdextension/test/run_*.sh` builds with a **plain C/C++
@@ -34,16 +35,27 @@ that is not beside the project checkout MUST pass one of those variables.
 not scanned, and the gate prints a green number that means nothing. `git add`
 before believing it.
 
-## Two vendored artifacts, one rule
+## Three vendored artifacts, one rule
 
-`gdextension/corebridge/vendor/core/` (the bundled core) and `conformance/` (the
-shared corpus) are **generated**. Never hand-edit either; regenerate:
+`gdextension/corebridge/vendor/core/` (the bundled core), `conformance/` (the
+shared corpus) and `addons/insimul_talos/supported-versions.json` + its mirrored
+cases (the workspace's published engine-version matrix) are **generated**. Never
+hand-edit any of them; regenerate:
 
 ```sh
 npm run vendor:core        -- --core <packages/core>
 npm run vendor:conformance -- --core <packages/core>
+npm run vendor:versions    -- --matrix <workspace docs/supported-versions.json>
 node tools/verify-mechanics/check-mechanics.mjs --core <packages/core> --write
 ```
+
+The matrix comes from the workspace parent, not from core, so it moves on its
+own schedule; `--check` verifies the mirror's own hashes and `--matrix` is the
+only real drift check. Re-vendoring it also re-mirrors
+`scripts/engine-versions/fixtures/` into
+`gdextension/test/fixtures/refuse-at-hello/`, which is what holds this repo's
+C++ port of the refuse-at-hello decision to the reference implementation's own
+answers.
 
 `packages/core` lives in the **babylon** checkout (`babylon/packages/core`), not
 in a top-level `packages/`. All three tools also take `--check` (or run with no
@@ -117,3 +129,29 @@ that will bite:
   (4.4) and friends are out.
 - One `class_name` per file; use inner `class Foo extends Bar:` for the rest.
 - Tabs, typed locals (`var x := ...`), `##` doc comments.
+
+## The Talos bridge is a THIRD artifact, and stays one
+
+`addons/insimul_talos/` implements `TALOS_INSIMUL_BRIDGE.md` §7.5: it depends on
+both projects and is depended on by neither. Four things that will bite:
+
+1. **`addons/insimul/` may never mention it.** `check-bridge.mjs` greps for
+   `insimul_talos` / `InsimulTalos` across the shipped plugin and fails on a hit.
+   The bridge is QA-only; a mention there is Insimul acquiring a QA dependency.
+2. **No Talos symbol in the bridge either.** Talos's Godot contract is duck-typed
+   — groups plus method and signal NAMES — so `talos_save`, `talos_event` and the
+   rest are contract, while `TalosBridge`, `res://addons/talos/…` and friends are
+   a compile-time dependency the design exists to avoid. The gate matches those
+   on a word boundary, because this artifact's own class is `InsimulTalosBridge`.
+3. **The six group names live in `bridge-contract.json`, and `talos.game.yaml`
+   quotes them.** The gate compares the two IN BOTH DIRECTIONS, and the adapter
+   reads its groups from the contract rather than spelling them. A group the
+   manifest does not declare is an adapter the Bridge never finds — it fails
+   after the run starts, not at install.
+4. **The decision half is C++ and that is deliberate.** §7.5 pictured one
+   GDScript file; there is no Godot binary in these gates, so a decision
+   procedure written in GDScript could not be executed by anything that gates a
+   merge. `gdextension/src/talos_bridge.*` keeps ONE implementation and makes it
+   testable under a plain compiler; the addon stays buildless GDScript plus data.
+   It is registered in the existing extension rather than a second one, so the
+   per-Godot-minor artifact matrix does not grow a third row.

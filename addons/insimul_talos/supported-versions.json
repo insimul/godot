@@ -1,0 +1,551 @@
+{
+  "artifact": "insimul/supported-engine-versions",
+  "version": 1,
+  "measured_at": "2026-08-12",
+  "authority": "docs/SUPPORTED_ENGINE_VERSIONS.md",
+  "summary": "Insimul's half of the supported cell. NO CELL IS SUPPORTED TODAY: on every engine at least one of the four axes is unstated, unbuilt, or disjoint from Talos's published claim. This file says which, and how each value was measured — it does not claim support Insimul has not earned.",
+
+  "contract": {
+    "rule": "A supported cell is the INTERSECTION of two per-minor artifact matrices — Insimul's and the counterparty's. A cell is supported only when BOTH projects ship a per-minor artifact for it. A cell either project leaves unbuilt is not a supported cell, however green the other project's tests are.",
+    "source": "docs/TALOS_INSIMUL_BRIDGE.md §7.7",
+    "consumer_procedure": [
+      "1. Read the four Insimul axes for the engine from `engines[].axes` here.",
+      "2. Read the counterparty's per-minor claim from its own matrix (`counterparty.matrix`).",
+      "3. The cell is supported iff every axis has status `verified` on both sides AND the engine minors agree.",
+      "4. Any axis at `unstated`, `declared` or `unverified` yields cell status `unsupported` — refuse before the run, not during it (see the refuse-at-hello contract)."
+    ],
+    "axis_status_vocabulary": {
+      "verified": "a per-minor artifact exists and was exercised on that minor; a measurement, not a declaration",
+      "declared": "a manifest states the value, but no artifact on that minor has been exercised",
+      "unstated": "the artifact that should carry the value does not carry it — the axis is silent, not permissive",
+      "unverified": "the value is known but its support claim has never been tested"
+    },
+    "cell_status_vocabulary": {
+      "supported": "both matrices ship a per-minor artifact for this cell and both are verified",
+      "unsupported": "at least one axis is not verified on at least one side",
+      "disjoint": "both sides state a value and the values do not overlap — not merely untested, actively incompatible"
+    }
+  },
+
+  "axes": [
+    {
+      "id": "engine_version",
+      "label": "Engine minor",
+      "owner": "engine",
+      "declared_in_hello_as": "engine, engine_version [TBP §2.2]",
+      "insimul_settles_with": "jq -r .EngineVersion unreal/Insimul.uplugin; jq -r .unity unity/package.json; grep -h 'compatibility_minimum\\|config/features' godot/gdextension/insimul.gdextension godot/templates/project/project.godot"
+    },
+    {
+      "id": "c_abi",
+      "label": "C ABI",
+      "owner": "insimul",
+      "declared_in_hello_as": "capabilities.insimul.core_version (§3.1), from insimul_version()",
+      "insimul_settles_with": "cat native/VERSION; grep -n 'INSIMULCORE_ABI_VERSION' native/corebridge/src/insimulcore.c; grep -rn 'ExpectedNativeSemver\\|ExpectedAbiSemver' unity unreal godot",
+      "note": "TWO C surfaces share this axis, not one: libinsimul (12 entry points, native/include/insimul.h) and libinsimulcore (5 entry points, native/corebridge/include/insimulcore.h). libinsimul has NO compiled-in ABI symbol — only insimul_version(), a semver+sha build stamp read off the dist VERSION file — so the axis is proxied by the library semver on MAJOR.MINOR. libinsimulcore does carry INSIMULCORE_ABI_VERSION, but it is not written to the dist stamp, so it is only checkable against a loaded library at runtime.",
+      "not_tracked_by_talos": true
+    },
+    {
+      "id": "snapshot_version",
+      "label": "Save/snapshot format",
+      "owner": "insimul",
+      "declared_in_hello_as": "capabilities.insimul.snapshot_version (§7.7)",
+      "insimul_settles_with": "grep -n 'SAVE_FILE_VERSION' server/rust/insimul-server/src/save_file.rs",
+      "note": "NAMING COLLISION, called out rather than conflated. The axis §7.7 means is the save/snapshot FORMAT compatibility gate, which in Insimul is SAVE_FILE_VERSION (server/rust/insimul-server/src/save_file.rs). Insimul separately has `snapshotVersion` in babylon/packages/core/src/world-snapshot-version.ts, which is a per-world monotonic STRUCTURE counter compared against worldVersion with a MAX_COMPATIBLE_VERSION_GAP of 50 — a different quantity with a colliding name. An adapter that publishes the world counter as capabilities.insimul.snapshot_version publishes the wrong axis.",
+      "not_tracked_by_talos": true
+    },
+    {
+      "id": "plugin_version",
+      "label": "Plugin / bridge build",
+      "owner": "insimul (Insimul plugin) and talos (Talos plugin + TBP protocol)",
+      "declared_in_hello_as": "protocol: \"tbp/1.0\", plugin_version, plugin_build_hash [TBP §2.1, §2.2]",
+      "insimul_settles_with": "jq -r .VersionName unreal/Insimul.uplugin; jq -r .version unity/package.json; grep -n '^version=' godot/addons/insimul/plugin.cfg",
+      "note": "The Insimul-side plugin version is measurable today. The `insimul-talos-bridge` artifact that would carry a TBP version range does not exist in any engine repo yet (BRIDGE §7.9, Insimul item 2), so the TBP half of this axis has no Insimul-side declaration at all."
+    }
+  ],
+
+  "counterparty": {
+    "project": "talos",
+    "organization": "Overpowered Inc. (internal, sibling product)",
+    "matrix": "talos/docs/supported-versions.json",
+    "access": "read-only; copied here for comparison, never edited from this repo",
+    "read_at": "2026-08-12",
+    "commit": "f230e8dba2e04503ffcdc8c2b61ccb23c549e131",
+    "sha256": "cb2b140b9f5669f3193b010554b05bc21a37c38fe6ef2977dd97ba01ad3f720e",
+    "claims": [
+      {
+        "engine": "godot",
+        "minor": "4.6",
+        "engine_version": "4.6.0",
+        "green": true,
+        "tests": 282,
+        "recorded_at": "2026-08-08T19:48:34Z"
+      },
+      {
+        "engine": "unity",
+        "minor": "6000.3",
+        "engine_version": "6000.3.21f1",
+        "green": true,
+        "tests": 108,
+        "recorded_at": "2026-08-08T19:28:15Z"
+      }
+    ],
+    "unpublished": [
+      {
+        "engine": "unreal",
+        "planned": "5.5–5.8 × Win64/Linux/Mac [TBP §4.3]",
+        "published_claim": null
+      }
+    ]
+  },
+
+  "measured_from": {
+    "workspace": "insimul (meta-repo)",
+    "how": "read-only inspection of the submodule working trees at the gitlink SHAs this branch pins",
+    "submodules": {
+      "godot": "6e746c70dba177b0431b921d851ce37ee9cd254c",
+      "unity": "4435844815cb2f201de4e1cdc8ea450e48ad64dc",
+      "unreal": "2219a51ebad17346d9650ea77f9a4e1e5f1a409e",
+      "native": "3859faff0184205b682ce6d99ced201242812a0b",
+      "server": "66404e312f12a9b8f1cc5dcbeac4e340ba3ba515",
+      "babylon": "0c2a2d466fe1de53e1b7364c2462e51b48edd68c"
+    }
+  },
+
+  "engines": [
+    {
+      "engine": "godot",
+      "cell": {
+        "status": "unsupported",
+        "insimul_minor": "4.2+ (declared), templates authored at 4.3",
+        "talos_minor": "4.6",
+        "why": "Talos publishes a green claim at 4.6.0 (282 tests). Insimul's GDExtension declares compatibility_minimum 4.2 and has NOT been built for any minor — the descriptor's bin/ paths are declarative, so there is no per-minor native artifact on either 4.3 or 4.6. §7.7: a cell without both artifacts is not a supported cell.",
+        "blocking_axes": [
+          "engine_version",
+          "c_abi"
+        ]
+      },
+      "axes": {
+        "engine_version": {
+          "value": ">=4.2",
+          "status": "declared",
+          "source": "godot/gdextension/insimul.gdextension:15 (compatibility_minimum = \"4.2\")",
+          "also": "godot/templates/project/project.godot:9 — config/features=PackedStringArray(\"4.3\", \"Forward Plus\")",
+          "note": "compatibility_minimum is a floor, not a support claim, and the two files disagree about the intended minor (4.2 vs 4.3). Neither is 4.6."
+        },
+        "c_abi": {
+          "value": null,
+          "status": "unstated",
+          "source": "godot/ — no expected-ABI constant exists (grep for ExpectedNativeSemver/ExpectedAbiSemver finds nothing outside unity/)",
+          "note": "The Godot addon binds libinsimul through the GDExtension without declaring which libinsimul semver it was written against, so skew here is undetectable from the manifest. Unity declares this; Godot does not."
+        },
+        "snapshot_version": {
+          "value": "3.0",
+          "status": "unverified",
+          "source": "server/rust/insimul-server/src/save_file.rs:37 (SAVE_FILE_VERSION)",
+          "note": "Workspace-wide, not per-engine: one save format serves all runtimes. Never round-tripped through the Godot runtime, so the value is known and the claim is untested."
+        },
+        "plugin_version": {
+          "value": "1.0.0",
+          "status": "declared",
+          "source": "godot/addons/insimul/plugin.cfg (version=\"1.0.0\")",
+          "note": "godot/package.json declares no version field. No insimul-talos-bridge artifact exists, so no TBP range is declared."
+        }
+      }
+    },
+    {
+      "engine": "unity",
+      "cell": {
+        "status": "disjoint",
+        "insimul_minor": "2022.3",
+        "talos_minor": "6000.3",
+        "why": "Both sides state a value and they do not overlap: unity/package.json declares Unity 2022.3 as the minimum editor, while Talos's only green Unity claim is 6000.3.21f1 (108 tests). The intersection of {2022.3-and-up as declared} with {6000.3, as tested} is untested on Insimul's side and stated nowhere as a support claim. This is the §7.7 skew, visible before a run.",
+        "blocking_axes": [
+          "engine_version"
+        ]
+      },
+      "axes": {
+        "engine_version": {
+          "value": "2022.3 (unityRelease 0f1)",
+          "status": "declared",
+          "source": "unity/package.json (\"unity\": \"2022.3\", \"unityRelease\": \"0f1\")",
+          "note": "A UPM minimum-editor declaration, not a tested-on claim; nothing records a Unity minor Insimul was exercised on."
+        },
+        "c_abi": {
+          "value": "0.1.0",
+          "status": "declared",
+          "source": "unity/Runtime/Prolog/InsimulProlog.cs:99 (ExpectedNativeSemver = \"0.1.0\"), unity/Runtime/CoreBridge/InsimulCore.cs:52 (ExpectedAbiSemver = \"0.1.0\")",
+          "note": "The ONLY engine that states this axis. Compatibility keys on MAJOR.MINOR; unity/scripts/fetch-native.sh cross-checks the fetched libinsimul stamp against ExpectedNativeSemver and warns on drift, while libinsimulcore's ABI is checked only at runtime by InsimulCore.VerifyAbiVersion(). Matches native/VERSION (0.1.0)."
+        },
+        "snapshot_version": {
+          "value": "3.0",
+          "status": "unverified",
+          "source": "server/rust/insimul-server/src/save_file.rs:37 (SAVE_FILE_VERSION)",
+          "note": "Never round-tripped through the Unity runtime."
+        },
+        "plugin_version": {
+          "value": "0.1.0",
+          "status": "declared",
+          "source": "unity/package.json (com.insimul.sdk 0.1.0)",
+          "note": "No insimul-talos-bridge artifact exists, so no TBP range is declared."
+        }
+      }
+    },
+    {
+      "engine": "unreal",
+      "cell": {
+        "status": "unsupported",
+        "insimul_minor": null,
+        "talos_minor": null,
+        "why": "Neither project has published anything. Insimul.uplugin carries NO EngineVersion key at all — the axis is silent, and a silent axis is not a permissive one. Talos's UE binary matrix is planned at 5.5–5.8 × Win64/Linux/Mac but unpublished [TBP §4.3]. There is nothing to intersect.",
+        "blocking_axes": [
+          "engine_version",
+          "c_abi"
+        ]
+      },
+      "axes": {
+        "engine_version": {
+          "value": null,
+          "status": "unstated",
+          "source": "unreal/Insimul.uplugin — `jq -r .EngineVersion` yields null; the key is absent",
+          "note": "This is §7.7's settling command returning nothing, which is the finding rather than a gap in the measurement. UE treats an absent EngineVersion as 'any', which is exactly the silent-permissive failure the refuse-at-hello contract exists to convert into a refusal."
+        },
+        "c_abi": {
+          "value": null,
+          "status": "unstated",
+          "source": "unreal/ — no expected-ABI constant exists",
+          "note": "Same gap as Godot: the plugin does not declare which libinsimul semver it was built against."
+        },
+        "snapshot_version": {
+          "value": "3.0",
+          "status": "unverified",
+          "source": "server/rust/insimul-server/src/save_file.rs:37 (SAVE_FILE_VERSION)",
+          "note": "Never round-tripped through the Unreal runtime."
+        },
+        "plugin_version": {
+          "value": "1.0.0",
+          "status": "declared",
+          "source": "unreal/Insimul.uplugin (VersionName 1.0.0, Version 1); unreal/VERSION agrees (1.0.0)",
+          "note": "No insimul-talos-bridge artifact exists, so no TBP range is declared."
+        }
+      }
+    }
+  ],
+
+  "workspace_axes": {
+    "c_abi": {
+      "libinsimul": {
+        "version": "0.1.0",
+        "source": "native/VERSION",
+        "entry_points": 12,
+        "header": "native/include/insimul.h",
+        "abi_symbol": null
+      },
+      "libinsimulcore": {
+        "abi_version": "0.1.0",
+        "source": "native/corebridge/src/insimulcore.c:44 (INSIMULCORE_ABI_VERSION)",
+        "entry_points": 5,
+        "header": "native/corebridge/include/insimulcore.h"
+      }
+    },
+    "snapshot_version": {
+      "value": "3.0",
+      "source": "server/rust/insimul-server/src/save_file.rs:37 (SAVE_FILE_VERSION)"
+    }
+  },
+
+  "not_tracked_by_talos": [
+    "c_abi — Talos's clean-room posture means it never links libinsimul and does not model this axis; it is Insimul's to declare in capabilities.insimul.core_version.",
+    "snapshot_version — Talos checkpoints through whatever the game exposes; the save FORMAT gate is Insimul's, surfaced as capabilities.insimul.snapshot_version.",
+    "The Insimul plugin version — Talos's matrix records engine minors and its own plugin, not third-party plugin builds."
+  ],
+
+  "refuse_at_hello": {
+    "contract": "docs/REFUSE_AT_HELLO.md",
+    "source": "docs/TALOS_INSIMUL_BRIDGE.md §7.7 (both rules) and §7.8 (the version-skew row)",
+    "rule": "An adapter declares all four axes in `hello` and is REFUSED at the handshake when any of them falls outside this matrix — not at first use. A refusal at handshake is something the Conductor can plan around; a refusal at first restore_checkpoint is a wasted run. A checkpoint is only valid within its snapshot_version, so a persisted archive entry from a skewed build is INVALIDATED, never restored.",
+    "reference_implementation": "scripts/engine-versions/check-hello.mjs",
+    "cases": "scripts/engine-versions/fixtures (21 cases; scripts/engine-versions/selftest-hello.sh proves the gate both refuses and admits)",
+    "decision_order": [
+      "1. protocol — a TBP major the adapter does not implement is refused before any axis is read",
+      "2. engine — an engine with no row in this matrix is refused",
+      "3. capabilities.insimul — a hello without it is refused, never degraded into (§7.8's dangerous row)",
+      "4. the four axes in order (engine_version, c_abi, snapshot_version, plugin_version): an axis whose published status is not `verified` refuses regardless of what the build reports; then the value is compared",
+      "5. the counterparty claim — same engine, same minor, or the intersection is empty",
+      "6. the published cell status, as a backstop: if the axes pass and the cell says otherwise, the matrix wins"
+    ],
+    "first_blocking_axis_wins": "One refusal carries ONE token — the first blocking reason in decision order. Order is contract, not taste: two adapters refusing the same build must produce the same token, or Conductor-side attribution drifts per engine.",
+    "error_envelope": {
+      "code": -32003,
+      "code_name": "NOT_DECLARED",
+      "retryable": false,
+      "carries": [
+        "sub_code (the token below)",
+        "axis",
+        "expected",
+        "observed",
+        "source",
+        "unblock"
+      ],
+      "note": "Talos freezes its top-level `code` enum and lets `data.sub_code` grow freely [talos:docs/03-engine-bridge.md §2.11], so every Insimul token is a SUB-code; Insimul does not mint top-level codes it does not own. NOT_DECLARED (-32003) is the closest frozen code — the build does not declare a combination the matrix supports — and it is not retryable, because waiting does not rebuild a plugin. Caveat: talos:addons/talos/core/refusals.gd classifies module refusals against a fixed NOT_DECLARED_REASONS list that contains no insimul_* reason, so a refusal routed through that classifier lands on INVALID_PARAMS (-32602) instead. Until that list grows, the adapter constructs the error itself."
+    },
+    "checkpoint_rule": {
+      "statement": "A persisted checkpoint archive entry is restorable only if it is stamped with the axes AND those axes match the published matrix. Every uncertainty resolves to `invalidate`.",
+      "why": "Go-Explore archives persist checkpoints across runs [TBP §2.6], so an archive built before a core upgrade outlives it. Restoring a stale-format snapshot that happens to parse is the worst available failure — it produces a world that is subtly not the world the archive believed it had.",
+      "carrier": "TBP's save_checkpoint response is additionalProperties:false over {id, tier, frame, latency_ms, bytes, level} — no version field. The stamp is therefore the adapter's own archive-side metadata, not a wire field, which is why an unstamped archive is the default rather than the exception."
+    },
+    "carrier": {
+      "status": "absent",
+      "finding": "capabilities.insimul — the block BRIDGE §3.1 proposes and this whole contract rides on — does NOT validate against tbp/1.x today. hello_response.schema.json declares `capabilities` with additionalProperties:false and no `insimul` key, and its own description says unknown keys are REJECTED rather than ignored, precisely so a misspelled flag cannot masquerade as a deliberate absence.",
+      "schema": "talos:talos/tbp/schemas/hello_response.schema.json",
+      "schema_sha256": "6802619b815cc6506b748bb8965a4e4db7eb1789aaccbc67f535df48a403b07b",
+      "read_at_commit": "f230e8dba2e04503ffcdc8c2b61ccb23c549e131",
+      "reproduce": "validate a valid tbp hello_response fixture with capabilities.insimul added, against that schema: \"Additional properties are not allowed ('insimul' was unexpected) ['result','capabilities']\". Verbatim command in docs/REFUSE_AT_HELLO.md.",
+      "consequence": "The contract is specified and executable here, and has nowhere to travel on the wire until Talos registers capabilities.insimul in an additive minor. That is a counterparty ask (BRIDGE §7.9), not an Insimul-side workaround: a namespaced block added by the schema owner is additive, while anything Insimul adds unilaterally is a schema violation the peer is required to reject."
+    },
+    "tokens": {
+      "insimul_hello_malformed": {
+        "stage": "hello",
+        "means": "the handshake carried no result object at all; nothing was checked because nothing was readable",
+        "unblock": "send a tbp/1.x hello_response"
+      },
+      "insimul_tbp_protocol_unknown": {
+        "stage": "hello",
+        "means": "a TBP major this adapter does not implement. Not a skewed axis — a different protocol, and guessing at an unknown envelope is how a misparse becomes a finding",
+        "unblock": "upgrade the adapter to a TBP major it declares"
+      },
+      "insimul_engine_unknown": {
+        "stage": "hello",
+        "means": "the engine has no row in the published matrix. Unpublished is not 'probably fine'",
+        "unblock": "publish a row for the engine in docs/supported-versions.json"
+      },
+      "insimul_capabilities_absent": {
+        "stage": "hello",
+        "means": "a hello with no capabilities.insimul — BRIDGE §7.8's dangerous row, where Talos would run against what looks like an ordinary game and file findings while the ground truth sits unread",
+        "unblock": "install insimul-talos-bridge, or run the game as an ordinary Talos target with no Insimul profile"
+      },
+      "insimul_engine_version_unpublished": {
+        "stage": "hello",
+        "axis": "engine_version",
+        "means": "the matrix has a row for the engine but no engine_version axis in it",
+        "unblock": "publish engines[].axes.engine_version"
+      },
+      "insimul_engine_version_unstated": {
+        "stage": "hello",
+        "axis": "engine_version",
+        "means": "the axis is published with status `unstated`, which is not `verified`: the artifact that should carry the value does not carry it — a silence, not a permission",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_engine_version_declared": {
+        "stage": "hello",
+        "axis": "engine_version",
+        "means": "the axis is published with status `declared`, which is not `verified`: a manifest states the value but no per-minor artifact was exercised — a floor, not a claim",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_engine_version_unverified": {
+        "stage": "hello",
+        "axis": "engine_version",
+        "means": "the axis is published with status `unverified`, which is not `verified`: the value is known and its support claim was never tested",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_engine_version_absent": {
+        "stage": "hello",
+        "axis": "engine_version",
+        "means": "the axis is verified in the matrix and the hello does not declare it. A partial declaration is not a partial pass",
+        "unblock": "declare the engine_version field in the adapter's hello"
+      },
+      "insimul_engine_version_skew": {
+        "stage": "hello",
+        "axis": "engine_version",
+        "means": "the build's engine_version is not the value the cell was verified with",
+        "unblock": "rebuild the adapter against the published engine_version, or publish a matrix row for the value the build carries",
+        "compared_as": "engine minor"
+      },
+      "insimul_c_abi_unpublished": {
+        "stage": "hello",
+        "axis": "c_abi",
+        "means": "the matrix has a row for the engine but no c_abi axis in it",
+        "unblock": "publish engines[].axes.c_abi"
+      },
+      "insimul_c_abi_unstated": {
+        "stage": "hello",
+        "axis": "c_abi",
+        "means": "the axis is published with status `unstated`, which is not `verified`: the artifact that should carry the value does not carry it — a silence, not a permission",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_c_abi_declared": {
+        "stage": "hello",
+        "axis": "c_abi",
+        "means": "the axis is published with status `declared`, which is not `verified`: a manifest states the value but no per-minor artifact was exercised — a floor, not a claim",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_c_abi_unverified": {
+        "stage": "hello",
+        "axis": "c_abi",
+        "means": "the axis is published with status `unverified`, which is not `verified`: the value is known and its support claim was never tested",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_c_abi_absent": {
+        "stage": "hello",
+        "axis": "c_abi",
+        "means": "the axis is verified in the matrix and the hello does not declare it. A partial declaration is not a partial pass",
+        "unblock": "declare the c_abi field in the adapter's hello"
+      },
+      "insimul_c_abi_skew": {
+        "stage": "hello",
+        "axis": "c_abi",
+        "means": "the build's c_abi is not the value the cell was verified with",
+        "unblock": "rebuild the adapter against the published c_abi, or publish a matrix row for the value the build carries",
+        "compared_as": "semver MAJOR.MINOR (libinsimul carries no ABI symbol; the semver is the proxy)"
+      },
+      "insimul_snapshot_version_unpublished": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the matrix has a row for the engine but no snapshot_version axis in it",
+        "unblock": "publish engines[].axes.snapshot_version"
+      },
+      "insimul_snapshot_version_unstated": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the axis is published with status `unstated`, which is not `verified`: the artifact that should carry the value does not carry it — a silence, not a permission",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_snapshot_version_declared": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the axis is published with status `declared`, which is not `verified`: a manifest states the value but no per-minor artifact was exercised — a floor, not a claim",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_snapshot_version_unverified": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the axis is published with status `unverified`, which is not `verified`: the value is known and its support claim was never tested",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_snapshot_version_absent": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the axis is verified in the matrix and the hello does not declare it. A partial declaration is not a partial pass",
+        "unblock": "declare the snapshot_version field in the adapter's hello"
+      },
+      "insimul_snapshot_version_skew": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the build's snapshot_version is not the value the cell was verified with",
+        "unblock": "rebuild the adapter against the published snapshot_version, or publish a matrix row for the value the build carries",
+        "compared_as": "exact string"
+      },
+      "insimul_plugin_version_unpublished": {
+        "stage": "hello",
+        "axis": "plugin_version",
+        "means": "the matrix has a row for the engine but no plugin_version axis in it",
+        "unblock": "publish engines[].axes.plugin_version"
+      },
+      "insimul_plugin_version_unstated": {
+        "stage": "hello",
+        "axis": "plugin_version",
+        "means": "the axis is published with status `unstated`, which is not `verified`: the artifact that should carry the value does not carry it — a silence, not a permission",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_plugin_version_declared": {
+        "stage": "hello",
+        "axis": "plugin_version",
+        "means": "the axis is published with status `declared`, which is not `verified`: a manifest states the value but no per-minor artifact was exercised — a floor, not a claim",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_plugin_version_unverified": {
+        "stage": "hello",
+        "axis": "plugin_version",
+        "means": "the axis is published with status `unverified`, which is not `verified`: the value is known and its support claim was never tested",
+        "unblock": "build and exercise a per-minor artifact for the cell, then re-publish the axis as verified"
+      },
+      "insimul_plugin_version_absent": {
+        "stage": "hello",
+        "axis": "plugin_version",
+        "means": "the axis is verified in the matrix and the hello does not declare it. A partial declaration is not a partial pass",
+        "unblock": "declare the plugin_version field in the adapter's hello"
+      },
+      "insimul_plugin_version_skew": {
+        "stage": "hello",
+        "axis": "plugin_version",
+        "means": "the build's plugin_version is not the value the cell was verified with",
+        "unblock": "rebuild the adapter against the published plugin_version, or publish a matrix row for the value the build carries",
+        "compared_as": "exact string"
+      },
+      "insimul_snapshot_version_not_save_format": {
+        "stage": "hello",
+        "axis": "snapshot_version",
+        "means": "the value does not have the MAJOR.MINOR shape of SAVE_FILE_VERSION — almost always the per-world snapshotVersion counter published on the wrong axis (see the axis note for the collision)",
+        "unblock": "publish SAVE_FILE_VERSION (server/rust/insimul-server/src/save_file.rs), not babylon's per-world snapshotVersion"
+      },
+      "insimul_counterparty_claim_absent": {
+        "stage": "hello",
+        "means": "the counterparty publishes no claim for this engine, so there is no second matrix to intersect with",
+        "unblock": "wait for the counterparty to publish, or run without an Insimul profile"
+      },
+      "insimul_counterparty_minor_disjoint": {
+        "stage": "hello",
+        "means": "both projects verified an artifact and they verified DIFFERENT minors. Two green matrices with an empty intersection is still an empty intersection",
+        "unblock": "ship artifacts for a common minor"
+      },
+      "insimul_cell_unsupported": {
+        "stage": "hello",
+        "means": "every axis passed but the published cell status is `unsupported` — the matrix knows something the axes do not, and the matrix wins",
+        "unblock": "re-intersect and re-publish the cell before running"
+      },
+      "insimul_cell_disjoint": {
+        "stage": "hello",
+        "means": "every axis passed but the published cell status is `disjoint` — the matrix knows something the axes do not, and the matrix wins",
+        "unblock": "re-intersect and re-publish the cell before running"
+      },
+      "insimul_cell_unpublished": {
+        "stage": "hello",
+        "means": "every axis passed but the published cell status is `unpublished` — the matrix knows something the axes do not, and the matrix wins",
+        "unblock": "re-intersect and re-publish the cell before running"
+      },
+      "insimul_checkpoint_malformed": {
+        "stage": "restore",
+        "means": "the archive entry was unreadable",
+        "unblock": "discard the entry"
+      },
+      "insimul_checkpoint_engine_unknown": {
+        "stage": "restore",
+        "means": "the archive names an engine with no row in the matrix",
+        "unblock": "publish a row before restoring archives recorded against it"
+      },
+      "insimul_checkpoint_unstamped": {
+        "stage": "restore",
+        "means": "the archive carries no version stamp. This is the DEFAULT, not an exotic case: TBP's save_checkpoint response carries {id, tier, frame, latency_ms, bytes, level} and no version field, so an adapter that does not stamp the axes itself produces exactly this",
+        "unblock": "stamp the four axes into the archive entry at save_checkpoint time"
+      },
+      "insimul_checkpoint_axis_uncheckable": {
+        "stage": "restore",
+        "means": "the matrix publishes no value for an axis the archive must be compared on (Godot and Unreal declare no expected C ABI anywhere). Uncheckable is not matching",
+        "unblock": "declare an expected value for the axis in the engine plugin, as Unity does with ExpectedNativeSemver/ExpectedAbiSemver"
+      },
+      "insimul_checkpoint_snapshot_version_absent": {
+        "stage": "restore",
+        "axis": "snapshot_version",
+        "means": "the archive is stamped, but not on the snapshot_version axis. Half a stamp is not a stamp",
+        "unblock": "stamp snapshot_version at save time"
+      },
+      "insimul_checkpoint_snapshot_version_skew": {
+        "stage": "restore",
+        "axis": "snapshot_version",
+        "means": "the archive was written under a different snapshot_version. Go-Explore archives persist ACROSS runs, so an entry outlives the upgrade that invalidated it",
+        "unblock": "discard the entry and re-explore; a stale-format snapshot that parses is worse than no snapshot"
+      },
+      "insimul_checkpoint_c_abi_absent": {
+        "stage": "restore",
+        "axis": "c_abi",
+        "means": "the archive is stamped, but not on the c_abi axis. Half a stamp is not a stamp",
+        "unblock": "stamp c_abi at save time"
+      },
+      "insimul_checkpoint_c_abi_skew": {
+        "stage": "restore",
+        "axis": "c_abi",
+        "means": "the archive was written under a different c_abi. Go-Explore archives persist ACROSS runs, so an entry outlives the upgrade that invalidated it",
+        "unblock": "discard the entry and re-explore; a stale-format snapshot that parses is worse than no snapshot"
+      }
+    }
+  }
+}

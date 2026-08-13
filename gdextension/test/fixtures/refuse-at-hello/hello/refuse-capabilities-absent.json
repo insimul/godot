@@ -1,0 +1,31 @@
+{
+  "case": "refuse — a hello with no capabilities.insimul",
+  "why": "§7.8's DANGEROUS row, the one the design exists to make loud: Talos runs, sees an ordinary game, files findings that look valid, and the ground truth sits unread. Nothing errors. The contract refuses the run instead of degrading into it.",
+  "matrix": "../matrix/SYNTHETIC-supported-cell.json",
+  "hello": {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocol": "tbp/1.5",
+      "engine": "godot",
+      "engine_version": "4.6.2",
+      "plugin_version": "0.4.1",
+      "session_id": "sess-fixture-0001",
+      "resume_token": "rtok-fixture",
+      "run_mode": "uncooked",
+      "process_role": "standalone",
+      "capabilities": {
+        "injection_paths": [
+          "event"
+        ],
+        "consumption_echo": true,
+        "checkpoint_tier": 2,
+        "frame_tap": "in_engine"
+      }
+    }
+  },
+  "expect": {
+    "verdict": "refuse",
+    "token": "insimul_capabilities_absent"
+  }
+}

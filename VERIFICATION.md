@@ -988,3 +988,74 @@ godot --path templates/project -s scripts/mechanics/mechanic_courtyard_demo.gd
 | `npm run test:activation` | ✅ **30 checks, 0 failures** — 8 bundles, 88 KB witnesses, 6 scenario steps |
 | `vendor-conformance --check --core` | ✅ byte-identical to core `76782e5`; 64 files, 19 case floors + the table floors met |
 | the human scene pass | ⬜ needs a `godot` binary + a built extension |
+
+---
+
+# `insimul-talos-bridge` (tasklist 183)
+
+The third artifact of `TALOS_INSIMUL_BRIDGE.md` §7.5 — the Talos bridge for an
+Insimul game, which depends on both projects and is depended on by neither. Its
+two halves gate separately: the DECISIONS under a plain C++ compiler, the
+INSTALL under Node.
+
+## Runs on any box — no Godot binary, and no libinsimul either
+
+```sh
+npm run test:talos-bridge   # bash gdextension/test/run_talos_bridge_tests.sh
+npm run check               # includes tools/verify-talos-bridge/check-bridge.mjs --self-test
+```
+
+Nothing in the decision half touches a knowledge base, so unlike the corpus
+gates this one has nothing it could be faking and always runs.
+
+**67 checks**, in six parts:
+
+| part | what runs | count |
+| --- | --- | --- |
+| parity | every case `scripts/engine-versions/check-hello.mjs` publishes, mirrored into `gdextension/test/fixtures/refuse-at-hello/` and replayed through this port, demanding the same verdict AND the same token | 21 |
+| the controls | the untouched hello admitted; one axis nudged refused; the SAME hello refused once the matrix demotes an axis | 3 |
+| §7.5 | a state verb before a world is loaded is refused as `insimul_kb_uninitialized`, retryable, with its unblock recipe — never an empty success | 5 |
+| the mapping | six groups, the `capabilities.insimul` payload (null world half until there is a world; tier 1 / `kb_authoritative`), the four-axis checkpoint stamp, one refusal per verb class, the §3.6 template-write refusal | 22 |
+| §3.4 | two enumeration orders produce one digest, and the cap truncates deterministically because the sort happens first | 5 |
+| a half-present install | a bridge with no contract decides nothing rather than defaulting to something | 5 |
+
+The parity suite is **two-sided by construction** — it carries an admitted hello
+and a restored archive — because a decision procedure that refused everything
+would otherwise pass every refusal case. Proven to fail: making
+`evaluate_hello` stop reading the published axis status turns the run red on 4
+checks.
+
+**20 checks + 7 negative controls** in `check-bridge.mjs`, covering what a
+decision cannot see: the artifact is separate (its own `plugin.cfg`,
+`addons/insimul/` never mentions it, no Talos symbol anywhere in it), the six
+groups agree between `bridge-contract.json` and `talos.game.yaml` **in both
+directions**, every method and signal the group contracts name is really defined,
+all 25 TBP verbs are accounted for with a why-not token on every one this bridge
+does not answer, and no `insimul_*` token is spelled that a published vocabulary
+does not carry.
+
+## Needs a `godot` binary + Talos — human end-to-end checklist
+
+The half no host gate reaches: whether the Bridge actually FINDS the adapter.
+
+- [ ] With `addons/insimul_talos/` enabled and its `talos.game.yaml` fragment
+      merged, a Talos session's `save_checkpoint` finds the hook rather than
+      refusing with `no_checkpoint_hooks`.
+- [ ] With the fragment **not** merged, it refuses with `no_checkpoint_hooks` and
+      the "would report success both times" message — the loud failure §7.4 says
+      a mis-installed adapter must produce.
+- [ ] Before `attach_world()`, `talos_ready_state()` is false and a `query_state`
+      answer carries the `insimul_kb_uninitialized` envelope rather than an empty
+      digest.
+- [ ] `InsimulTalos.hello_decision()` refuses on today's published matrix with
+      `insimul_engine_version_declared`, and the refusal reaches the run as an
+      `assert_failed` telemetry event.
+
+## Status on this machine (talos-bridge)
+
+| gate | result |
+| --- | --- |
+| `npm run test:talos-bridge` | ✅ **67 checks, 0 failures** — 21 reference cases replayed, 3 controls |
+| `npm run check` | ✅ 188 `.gd` files; check-bridge 20 checks + 7 negative controls |
+| `vendor-supported-versions --check` | ✅ 3 engine rows, 42 why-not tokens, 21 reference cases |
+| the human end-to-end checklist | ⬜ needs a `godot` binary, a built extension and Talos |
